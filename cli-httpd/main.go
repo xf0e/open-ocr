@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/couchbaselabs/logg"
-	"github.com/tleyden/open-ocr"
+	"github.com/xf0e/open-ocr"
 )
 
 // This assumes that there is a worker running
@@ -20,6 +20,7 @@ func init() {
 	logg.LogKeys["OCR_WORKER"] = true
 	logg.LogKeys["OCR_HTTP"] = true
 	logg.LogKeys["OCR_TESSERACT"] = true
+	logg.LogKeys["OCR_SANDWICH"] = true
 }
 
 func main() {

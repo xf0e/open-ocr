@@ -18,6 +18,7 @@ func init() {
 	logg.LogKeys["PREPROCESSOR_WORKER"] = true
 	logg.LogKeys["OCR_HTTP"] = true
 	logg.LogKeys["OCR_TESSERACT"] = true
+	logg.LogKeys["OCR_SANDWICH"] = true
 }
 
 func main() {

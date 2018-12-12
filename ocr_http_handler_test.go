@@ -34,7 +34,7 @@ func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 
 	ocrRequest := OcrRequest{
 		ImgUrl:     "http://localhost:8081/img",
-		EngineType: ENGINE_MOCK,
+		EngineType: EngineMock,
 	}
 	jsonBytes, err := json.Marshal(ocrRequest)
 	if err != nil {

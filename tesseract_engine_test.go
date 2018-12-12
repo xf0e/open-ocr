@@ -25,7 +25,7 @@ func TestTesseractEngineWithRequest(t *testing.T) {
 
 	ocrRequest := OcrRequest{
 		ImgBytes:   bytes,
-		EngineType: ENGINE_TESSERACT,
+		EngineType: EngineTesseract,
 		EngineArgs: cFlags,
 	}
 
