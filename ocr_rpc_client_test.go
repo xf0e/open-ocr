@@ -47,7 +47,7 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 
 	for i := 0; i < 50; i++ {
 
-		ocrRequest := OcrRequest{ImgUrl: testImageUrl, EngineType: ENGINE_MOCK}
+		ocrRequest := OcrRequest{ImgUrl: testImageUrl, EngineType: EngineMock}
 		decodeResult, err := ocrClient.DecodeImage(ocrRequest)
 		if err != nil {
 			logg.LogTo("TEST", "err: %v", err)

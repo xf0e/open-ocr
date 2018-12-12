@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/couchbaselabs/logg"
-	"github.com/tleyden/open-ocr"
+	"github.com/xf0e/open-ocr"
 )
 
 // This assumes that there is a rabbit mq running
@@ -16,6 +15,7 @@ func init() {
 	logg.LogKeys["OCR_WORKER"] = true
 	logg.LogKeys["OCR_HTTP"] = true
 	logg.LogKeys["OCR_TESSERACT"] = true
+	logg.LogKeys["OCR_SANDWICH"] = true
 }
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 	noOpFlagFunc := ocrworker.NoOpFlagFunction()
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(noOpFlagFunc)
 
-	// inifinite loop, since sometimes worker <-> rabbitmq connection
+	// infinite loop, since sometimes worker <-> rabbitmq connection
 	// gets broken.  see https://github.com/tleyden/open-ocr/issues/4
 	for {
 		logg.LogTo("OCR_WORKER", "Creating new OCR Worker")

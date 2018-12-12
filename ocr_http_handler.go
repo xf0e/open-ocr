@@ -42,7 +42,7 @@ func (s *OcrHttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logg.LogTo("OCR_HTTP", "ocrResult: %v", ocrResult)
+	// logg.LogTo("OCR_HTTP", "ocrResult: %v", ocrResult)
 
 	fmt.Fprintf(w, ocrResult.Text)
 

@@ -63,7 +63,6 @@ func (c ConvertPdf) preprocess(ocrRequest *OcrRequest) error {
 	if err != nil {
 		logg.LogFatal("Error running command: %s. out: %s", err, out)
 	}
-	logg.LogTo("PREPROCESSOR_WORKER", "output: %v", string(out))
 
 	// read bytes from output file
 	resultBytes, err := ioutil.ReadFile(tmpFileNameOutput)

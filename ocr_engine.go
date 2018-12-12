@@ -10,9 +10,10 @@ import (
 type OcrEngineType int
 
 const (
-	ENGINE_TESSERACT = OcrEngineType(iota)
-	ENGINE_GO_TESSERACT
-	ENGINE_MOCK
+	EngineTesseract = OcrEngineType(iota)
+	EngineGoTesseract
+	EngineSandwichTesseract
+	EngineMock
 )
 
 type OcrEngine interface {
@@ -21,22 +22,26 @@ type OcrEngine interface {
 
 func NewOcrEngine(engineType OcrEngineType) OcrEngine {
 	switch engineType {
-	case ENGINE_MOCK:
+	case EngineMock:
 		return &MockEngine{}
-	case ENGINE_TESSERACT:
+	case EngineTesseract:
 		return &TesseractEngine{}
+	case EngineSandwichTesseract:
+		return &SandwichEngine{}
 	}
 	return nil
 }
 
 func (e OcrEngineType) String() string {
 	switch e {
-	case ENGINE_MOCK:
+	case EngineMock:
 		return "ENGINE_MOCK"
-	case ENGINE_TESSERACT:
+	case EngineTesseract:
 		return "ENGINE_TESSERACT"
-	case ENGINE_GO_TESSERACT:
+	case EngineGoTesseract:
 		return "ENGINE_GO_TESSERACT"
+	case EngineSandwichTesseract:
+		return "ENGINE_SANDWICH_TESSERACT"
 
 	}
 	return ""
@@ -50,14 +55,16 @@ func (e *OcrEngineType) UnmarshalJSON(b []byte) (err error) {
 		engineString := strings.ToUpper(engineTypeStr)
 		switch engineString {
 		case "TESSERACT":
-			*e = ENGINE_TESSERACT
+			*e = EngineTesseract
 		case "GO_TESSERACT":
-			*e = ENGINE_GO_TESSERACT
+			*e = EngineGoTesseract
+		case "SANDWICH":
+			*e = EngineSandwichTesseract
 		case "MOCK":
-			*e = ENGINE_MOCK
+			*e = EngineMock
 		default:
 			logg.LogWarn("Unexpected OcrEngineType json: %v", engineString)
-			*e = ENGINE_MOCK
+			*e = EngineMock
 		}
 		return nil
 	}

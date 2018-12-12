@@ -17,7 +17,7 @@ func TestOcrEngineTypeJson(t *testing.T) {
 		logg.LogError(err)
 	}
 	assert.True(t, err == nil)
-	assert.Equals(t, ocrRequest.EngineType, ENGINE_TESSERACT)
+	assert.Equals(t, ocrRequest.EngineType, EngineTesseract)
 	logg.LogTo("TEST", "ocrRequest: %v", ocrRequest)
 
 }

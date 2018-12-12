@@ -56,11 +56,11 @@ func (w OcrRpcWorker) Run() error {
 	if err = w.channel.ExchangeDeclare(
 		w.rabbitConfig.Exchange,     // name of the exchange
 		w.rabbitConfig.ExchangeType, // type
-		true,  // durable
-		false, // delete when complete
-		false, // internal
-		false, // noWait
-		nil,   // arguments
+		true,                        // durable
+		false,                       // delete when complete
+		false,                       // internal
+		false,                       // noWait
+		nil,                         // arguments
 	); err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (w OcrRpcWorker) Run() error {
 	queue, err := w.channel.QueueDeclare(
 		queueName, // name of the queue
 		true,      // durable
-		false,     // delete when usused
+		false,     // delete when unused
 		false,     // exclusive
 		false,     // noWait
 		nil,       // arguments
@@ -87,8 +87,8 @@ func (w OcrRpcWorker) Run() error {
 		queue.Name,                // name of the queue
 		w.rabbitConfig.RoutingKey, // bindingKey
 		w.rabbitConfig.Exchange,   // sourceExchange
-		false, // noWait
-		nil,   // arguments
+		false,                     // noWait
+		nil,                       // arguments
 	); err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func (w OcrRpcWorker) Run() error {
 func (w *OcrRpcWorker) Shutdown() error {
 	// will close() the deliveries channel
 	if err := w.channel.Cancel(w.tag, true); err != nil {
-		return fmt.Errorf("Worker cancel failed: %s", err)
+		return fmt.Errorf("worker cancel failed: %s", err)
 	}
 
 	if err := w.conn.Close(); err != nil {
@@ -145,7 +145,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 			logg.LogError(fmt.Errorf(msg, err))
 		}
 
-		logg.LogTo("OCR_WORKER", "Sending rpc response: %v", ocrResult)
+		// logg.LogTo("OCR_WORKER", "Sending rpc response: %v", ocrResult)
 		err = w.sendRpcResponse(ocrResult, d.ReplyTo, d.CorrelationId)
 		if err != nil {
 			msg := "Error returning ocr result: %v.  Error: %v"
@@ -166,7 +166,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	ocrResult := OcrResult{Text: "Error"}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {
-		msg := "Error unmarshaling json: %v.  Error: %v"
+		msg := "Error unmarshalling json: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, string(d.Body), err)
 		logg.LogError(fmt.Errorf(errMsg))
 		ocrResult.Text = errMsg
@@ -237,7 +237,7 @@ func confirmDeliveryWorker(ack, nack chan uint64) {
 	case tag := <-nack:
 		logg.LogTo("OCR_WORKER", "failed to confirm delivery: %v", tag)
 	case <-time.After(RPC_RESPONSE_TIMEOUT):
-		// this is bad, the worker will probably be dsyfunctional
+		// this is bad, the worker will probably be dysfunctional
 		// at this point, so panic
 		logg.LogPanic("timeout trying to confirm delivery")
 	}
