@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	RPC_RESPONSE_TIMEOUT = time.Second * 120
+	RPC_RESPONSE_TIMEOUT  = time.Minute * 5
+	RESPONE_CACHE_TIMEOUT = time.Minute * 120
 )
 
 type OcrRpcClient struct {
@@ -20,8 +21,13 @@ type OcrRpcClient struct {
 }
 
 type OcrResult struct {
-	Text string
+	Text   string `json:"text"`
+	Status string `json:"status"`
 }
+
+// var requests map[string]chan OcrResult = make(map[string]chan OcrResult)
+var requests = make(map[string]chan OcrResult)
+var timers = make(map[string]*time.Timer)
 
 func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
 	ocrRpcClient := &OcrRpcClient{
@@ -63,7 +69,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
 		return OcrResult{}, err
 	}
 
-	rpcResponseChan := make(chan OcrResult)
+	rpcResponseChan := make(chan OcrResult, 1)
 
 	callbackQueue, err := c.subscribeCallbackQueue(correlationUuid, rpcResponseChan)
 	if err != nil {
@@ -138,13 +144,29 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
 		return OcrResult{}, nil
 	}
 
-	select {
+	/* select {
 	case ocrResult := <-rpcResponseChan:
 		return ocrResult, nil
 	case <-time.After(RPC_RESPONSE_TIMEOUT):
 		return OcrResult{}, fmt.Errorf("Timeout waiting for RPC response")
-	}
+	} */
 
+	if ocrRequest.Deferred {
+		logg.LogTo("OCR_CLIENT", "Distributed request")
+		requestId, _ := uuid.NewV4()
+		timer := time.NewTimer(RESPONE_CACHE_TIMEOUT)
+		requests[requestId.String()] = rpcResponseChan
+		timers[requestId.String()] = timer
+		go func() {
+			<-timer.C
+			CheckOcrStatusById(requestId.String())
+		}()
+		return OcrResult{
+			Text: requestId.String(),
+		}, nil
+	} else {
+		return CheckReply(rpcResponseChan, RPC_RESPONSE_TIMEOUT)
+	}
 }
 
 func (c OcrRpcClient) subscribeCallbackQueue(correlationUuid string, rpcResponseChan chan OcrResult) (amqp.Queue, error) {
@@ -153,7 +175,7 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationUuid string, rpcResponse
 	callbackQueue, err := c.channel.QueueDeclare(
 		"",    // name -- let rabbit generate a random one
 		false, // durable
-		true,  // delete when usused
+		true,  // delete when unused
 		true,  // exclusive
 		false, // noWait
 		nil,   // arguments
@@ -198,6 +220,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 	logg.LogTo("OCR_CLIENT", "looping over deliveries..")
 	for d := range deliveries {
 		if d.CorrelationId == correlationUuid {
+			defer c.connection.Close()
 			logg.LogTo(
 				"OCR_CLIENT",
 				"got %dB delivery(first 64 Bytes): [%v] %q.  Reply to: %v",
@@ -221,6 +244,30 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 			logg.LogTo("OCR_CLIENT", "ignoring delivery w/ correlation id: %v", d.CorrelationId)
 		}
 
+	}
+}
+
+func CheckOcrStatusById(requestId string) (OcrResult, error) {
+	if _, ok := requests[requestId]; !ok {
+		return OcrResult{}, fmt.Errorf("no such request %s", requestId)
+	}
+	ocrResult, err := CheckReply(requests[requestId], time.Second*2)
+	if ocrResult.Status != "processing" {
+		close(requests[requestId])
+		delete(requests, requestId)
+		timers[requestId].Stop()
+		delete(timers, requestId)
+	}
+	return ocrResult, err
+}
+
+func CheckReply(rpcResponseChan chan OcrResult, timeout time.Duration) (OcrResult, error) {
+	logg.LogTo("OCR_CLIENT", "checking for response")
+	select {
+	case ocrResult := <-rpcResponseChan:
+		return ocrResult, nil
+	case <-time.After(timeout):
+		return OcrResult{Text: "timeout waiting for RPC response", Status: "processing"}, nil
 	}
 }
 

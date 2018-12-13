@@ -47,6 +47,8 @@ func main() {
 
 	http.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
 
+	http.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
+
 	// add a handler to serve up an image from the filesystem.
 	// ignore this, was just something for testing ..
 	http.HandleFunc("/img", func(w http.ResponseWriter, r *http.Request) {

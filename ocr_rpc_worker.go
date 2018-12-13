@@ -49,6 +49,7 @@ func (w OcrRpcWorker) Run() error {
 
 	logg.LogTo("OCR_WORKER", "got Connection, getting Channel")
 	w.channel, err = w.conn.Channel()
+	w.channel.Qos(10, 0, true)
 	if err != nil {
 		return err
 	}
@@ -97,7 +98,7 @@ func (w OcrRpcWorker) Run() error {
 	deliveries, err := w.channel.Consume(
 		queue.Name, // name
 		tag,        // consumerTag,
-		true,       // noAck
+		false,      // noAck
 		false,      // exclusive
 		false,      // noLocal
 		false,      // noWait
@@ -154,6 +155,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 			done <- err
 			break
 		}
+		d.Ack(false)
 
 	}
 	logg.LogTo("OCR_WORKER", "handle: deliveries channel closed")
@@ -182,6 +184,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 		errMsg := fmt.Sprintf(msg, ocrRequest.ImgUrl, err)
 		logg.LogError(fmt.Errorf(errMsg))
 		ocrResult.Text = errMsg
+		ocrResult.Status = "error"
 		return ocrResult, err
 	}
 

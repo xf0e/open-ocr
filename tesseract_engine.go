@@ -198,7 +198,7 @@ func (t TesseractEngine) processImageFile(inputFilename string, engineArgs Tesse
 	tmpOutFileBaseName := inputFilename
 
 	// possible file extensions
-	fileExtensions := []string{"txt", "hocr"}
+	fileExtensions := []string{"txt", "hocr", "json"}
 
 	// build args array
 	cflags := engineArgs.Export()
