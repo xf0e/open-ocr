@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	RPC_RESPONSE_TIMEOUT  = time.Minute * 5
-	RESPONE_CACHE_TIMEOUT = time.Minute * 120
+	RpcResponseTimeout   = time.Minute * 1
+	ResponseCacheTimeout = time.Minute * 2
 )
 
 type OcrRpcClient struct {
@@ -25,7 +25,6 @@ type OcrResult struct {
 	Status string `json:"status"`
 }
 
-// var requests map[string]chan OcrResult = make(map[string]chan OcrResult)
 var requests = make(map[string]chan OcrResult)
 var timers = make(map[string]*time.Timer)
 
@@ -50,7 +49,9 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
 	if err != nil {
 		return OcrResult{}, err
 	}
-	defer c.connection.Close()
+	// if we close the connection here, the deferred status wont get the ocr result
+	// and will be always returning "processing"
+	// defer c.connection.Close()
 
 	c.channel, err = c.connection.Channel()
 	if err != nil {
@@ -144,17 +145,10 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
 		return OcrResult{}, nil
 	}
 
-	/* select {
-	case ocrResult := <-rpcResponseChan:
-		return ocrResult, nil
-	case <-time.After(RPC_RESPONSE_TIMEOUT):
-		return OcrResult{}, fmt.Errorf("Timeout waiting for RPC response")
-	} */
-
 	if ocrRequest.Deferred {
 		logg.LogTo("OCR_CLIENT", "Distributed request")
 		requestId, _ := uuid.NewV4()
-		timer := time.NewTimer(RESPONE_CACHE_TIMEOUT)
+		timer := time.NewTimer(ResponseCacheTimeout)
 		requests[requestId.String()] = rpcResponseChan
 		timers[requestId.String()] = timer
 		go func() {
@@ -165,7 +159,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
 			Text: requestId.String(),
 		}, nil
 	} else {
-		return CheckReply(rpcResponseChan, RPC_RESPONSE_TIMEOUT)
+		return CheckReply(rpcResponseChan, RpcResponseTimeout)
 	}
 }
 
@@ -262,12 +256,12 @@ func CheckOcrStatusById(requestId string) (OcrResult, error) {
 }
 
 func CheckReply(rpcResponseChan chan OcrResult, timeout time.Duration) (OcrResult, error) {
-	logg.LogTo("OCR_CLIENT", "checking for response")
+	logg.LogTo("OCR_CLIENT", "Checking for response")
 	select {
 	case ocrResult := <-rpcResponseChan:
 		return ocrResult, nil
 	case <-time.After(timeout):
-		return OcrResult{Text: "timeout waiting for RPC response", Status: "processing"}, nil
+		return OcrResult{Text: "Timeout waiting for RPC response", Status: "processing"}, nil
 	}
 }
 

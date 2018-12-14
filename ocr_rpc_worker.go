@@ -239,7 +239,7 @@ func confirmDeliveryWorker(ack, nack chan uint64) {
 		logg.LogTo("OCR_WORKER", "confirmed delivery, tag: %v", tag)
 	case tag := <-nack:
 		logg.LogTo("OCR_WORKER", "failed to confirm delivery: %v", tag)
-	case <-time.After(RPC_RESPONSE_TIMEOUT):
+	case <-time.After(RpcResponseTimeout):
 		// this is bad, the worker will probably be dysfunctional
 		// at this point, so panic
 		logg.LogPanic("timeout trying to confirm delivery")
