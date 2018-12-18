@@ -49,7 +49,8 @@ func (w OcrRpcWorker) Run() error {
 
 	logg.LogTo("OCR_WORKER", "got Connection, getting Channel")
 	w.channel, err = w.conn.Channel()
-	w.channel.Qos(10, 0, true)
+	// setting the prefetchCount to 1 reduces the Memory Consumption by the worker
+	w.channel.Qos(1, 0, true)
 	if err != nil {
 		return err
 	}

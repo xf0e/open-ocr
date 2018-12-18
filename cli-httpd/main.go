@@ -8,6 +8,7 @@ import (
 
 	"github.com/couchbaselabs/logg"
 	"github.com/xf0e/open-ocr"
+	_ "net/http/pprof"
 )
 
 // This assumes that there is a worker running

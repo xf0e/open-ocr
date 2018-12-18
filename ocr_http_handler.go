@@ -3,9 +3,8 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/couchbaselabs/logg"
+	"net/http"
 )
 
 type OcrHttpHandler struct {

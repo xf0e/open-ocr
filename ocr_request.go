@@ -61,6 +61,6 @@ func (ocrRequest *OcrRequest) downloadImgUrl() error {
 	return nil
 }
 
-func (o OcrRequest) String() string {
-	return fmt.Sprintf("ImgUrl: %s, EngineType: %s, Preprocessors: %s", o.ImgUrl, o.EngineType, o.PreprocessorChain)
+func (ocrRequest OcrRequest) String() string {
+	return fmt.Sprintf("ImgUrl: %s, EngineType: %s, Preprocessors: %s", ocrRequest.ImgUrl, ocrRequest.EngineType, ocrRequest.PreprocessorChain)
 }

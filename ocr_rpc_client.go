@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	RpcResponseTimeout   = time.Minute * 1
-	ResponseCacheTimeout = time.Minute * 2
+	RpcResponseTimeout   = time.Minute * 60
+	ResponseCacheTimeout = time.Minute * 60
 )
 
 type OcrRpcClient struct {
@@ -212,6 +212,8 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationUuid string, rpcResponse
 
 func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correlationUuid string, rpcResponseChan chan OcrResult) {
 	logg.LogTo("OCR_CLIENT", "looping over deliveries..")
+	// TODO this defer is probably a memory leak
+	// defer c.connection.Close()
 	for d := range deliveries {
 		if d.CorrelationId == correlationUuid {
 			defer c.connection.Close()
