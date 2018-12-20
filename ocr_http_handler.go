@@ -77,6 +77,12 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 			logg.LogError(err)
 			return OcrResult{}, err
 		}
+		// TODO check here if we have enough workers to handle new request and the true case!
+		ampqApiConfig := DefaultResManagerConfig()
+		serviceCanAccept := serviceCanAccept(&ampqApiConfig)
+		if serviceCanAccept {
+			logg.LogTo("OCR_CLIENT", "can get info from api")
+		}
 
 		ocrResult, err := ocrClient.DecodeImage(ocrRequest)
 
