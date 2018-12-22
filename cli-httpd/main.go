@@ -3,11 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-
-	"net/http"
-
 	"github.com/couchbaselabs/logg"
 	"github.com/xf0e/open-ocr"
+	"net/http"
 	_ "net/http/pprof"
 )
 
@@ -24,6 +22,10 @@ func init() {
 	logg.LogKeys["OCR_SANDWICH"] = true
 }
 
+/*var resourceChannel = make(chan bool)
+var ampqApiConfig = ocrworker.DefaultResManagerConfig()
+var ServiceCanAccept bool*/
+
 func main() {
 
 	var http_port int
@@ -36,6 +38,7 @@ func main() {
 		)
 
 	}
+
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
 
 	// any requests to root, just redirect to main page
@@ -59,6 +62,17 @@ func main() {
 	listenAddr := fmt.Sprintf(":%d", http_port)
 
 	logg.LogTo("OCR_HTTP", "Starting listener on %v", listenAddr)
+	/*
+		// start a goroutine which will decide if we have resources for future requests
+		go func() {
+			for {
+				resourceChannel <- ocrworker.AcceptRequest(&ampqApiConfig)
+				ServiceCanAccept = <- resourceChannel
+				ocrworker.ServiceCanAccept = ServiceCanAccept
+				time.Sleep(10 * time.Second)
+				logg.LogTo("OCR_HTTP", "oh la la la")
+			}
+		}()*/
 	logg.LogError(http.ListenAndServe(listenAddr, nil))
 
 }

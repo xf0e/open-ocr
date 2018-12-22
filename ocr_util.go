@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/nu7hatch/gouuid"
 )
@@ -38,7 +39,8 @@ func saveBytesToFileName(bytes []byte, tmpFileName string) error {
 
 func url2bytes(url string) ([]byte, error) {
 
-	resp, err := http.Get(url)
+	var client = &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}

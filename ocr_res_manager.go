@@ -2,66 +2,124 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"time"
+	"fmt"
+	"github.com/couchbaselabs/logg"
 )
 
-// {"consumer_details":[{"arguments":{},"channel_details":{"connection_name":"127.0.0.1:42242 -> 127.0.0.1:5672","name":"127.0.0.1:42242 -> 127.0.0.1:5672 (1)","node":"rabbit@wega","number":1,"peer_host":"127.0.0.1","peer_port":42242,"user":"guest"},"ack_required":true,"consumer_tag":"foo","exclusive":false,"prefetch_count":0,"queue":{"name":"decode-ocr","vhost":"/"}}],"arguments":{},"auto_delete":false,"backing_queue_status":{"avg_ack_egress_rate":0.13959283486782112,"avg_ack_ingress_rate":0.09377917479588953,"avg_egress_rate":0.09377917479588953,"avg_ingress_rate":0.07468769667840547,"delta":["delta",0,0,0,0],"len":0,"mode":"default","next_seq_id":17,"q1":0,"q2":0,"q3":0,"q4":0,"target_ram_count":"infinity"},"consumer_utilisation":null,"consumers":1,"deliveries":[],"durable":true,"effective_policy_definition":[],"exclusive":false,"exclusive_consumer_tag":null,"garbage_collection":{"fullsweep_after":65535,"max_heap_size":0,"min_bin_vheap_size":46422,"min_heap_size":233,"minor_gcs":6},"head_message_timestamp":null,"idle_since":"2018-12-20 0:53:28","incoming":[],"memory":17044,"message_bytes":0,"message_bytes_paged_out":0,"message_bytes_persistent":0,"message_bytes_ram":0,"message_bytes_ready":0,"message_bytes_unacknowledged":0,"message_stats":{"ack":17,"ack_details":{"rate":0.0},"deliver":20,"deliver_details":{"rate":0.0},"deliver_get":20,"deliver_get_details":{"rate":0.0},"deliver_no_ack":0,"deliver_no_ack_details":{"rate":0.0},"get":0,"get_details":{"rate":0.0},"get_no_ack":0,"get_no_ack_details":{"rate":0.0},"publish":17,"publish_details":{"rate":0.0},"redeliver":3,"redeliver_details":{"rate":0.0}},"messages":0,"messages_details":{"rate":0.0},"messages_paged_out":0,"messages_persistent":0,"messages_ram":0,"messages_ready":0,"messages_ready_details":{"rate":0.0},"messages_ready_ram":0,"messages_unacknowledged":0,"messages_unacknowledged_details":{"rate":0.0},"messages_unacknowledged_ram":0,"name":"decode-ocr","node":"rabbit@wega","operator_policy":null,"policy":null,"recoverable_slaves":null,"reductions":76046,"reductions_details":{"rate":0.0},"state":"running","vhost":"/"}
-
-type OcrResManager struct {
-	numMessages  string `json:"messages"`
-	numConsumers string `json:"consumers"`
+type OcrQueueManager struct {
+	NumMessages  uint `json:"messages"`
+	NumConsumers uint `json:"consumers"`
+	MessageBytes uint `json:"message_bytes"`
 }
 
-type AmqpApiConfig struct {
+type OcrResManager struct {
+	MemLimit uint64 `json:"mem_limit"`
+	MemUsed  uint64 `json:"mem_used"`
+}
+
+const (
+	factorForMessageAccept uint   = 2
+	memoryThreshold        uint64 = 95
+)
+
+type AmqpAPIConfig struct {
 	AmqpURI   string
 	Port      string
-	Path      string
+	PathQueue string
+	PathStats string
 	QueueName string
 }
 
-func DefaultResManagerConfig() AmqpApiConfig {
+func DefaultResManagerConfig() AmqpAPIConfig {
 
-	// http://localhost:15672/api/queues/%2f/decode-ocr
-
-	AmqpApiConfig := AmqpApiConfig{
+	AmqpApiConfig := AmqpAPIConfig{
 		AmqpURI:   "http://guest:guest@localhost:",
 		Port:      "15672",
-		Path:      "/api/queues/%2f/",
+		PathQueue: "/api/queues/%2f/",
+		PathStats: "/api/nodes",
 		QueueName: "decode-ocr",
 	}
 	return AmqpApiConfig
 
 }
 
-func serviceCanAccept(config *AmqpApiConfig) bool {
+func AcceptRequest(config *AmqpAPIConfig) bool {
 	isAvailable := false
-	resManager := new(OcrResManager)
-	var url = ""
-	url += config.AmqpURI + config.Port + config.Path + config.QueueName
-	getJson(url, &resManager)
+	resManager := make([]OcrResManager, 0)
+	queueManager := new(OcrQueueManager)
+	var urlQueue, urlStat = "", ""
+	urlQueue += config.AmqpURI + config.Port + config.PathQueue + config.QueueName
+	urlStat += config.AmqpURI + config.Port + config.PathStats
+	jsonQueueStat, err := url2bytes(urlQueue)
+	if err != nil {
+		logg.LogError(err)
+		return false
+	}
+	jsonResStat, err := url2bytes(urlStat)
+	if err != nil {
+		logg.LogError(err)
+		return false
+	}
 
-	println(url)
-	println(resManager.numMessages)
-	println(resManager.numConsumers)
+	err = json.Unmarshal(jsonQueueStat, &queueManager)
+	if err != nil {
+		msg := "Error unmarshaling json: %v"
+		errMsg := fmt.Sprintf(msg, err)
+		logg.LogError(fmt.Errorf(errMsg))
+		return false
+	}
+
+	err = json.Unmarshal(jsonResStat, &resManager)
+	if err != nil {
+		msg := "Error unmarshaling json: %v"
+		errMsg := fmt.Sprintf(msg, err)
+		logg.LogError(fmt.Errorf(errMsg))
+		return false
+	}
+
+	logg.LogTo("OCR_CLIENT", "Queue statistics: messages size %v, number consumers %v, number messages %v,	memory stats %v",
+		queueManager.MessageBytes,
+		queueManager.NumConsumers,
+		queueManager.NumMessages,
+		resManager)
+	logg.LogTo("OCR_CLIENT", "API URL %s", urlQueue)
+	logg.LogTo("OCR_CLIENT", "API URL %s", urlStat)
+
+	flagForResources := schedulerByMemoryLoad(resManager)
+	flagForQueue := schedulerByWorkerNumber(queueManager)
+	if flagForQueue && flagForResources {
+		isAvailable = true
+		logg.LogTo("OCR_CLIENT", "resources for request are available")
+	}
 
 	return isAvailable
 }
 
-func getJson(url string, target interface{}) error {
-
-	var myClient = &http.Client{Timeout: 10 * time.Second}
-	r, err := myClient.Get(url)
-	if err != nil {
-		// return err
-	}
-	defer r.Body.Close()
-
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err.Error())
+// computes the ratio of total available memory and used memory and returns a bool value if a threshold is reached
+func schedulerByMemoryLoad(resManager []OcrResManager) bool {
+	resFlag := false
+	var memTotalAvailable uint64
+	var memTotalInUse uint64
+	for k := range resManager {
+		memTotalInUse += resManager[k].MemUsed
+		memTotalAvailable += resManager[k].MemLimit
 	}
 
-	return json.Unmarshal(body, &target)
+	logg.LogTo("OCR_CLIENT", "Memory in RabbitMQ cluster available %v, used %v", memTotalAvailable,
+		memTotalInUse)
+
+	if memTotalInUse < ((memTotalAvailable * memoryThreshold) / 100) {
+		resFlag = true
+	}
+
+	return resFlag
+}
+
+// if the number of messages in the queue to high we should not accept the new messages
+func schedulerByWorkerNumber(resManger *OcrQueueManager) bool {
+	resFlag := false
+	if (resManger.NumMessages) < (resManger.NumConsumers * factorForMessageAccept) {
+		resFlag = true
+	}
+	return resFlag
 }

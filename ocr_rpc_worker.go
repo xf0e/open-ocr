@@ -169,7 +169,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	ocrResult := OcrResult{Text: "Error"}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {
-		msg := "Error unmarshalling json: %v.  Error: %v"
+		msg := "Error unmarshaling json: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, string(d.Body), err)
 		logg.LogError(fmt.Errorf(errMsg))
 		ocrResult.Text = errMsg

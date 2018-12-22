@@ -54,6 +54,12 @@ func (s *OcrHttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResult, error) {
 
+	defaultResManagerConfig := DefaultResManagerConfig()
+	if !AcceptRequest(&defaultResManagerConfig) {
+		err := fmt.Errorf("no ressources available to proced the request")
+		return OcrResult{}, err
+	}
+
 	switch ocrRequest.InplaceDecode {
 	case true:
 		// inplace decode: short circuit rabbitmq, and just call
@@ -77,15 +83,8 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 			logg.LogError(err)
 			return OcrResult{}, err
 		}
-		// TODO check here if we have enough workers to handle new request and the true case!
-		ampqApiConfig := DefaultResManagerConfig()
-		serviceCanAccept := serviceCanAccept(&ampqApiConfig)
-		if serviceCanAccept {
-			logg.LogTo("OCR_CLIENT", "can get info from api")
-		}
 
 		ocrResult, err := ocrClient.DecodeImage(ocrRequest)
-
 		if err != nil {
 			logg.LogError(err)
 			return OcrResult{}, err
