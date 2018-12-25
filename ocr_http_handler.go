@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/couchbaselabs/logg"
 	"net/http"
+	"sync"
 )
 
 type OcrHttpHandler struct {
@@ -17,10 +18,25 @@ func NewOcrHttpHandler(r RabbitConfig) *OcrHttpHandler {
 	}
 }
 
+var (
+	ServiceCanAccept   bool
+	ServiceCanAcceptMu sync.Mutex
+)
+
 func (s *OcrHttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	logg.LogTo("OCR_HTTP", "serveHttp called")
 	defer req.Body.Close()
+
+	ServiceCanAcceptMu.Lock()
+	ServiceCanAcceptLocal := ServiceCanAccept
+	ServiceCanAcceptMu.Unlock()
+	if !ServiceCanAcceptLocal {
+		err := "no resources available to process the request"
+		logg.LogError(fmt.Errorf(err))
+		http.Error(w, err, 500)
+		return
+	}
 
 	ocrRequest := OcrRequest{}
 	decoder := json.NewDecoder(req.Body)
@@ -53,12 +69,6 @@ func (s *OcrHttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResult, error) {
-
-	defaultResManagerConfig := DefaultResManagerConfig()
-	if !AcceptRequest(&defaultResManagerConfig) {
-		err := fmt.Errorf("no ressources available to proced the request")
-		return OcrResult{}, err
-	}
 
 	switch ocrRequest.InplaceDecode {
 	case true:

@@ -6,13 +6,13 @@ import (
 	"github.com/couchbaselabs/logg"
 )
 
-type OcrQueueManager struct {
+type ocrQueueManager struct {
 	NumMessages  uint `json:"messages"`
 	NumConsumers uint `json:"consumers"`
 	MessageBytes uint `json:"message_bytes"`
 }
 
-type OcrResManager struct {
+type ocrResManager struct {
 	MemLimit uint64 `json:"mem_limit"`
 	MemUsed  uint64 `json:"mem_used"`
 }
@@ -30,23 +30,25 @@ type AmqpAPIConfig struct {
 	QueueName string
 }
 
+// generates the URI for API of rabbitMQ
 func DefaultResManagerConfig() AmqpAPIConfig {
 
-	AmqpApiConfig := AmqpAPIConfig{
+	AmqpAPIConfig := AmqpAPIConfig{
 		AmqpURI:   "http://guest:guest@localhost:",
 		Port:      "15672",
 		PathQueue: "/api/queues/%2f/",
 		PathStats: "/api/nodes",
 		QueueName: "decode-ocr",
 	}
-	return AmqpApiConfig
+	return AmqpAPIConfig
 
 }
 
-func AcceptRequest(config *AmqpAPIConfig) bool {
+// checks if resources for incoming request are available
+func CheckForAcceptRequest(config *AmqpAPIConfig, statusChanged bool) bool {
 	isAvailable := false
-	resManager := make([]OcrResManager, 0)
-	queueManager := new(OcrQueueManager)
+	resManager := make([]ocrResManager, 0)
+	queueManager := new(ocrQueueManager)
 	var urlQueue, urlStat = "", ""
 	urlQueue += config.AmqpURI + config.Port + config.PathQueue + config.QueueName
 	urlStat += config.AmqpURI + config.Port + config.PathStats
@@ -77,26 +79,30 @@ func AcceptRequest(config *AmqpAPIConfig) bool {
 		return false
 	}
 
-	logg.LogTo("OCR_CLIENT", "Queue statistics: messages size %v, number consumers %v, number messages %v,	memory stats %v",
-		queueManager.MessageBytes,
-		queueManager.NumConsumers,
-		queueManager.NumMessages,
-		resManager)
-	logg.LogTo("OCR_CLIENT", "API URL %s", urlQueue)
-	logg.LogTo("OCR_CLIENT", "API URL %s", urlStat)
-
 	flagForResources := schedulerByMemoryLoad(resManager)
 	flagForQueue := schedulerByWorkerNumber(queueManager)
 	if flagForQueue && flagForResources {
 		isAvailable = true
-		logg.LogTo("OCR_CLIENT", "resources for request are available")
+	}
+
+	if statusChanged {
+		logg.LogTo("OCR_RESMAN", "Queue statistics: messages size %v, number consumers %v, number messages %v,	memory stats %v",
+			queueManager.MessageBytes,
+			queueManager.NumConsumers,
+			queueManager.NumMessages,
+			resManager)
+		// logg.LogTo("OCR_RESMAN", "API URL %s", urlQueue)
+		// logg.LogTo("OCR_RESMAN", "API URL %s", urlStat)
+		if isAvailable {
+			logg.LogTo("OCR_RESMAN", "resources for request are available")
+		}
 	}
 
 	return isAvailable
 }
 
 // computes the ratio of total available memory and used memory and returns a bool value if a threshold is reached
-func schedulerByMemoryLoad(resManager []OcrResManager) bool {
+func schedulerByMemoryLoad(resManager []ocrResManager) bool {
 	resFlag := false
 	var memTotalAvailable uint64
 	var memTotalInUse uint64
@@ -105,9 +111,6 @@ func schedulerByMemoryLoad(resManager []OcrResManager) bool {
 		memTotalAvailable += resManager[k].MemLimit
 	}
 
-	logg.LogTo("OCR_CLIENT", "Memory in RabbitMQ cluster available %v, used %v", memTotalAvailable,
-		memTotalInUse)
-
 	if memTotalInUse < ((memTotalAvailable * memoryThreshold) / 100) {
 		resFlag = true
 	}
@@ -115,8 +118,8 @@ func schedulerByMemoryLoad(resManager []OcrResManager) bool {
 	return resFlag
 }
 
-// if the number of messages in the queue to high we should not accept the new messages
-func schedulerByWorkerNumber(resManger *OcrQueueManager) bool {
+// if the number of messages in the queue too high we should not accept the new messages
+func schedulerByWorkerNumber(resManger *ocrQueueManager) bool {
 	resFlag := false
 	if (resManger.NumMessages) < (resManger.NumConsumers * factorForMessageAccept) {
 		resFlag = true
