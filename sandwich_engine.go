@@ -139,13 +139,13 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 	if err != nil {
 		logg.LogWarn("OCR_SANDWICH", "safety check can not be completed", err)
 		logg.LogWarn("OCR_SANDWICH", "processing of %s will be aborted", tmpFileName)
-		return OcrResult{"WARNING: the provided file format is not supported"}, err
+		return OcrResult{"WARNING: the provided file format is not supported", "done"}, err
 	}
 	uplFileType := detectFileType(buffer[:])
 	if uplFileType == "UNKNOWN" {
 		logg.LogWarn("OCR_SANDWICH", "file type is: %s. only support TIFF and PDF input files", uplFileType)
 		err := fmt.Errorf("file format not understood")
-		return OcrResult{"WARNING: only support TIFF and PDF input files"}, err
+		return OcrResult{"WARNING: only support TIFF and PDF input files", "done"}, err
 	}
 	logg.LogTo("OCR_SANDWICH", "file type is: %s", uplFileType)
 

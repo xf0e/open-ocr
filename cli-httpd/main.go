@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-
-	"net/http"
-
 	"github.com/couchbaselabs/logg"
+	"github.com/stackimpact/stackimpact-go"
 	"github.com/xf0e/open-ocr"
+	"net/http"
+	_ "net/http/pprof"
+	"time"
 )
 
 // This assumes that there is a worker running
@@ -21,10 +22,19 @@ func init() {
 	logg.LogKeys["OCR_HTTP"] = true
 	logg.LogKeys["OCR_TESSERACT"] = true
 	logg.LogKeys["OCR_SANDWICH"] = true
+	logg.LogKeys["OCR_RESMAN"] = true
 }
 
 func main() {
 
+	agent := stackimpact.Start(stackimpact.Options{
+		AgentKey:       "819507c0da027d68b0f6ee694dca6c3b389daeab",
+		AppName:        "BasicH",
+		AppVersion:     "1.0.0",
+		AppEnvironment: "dev",
+	})
+
+	var ampqAPIConfig = ocrworker.DefaultResManagerConfig()
 	var http_port int
 	flagFunc := func() {
 		flag.IntVar(
@@ -35,6 +45,7 @@ func main() {
 		)
 
 	}
+
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
 
 	// any requests to root, just redirect to main page
@@ -42,10 +53,14 @@ func main() {
 		text := `<h1>OpenOCR is running!<h1> Need <a href="http://www.openocr.net">docs</a>?`
 		fmt.Fprintf(w, text)
 	})
-
-	http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
+	span := agent.Profile()
+	http.Handle(agent.ProfileHandler("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig)))
+	//http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
+	defer span.Stop()
 
 	http.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
+
+	http.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
 
 	// add a handler to serve up an image from the filesystem.
 	// ignore this, was just something for testing ..
@@ -56,6 +71,25 @@ func main() {
 	listenAddr := fmt.Sprintf(":%d", http_port)
 
 	logg.LogTo("OCR_HTTP", "Starting listener on %v", listenAddr)
+
+	// start a goroutine which will decide if we have resources for future requests
+	go func() {
+		var boolValueChanged = true
+		var boolNewValue = false
+		var boolOldValue = true
+		for {
+			// only print the RESMAN output if the state has changed
+			boolValueChanged = boolOldValue != boolNewValue
+			if boolValueChanged {
+				boolOldValue = boolNewValue
+			}
+			ocrworker.ServiceCanAcceptMu.Lock()
+			ocrworker.ServiceCanAccept = ocrworker.CheckForAcceptRequest(&ampqAPIConfig, boolValueChanged)
+			boolNewValue = ocrworker.ServiceCanAccept
+			ocrworker.ServiceCanAcceptMu.Unlock()
+			time.Sleep(3 * time.Second)
+		}
+	}()
 	logg.LogError(http.ListenAndServe(listenAddr, nil))
 
 }

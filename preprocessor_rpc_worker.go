@@ -232,7 +232,7 @@ func (w *PreprocessorRpcWorker) handleDelivery(d amqp.Delivery) error {
 	ocrRequest := OcrRequest{}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {
-		msg := "Error unmarshalling json: %v.  Error: %v"
+		msg := "Error unmarshaling json: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, string(d.Body), err)
 		logg.LogError(fmt.Errorf(errMsg))
 		return err

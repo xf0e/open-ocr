@@ -3,25 +3,42 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/couchbaselabs/logg"
+	"net/http"
+	"sync"
 )
 
-type OcrHttpHandler struct {
+// OcrHTTPStatusHandler is for initial handling of ocr request
+type OcrHTTPStatusHandler struct {
 	RabbitConfig RabbitConfig
 }
 
-func NewOcrHttpHandler(r RabbitConfig) *OcrHttpHandler {
-	return &OcrHttpHandler{
+func NewOcrHttpHandler(r RabbitConfig) *OcrHTTPStatusHandler {
+	return &OcrHTTPStatusHandler{
 		RabbitConfig: r,
 	}
 }
 
-func (s *OcrHttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+var (
+	// ServiceCanAccept is global. Used to set the flag for logging
+	ServiceCanAccept   bool
+	ServiceCanAcceptMu sync.Mutex
+)
+
+func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	logg.LogTo("OCR_HTTP", "serveHttp called")
 	defer req.Body.Close()
+
+	ServiceCanAcceptMu.Lock()
+	ServiceCanAcceptLocal := ServiceCanAccept
+	ServiceCanAcceptMu.Unlock()
+	if !ServiceCanAcceptLocal {
+		err := "no resources available to process the request"
+		logg.LogError(fmt.Errorf(err))
+		http.Error(w, err, 500)
+		return
+	}
 
 	ocrRequest := OcrRequest{}
 	decoder := json.NewDecoder(req.Body)
@@ -41,10 +58,15 @@ func (s *OcrHttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, errMsg, 500)
 		return
 	}
-
+	// log the whole result
 	// logg.LogTo("OCR_HTTP", "ocrResult: %v", ocrResult)
-
-	fmt.Fprintf(w, ocrResult.Text)
+	w.Header().Set("Content-Type", "application/json")
+	js, err := json.Marshal(ocrResult)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(js)
 
 }
 
@@ -75,7 +97,6 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 		}
 
 		ocrResult, err := ocrClient.DecodeImage(ocrRequest)
-
 		if err != nil {
 			logg.LogError(err)
 			return OcrResult{}, err

@@ -49,6 +49,8 @@ func (w OcrRpcWorker) Run() error {
 
 	logg.LogTo("OCR_WORKER", "got Connection, getting Channel")
 	w.channel, err = w.conn.Channel()
+	// setting the prefetchCount to 1 reduces the Memory Consumption by the worker
+	w.channel.Qos(1, 0, true)
 	if err != nil {
 		return err
 	}
@@ -97,7 +99,7 @@ func (w OcrRpcWorker) Run() error {
 	deliveries, err := w.channel.Consume(
 		queue.Name, // name
 		tag,        // consumerTag,
-		true,       // noAck
+		false,      // noAck
 		false,      // exclusive
 		false,      // noLocal
 		false,      // noWait
@@ -154,6 +156,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 			done <- err
 			break
 		}
+		d.Ack(false)
 
 	}
 	logg.LogTo("OCR_WORKER", "handle: deliveries channel closed")
@@ -166,7 +169,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	ocrResult := OcrResult{Text: "Error"}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {
-		msg := "Error unmarshalling json: %v.  Error: %v"
+		msg := "Error unmarshaling json: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, string(d.Body), err)
 		logg.LogError(fmt.Errorf(errMsg))
 		ocrResult.Text = errMsg
@@ -182,6 +185,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 		errMsg := fmt.Sprintf(msg, ocrRequest.ImgUrl, err)
 		logg.LogError(fmt.Errorf(errMsg))
 		ocrResult.Text = errMsg
+		ocrResult.Status = "error"
 		return ocrResult, err
 	}
 
@@ -236,7 +240,7 @@ func confirmDeliveryWorker(ack, nack chan uint64) {
 		logg.LogTo("OCR_WORKER", "confirmed delivery, tag: %v", tag)
 	case tag := <-nack:
 		logg.LogTo("OCR_WORKER", "failed to confirm delivery: %v", tag)
-	case <-time.After(RPC_RESPONSE_TIMEOUT):
+	case <-time.After(RpcResponseTimeout):
 		// this is bad, the worker will probably be dysfunctional
 		// at this point, so panic
 		logg.LogPanic("timeout trying to confirm delivery")
