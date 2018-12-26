@@ -34,7 +34,7 @@ func main() {
 		AppEnvironment: "dev",
 	})
 
-	var ampqApiConfig = ocrworker.DefaultResManagerConfig()
+	var ampqAPIConfig = ocrworker.DefaultResManagerConfig()
 	var http_port int
 	flagFunc := func() {
 		flag.IntVar(
@@ -84,7 +84,7 @@ func main() {
 				boolOldValue = boolNewValue
 			}
 			ocrworker.ServiceCanAcceptMu.Lock()
-			ocrworker.ServiceCanAccept = ocrworker.CheckForAcceptRequest(&ampqApiConfig, boolValueChanged)
+			ocrworker.ServiceCanAccept = ocrworker.CheckForAcceptRequest(&ampqAPIConfig, boolValueChanged)
 			boolNewValue = ocrworker.ServiceCanAccept
 			ocrworker.ServiceCanAcceptMu.Unlock()
 			time.Sleep(3 * time.Second)

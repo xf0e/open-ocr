@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	RpcResponseTimeout   = time.Minute * 60
+	RPCResponseTimeout   = time.Minute * 60
 	ResponseCacheTimeout = time.Minute * 60
 )
 
@@ -147,19 +147,19 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
 
 	if ocrRequest.Deferred {
 		logg.LogTo("OCR_CLIENT", "Distributed request")
-		requestId, _ := uuid.NewV4()
+		requestID, _ := uuid.NewV4()
 		timer := time.NewTimer(ResponseCacheTimeout)
-		requests[requestId.String()] = rpcResponseChan
-		timers[requestId.String()] = timer
+		requests[requestID.String()] = rpcResponseChan
+		timers[requestID.String()] = timer
 		go func() {
 			<-timer.C
-			CheckOcrStatusById(requestId.String())
+			CheckOcrStatusByID(requestID.String())
 		}()
 		return OcrResult{
-			Text: requestId.String(),
+			Text: requestID.String(),
 		}, nil
 	} else {
-		return CheckReply(rpcResponseChan, RpcResponseTimeout)
+		return CheckReply(rpcResponseChan, RPCResponseTimeout)
 	}
 }
 
@@ -243,20 +243,22 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 	}
 }
 
-func CheckOcrStatusById(requestId string) (OcrResult, error) {
-	if _, ok := requests[requestId]; !ok {
-		return OcrResult{}, fmt.Errorf("no such request %s", requestId)
+func CheckOcrStatusByID(requestID string) (OcrResult, error) {
+	if _, ok := requests[requestID]; !ok {
+		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
-	ocrResult, err := CheckReply(requests[requestId], time.Second*2)
+	ocrResult, err := CheckReply(requests[requestID], time.Second*2)
 	if ocrResult.Status != "processing" {
-		close(requests[requestId])
-		delete(requests, requestId)
-		timers[requestId].Stop()
-		delete(timers, requestId)
+		close(requests[requestID])
+		delete(requests, requestID)
+		timers[requestID].Stop()
+		delete(timers, requestID)
 	}
 	return ocrResult, err
 }
 
+// CheckReply checks the status of deferred request and reply to the requester with
+// status or, if done, with orc text
 func CheckReply(rpcResponseChan chan OcrResult, timeout time.Duration) (OcrResult, error) {
 	logg.LogTo("OCR_CLIENT", "Checking for response")
 	select {

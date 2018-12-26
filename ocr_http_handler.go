@@ -8,22 +8,24 @@ import (
 	"sync"
 )
 
-type OcrHttpHandler struct {
+// OcrHTTPStatusHandler is for initial handling of ocr request
+type OcrHTTPStatusHandler struct {
 	RabbitConfig RabbitConfig
 }
 
-func NewOcrHttpHandler(r RabbitConfig) *OcrHttpHandler {
-	return &OcrHttpHandler{
+func NewOcrHttpHandler(r RabbitConfig) *OcrHTTPStatusHandler {
+	return &OcrHTTPStatusHandler{
 		RabbitConfig: r,
 	}
 }
 
 var (
+	// ServiceCanAccept is global. Used to set the flag for logging
 	ServiceCanAccept   bool
 	ServiceCanAcceptMu sync.Mutex
 )
 
-func (s *OcrHttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	logg.LogTo("OCR_HTTP", "serveHttp called")
 	defer req.Body.Close()

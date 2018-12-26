@@ -22,6 +22,7 @@ const (
 	memoryThreshold        uint64 = 95
 )
 
+// AmqpAPIConfig struct for rabbitMQ API
 type AmqpAPIConfig struct {
 	AmqpURI   string
 	Port      string
