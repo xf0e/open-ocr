@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	RPCResponseTimeout   = time.Minute * 60
-	ResponseCacheTimeout = time.Minute * 60
+	RPCResponseTimeout   = time.Minute
+	ResponseCacheTimeout = time.Minute
 )
 
 type OcrRpcClient struct {
@@ -125,6 +125,18 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
 		return OcrResult{}, err
 	}
 
+	if ocrRequest.ReplyTo != "" {
+		logg.LogTo("OCR_CLIENT", "Automated response requested")
+		validURL, err := checkUrlForReplyTo(ocrRequest.ReplyTo)
+		if err != nil {
+			return OcrResult{}, err
+		}
+		ocrRequest.ReplyTo = validURL
+		// force set the deferred flag to drop the connection and deliver
+		// ocr automatically to the URL in ReplyTo tag
+		ocrRequest.Deferred = true
+	}
+
 	if err = c.channel.Publish(
 		c.rabbitConfig.Exchange, // publish to an exchange
 		routingKey,
@@ -151,12 +163,46 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
 		timer := time.NewTimer(ResponseCacheTimeout)
 		requests[requestID.String()] = rpcResponseChan
 		timers[requestID.String()] = timer
-		go func() {
-			<-timer.C
-			CheckOcrStatusByID(requestID.String())
-		}()
+		// deferred == true but no automatic reply to the requester
+		// client should poll to get the ocr
+		if ocrRequest.ReplyTo == "" {
+			go func() {
+				<-timer.C
+				CheckOcrStatusByID(requestID.String())
+			}()
+			return OcrResult{
+				Text: requestID.String(),
+			}, nil
+		} else { // automatic delivery oder POST to the requester
+			timer := time.NewTimer(time.Second * 20)
+			ticker := time.NewTicker(time.Second)
+			done := make(chan bool)
+			defer ticker.Stop()
+			go func() {
+				<-timer.C
+				done <- true
+			}()
+			go func() {
+				for {
+					select {
+					case <-done:
+						fmt.Println("Request processing took to long")
+						// TODO DELETE request by timeout
+						ocrPostClient := NewOcrPostClient()
+						err := ocrPostClient.Post(requestID.String(), ocrRequest.ReplyTo)
+						if err != nil {
+							logg.LogError(err)
+						}
+					case t := <-ticker.C:
+						fmt.Println("checking if request id done: ", t)
+						CheckOcrStatusByID(requestID.String())
+					}
+				}
+			}()
+		}
 		return OcrResult{
-			Text: requestID.String(),
+			Text:   requestID.String(),
+			Status: "processing",
 		}, nil
 	} else {
 		return CheckReply(rpcResponseChan, RPCResponseTimeout)
@@ -249,11 +295,14 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 	}
 	ocrResult, err := CheckReply(requests[requestID], time.Second*2)
 	if ocrResult.Status != "processing" {
+		// TODO race condition on requests
 		close(requests[requestID])
 		delete(requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
+		println(len(requestID))
 	}
+	println(ocrResult.Status)
 	return ocrResult, err
 }
 

@@ -5,6 +5,7 @@ import (
 	"github.com/couchbaselabs/logg"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -115,4 +116,19 @@ func convertImageToPdf(inputFilename string) string {
 
 	return tmpFileImgToPdf
 
+}
+
+func checkUrlForReplyTo(uri string) (string, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		logg.LogWarn("OCR_CLIENT", "provided("+u.String()+") URI address is not valid")
+		return "", err
+	} else if u.Scheme == "" || u.Host == "" {
+		errorText := "provided(" + u.String() + ") URI must be an absolute URL"
+		err = fmt.Errorf(errorText)
+	} else if u.Scheme != "http" {
+		errorText := "provided(" + u.String() + ") URI must begin with http"
+		err = fmt.Errorf(errorText)
+	}
+	return u.String(), err
 }

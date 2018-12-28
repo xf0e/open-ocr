@@ -33,7 +33,7 @@ func main() {
 		AppVersion:     "1.0.0",
 		AppEnvironment: "dev",
 	})
-
+	span := agent.Profile()
 	var ampqAPIConfig = ocrworker.DefaultResManagerConfig()
 	var http_port int
 	flagFunc := func() {
@@ -53,10 +53,9 @@ func main() {
 		text := `<h1>OpenOCR is running!<h1> Need <a href="http://www.openocr.net">docs</a>?`
 		fmt.Fprintf(w, text)
 	})
-	span := agent.Profile()
+
 	http.Handle(agent.ProfileHandler("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig)))
 	//http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
-	defer span.Stop()
 
 	http.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
 
@@ -91,5 +90,5 @@ func main() {
 		}
 	}()
 	logg.LogError(http.ListenAndServe(listenAddr, nil))
-
+	defer span.Stop()
 }
