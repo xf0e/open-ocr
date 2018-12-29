@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/couchbaselabs/logg"
+	"github.com/nu7hatch/gouuid"
 	"net/http"
 	"sync"
 )
@@ -72,6 +73,9 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 
 func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResult, error) {
 
+	var requestIDRaw, _ = uuid.NewV4()
+	requestID := requestIDRaw.String()
+	ocrResult := NewOcrResult(requestID)
 	switch ocrRequest.InplaceDecode {
 	case true:
 		// inplace decode: short circuit rabbitmq, and just call
@@ -96,7 +100,7 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 			return OcrResult{}, err
 		}
 
-		ocrResult, err := ocrClient.DecodeImage(ocrRequest)
+		ocrResult, err = ocrClient.DecodeImage(ocrRequest, requestID)
 		if err != nil {
 			logg.LogError(err)
 			return OcrResult{}, err

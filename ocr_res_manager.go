@@ -115,7 +115,6 @@ func schedulerByMemoryLoad(resManager []ocrResManager) bool {
 	if memTotalInUse < ((memTotalAvailable * memoryThreshold) / 100) {
 		resFlag = true
 	}
-
 	return resFlag
 }
 

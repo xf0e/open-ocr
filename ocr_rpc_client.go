@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/couchbaselabs/logg"
-	"github.com/nu7hatch/gouuid"
 	"github.com/streadway/amqp"
 	"time"
 )
@@ -23,6 +22,14 @@ type OcrRpcClient struct {
 type OcrResult struct {
 	Text   string `json:"text"`
 	Status string `json:"status"`
+	Id     string `json:"id"`
+}
+
+func NewOcrResult(id string) OcrResult {
+	ocrResult := &OcrResult{}
+	ocrResult.Status = "processing"
+	ocrResult.Id = id
+	return *ocrResult
 }
 
 var requests = make(map[string]chan OcrResult)
@@ -35,19 +42,19 @@ func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
 	return ocrRpcClient, nil
 }
 
-func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
+func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (OcrResult, error) {
 	var err error
 
-	correlationUuidRaw, err := uuid.NewV4()
+	/* correlationUuidRaw, err := uuid.NewV4()
 	if err != nil {
-		return OcrResult{}, err
-	}
-	correlationUuid := correlationUuidRaw.String()
+		return OcrResult{Text: "Internal Server Error: correlationUuidRaw is not generated", Status: "error"}, err
+	} */
+	correlationUuid := requestID
 
 	logg.LogTo("OCR_CLIENT", "dialing %q", c.rabbitConfig.AmqpURI)
 	c.connection, err = amqp.Dial(c.rabbitConfig.AmqpURI)
 	if err != nil {
-		return OcrResult{}, err
+		return OcrResult{Text: "Internal Server Error: message broker is not reachable", Status: "error"}, err
 	}
 	// if we close the connection here, the deferred status wont get the ocr result
 	// and will be always returning "processing"
@@ -159,19 +166,18 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
 
 	if ocrRequest.Deferred {
 		logg.LogTo("OCR_CLIENT", "Distributed request")
-		requestID, _ := uuid.NewV4()
 		timer := time.NewTimer(ResponseCacheTimeout)
-		requests[requestID.String()] = rpcResponseChan
-		timers[requestID.String()] = timer
-		// deferred == true but no automatic reply to the requester
+		requests[requestID] = rpcResponseChan
+		timers[requestID] = timer
+		// // deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
 		if ocrRequest.ReplyTo == "" {
 			go func() {
 				<-timer.C
-				CheckOcrStatusByID(requestID.String())
+				CheckOcrStatusByID(requestID)
 			}()
 			return OcrResult{
-				Text: requestID.String(),
+				Id: requestID,
 			}, nil
 		} else { // automatic delivery oder POST to the requester
 			timer := time.NewTimer(time.Second * 20)
@@ -187,21 +193,21 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest) (OcrResult, error) {
 					select {
 					case <-done:
 						fmt.Println("Request processing took to long")
-						// TODO DELETE request by timeout
+						// TODO DELETE request by timeout, check for cleanup, check for faster reply. Set done status
 						ocrPostClient := NewOcrPostClient()
-						err := ocrPostClient.Post(requestID.String(), ocrRequest.ReplyTo)
+						err := ocrPostClient.Post(requestID, ocrRequest.ReplyTo)
 						if err != nil {
 							logg.LogError(err)
 						}
 					case t := <-ticker.C:
 						fmt.Println("checking if request id done: ", t)
-						CheckOcrStatusByID(requestID.String())
+						CheckOcrStatusByID(requestID)
 					}
 				}
 			}()
 		}
 		return OcrResult{
-			Text:   requestID.String(),
+			Id:     requestID,
 			Status: "processing",
 		}, nil
 	} else {
@@ -265,16 +271,23 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 			defer c.connection.Close()
 			logg.LogTo(
 				"OCR_CLIENT",
-				"got %dB delivery(first 64 Bytes): [%v] %q.  Reply to: %v",
+				"got %dB delivery(first 32 bytes): [%v] %q.  Reply to: %v",
 				len(d.Body),
 				d.DeliveryTag,
-				d.Body[0:64],
+				d.Body[0:32],
 				d.ReplyTo,
 			)
-
-			ocrResult := OcrResult{
-				Text: string(d.Body),
+			// ocrResult := OcrResult{
+			//	Text: string(d.Body),
+			// }
+			ocrResult := OcrResult{}
+			err := json.Unmarshal(d.Body, &ocrResult)
+			if err != nil {
+				msg := "Error unmarshaling json: %v.  Error: %v"
+				errMsg := fmt.Sprintf(msg, string(d.Body[0:32]), err)
+				logg.LogError(fmt.Errorf(errMsg))
 			}
+			ocrResult.Id = correlationUuid
 
 			logg.LogTo("OCR_CLIENT", "send result to rpcResponseChan")
 			rpcResponseChan <- ocrResult

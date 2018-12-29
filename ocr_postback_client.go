@@ -7,6 +7,7 @@ import (
 	"github.com/couchbaselabs/logg"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type OcrPostClient struct {
@@ -25,9 +26,12 @@ func (c *OcrPostClient) Post(requestID string, replyToAddress string) error {
 	ocrResult, err := CheckOcrStatusByID(requestID)
 
 	jsonReply, err := json.Marshal(ocrResult)
+	println(ocrResult.Text)
+	println(ocrResult.Status)
+	println(ocrResult.Id)
 	if err != nil {
 		ocrResult.Text = requestID
-		ocrResult.Status = "server error"
+		ocrResult.Status = "error"
 	}
 	// println(ocrResult.Status)
 	// println(ocrResult.Text[0:64])
@@ -37,7 +41,7 @@ func (c *OcrPostClient) Post(requestID string, replyToAddress string) error {
 	req.Header.Set("X-Custom-Header", "automated reply")
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: time.Duration(2 * time.Second)}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err

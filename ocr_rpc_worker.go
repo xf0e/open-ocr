@@ -140,7 +140,8 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 			d.RoutingKey,
 			d.ReplyTo,
 		)
-
+		// reply from engine here
+		// id is not set, Text is set, Status is set
 		ocrResult, err := w.resultForDelivery(d)
 		if err != nil {
 			msg := "Error generating ocr result.  Error: %v"
@@ -166,7 +167,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 
 	ocrRequest := OcrRequest{}
-	ocrResult := OcrResult{Text: "Error"}
+	ocrResult := OcrResult{Status: "error"}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {
 		msg := "Error unmarshaling json: %v.  Error: %v"
@@ -179,13 +180,11 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	ocrEngine := NewOcrEngine(ocrRequest.EngineType)
 
 	ocrResult, err = ocrEngine.ProcessRequest(ocrRequest)
-
 	if err != nil {
 		msg := "Error processing image url: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, ocrRequest.ImgUrl, err)
 		logg.LogError(fmt.Errorf(errMsg))
 		ocrResult.Text = errMsg
-		ocrResult.Status = "error"
 		return ocrResult, err
 	}
 
@@ -210,6 +209,13 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 	}
 
 	logg.LogTo("OCR_WORKER", "sendRpcResponse to: %v", replyTo)
+	// ocr worker is publishing back the decoded text
+	// TODO here we lose information about status and id
+	body, err := json.Marshal(r)
+	if err != nil {
+		return err
+	}
+
 	if err := w.channel.Publish(
 		w.rabbitConfig.Exchange, // publish to an exchange
 		replyTo,                 // routing to 0 or more queues
@@ -219,10 +225,11 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 			Headers:         amqp.Table{},
 			ContentType:     "text/plain",
 			ContentEncoding: "",
-			Body:            []byte(r.Text),
-			DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
-			Priority:        0,              // 0-9
-			CorrelationId:   correlationId,
+			Body:            body,
+			// Body:            []byte(r.Text),
+			DeliveryMode:  amqp.Transient, // 1=non-persistent, 2=persistent
+			Priority:      0,              // 0-9
+			CorrelationId: correlationId,
 			// a bunch of application/implementation-specific fields
 		},
 	); err != nil {
