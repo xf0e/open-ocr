@@ -167,7 +167,8 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 
 	ocrRequest := OcrRequest{}
-	ocrResult := OcrResult{Status: "error"}
+	// ocrResult := OcrResult{Status: "error"}
+	ocrResult := OcrResult{}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {
 		msg := "Error unmarshaling json: %v.  Error: %v"
@@ -210,7 +211,6 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 
 	logg.LogTo("OCR_WORKER", "sendRpcResponse to: %v", replyTo)
 	// ocr worker is publishing back the decoded text
-	// TODO here we lose information about status and id
 	body, err := json.Marshal(r)
 	if err != nil {
 		return err

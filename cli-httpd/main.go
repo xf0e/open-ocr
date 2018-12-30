@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/couchbaselabs/logg"
-	"github.com/stackimpact/stackimpact-go"
 	"github.com/xf0e/open-ocr"
 	"net/http"
 	_ "net/http/pprof"
@@ -27,13 +26,6 @@ func init() {
 
 func main() {
 
-	agent := stackimpact.Start(stackimpact.Options{
-		AgentKey:       "819507c0da027d68b0f6ee694dca6c3b389daeab",
-		AppName:        "BasicH",
-		AppVersion:     "1.0.0",
-		AppEnvironment: "dev",
-	})
-	span := agent.Profile()
 	var ampqAPIConfig = ocrworker.DefaultResManagerConfig()
 	var http_port int
 	flagFunc := func() {
@@ -54,13 +46,11 @@ func main() {
 		fmt.Fprintf(w, text)
 	})
 
-	http.Handle(agent.ProfileHandler("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig)))
-	//http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
+	http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
 
 	http.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
 
 	http.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
-
 	// add a handler to serve up an image from the filesystem.
 	// ignore this, was just something for testing ..
 	http.HandleFunc("/img", func(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +79,7 @@ func main() {
 			time.Sleep(3 * time.Second)
 		}
 	}()
+	// log.Println(http.ListenAndServe("localhost:6060", nil))
 	logg.LogError(http.ListenAndServe(listenAddr, nil))
-	defer span.Stop()
+
 }

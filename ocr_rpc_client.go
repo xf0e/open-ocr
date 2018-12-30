@@ -143,7 +143,6 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		// ocr automatically to the URL in ReplyTo tag
 		ocrRequest.Deferred = true
 	}
-
 	if err = c.channel.Publish(
 		c.rabbitConfig.Exchange, // publish to an exchange
 		routingKey,
@@ -163,13 +162,13 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	); err != nil {
 		return OcrResult{}, nil
 	}
-
+	// TODO rewrite it also check if there are memory leak after global timeout
 	if ocrRequest.Deferred {
 		logg.LogTo("OCR_CLIENT", "Distributed request")
 		timer := time.NewTimer(ResponseCacheTimeout)
 		requests[requestID] = rpcResponseChan
 		timers[requestID] = timer
-		// // deferred == true but no automatic reply to the requester
+		// deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
 		if ocrRequest.ReplyTo == "" {
 			go func() {
@@ -177,31 +176,34 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 				CheckOcrStatusByID(requestID)
 			}()
 			return OcrResult{
-				Id: requestID,
+				Id:     requestID,
+				Status: "processing",
 			}, nil
 		} else { // automatic delivery oder POST to the requester
 			timer := time.NewTimer(time.Second * 20)
 			ticker := time.NewTicker(time.Second)
-			done := make(chan bool)
-			defer ticker.Stop()
+			done := make(chan bool, 1)
 			go func() {
 				<-timer.C
 				done <- true
 			}()
 			go func() {
+			T:
 				for {
 					select {
 					case <-done:
-						fmt.Println("Request processing took to long")
+						ticker.Stop()
+						fmt.Println("Request processing took too long, aborting")
 						// TODO DELETE request by timeout, check for cleanup, check for faster reply. Set done status
 						ocrPostClient := NewOcrPostClient()
 						err := ocrPostClient.Post(requestID, ocrRequest.ReplyTo)
 						if err != nil {
 							logg.LogError(err)
 						}
+						break T
 					case t := <-ticker.C:
 						fmt.Println("checking if request id done: ", t)
-						CheckOcrStatusByID(requestID)
+						//CheckOcrStatusByID(requestID)
 					}
 				}
 			}()
@@ -280,6 +282,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 			// ocrResult := OcrResult{
 			//	Text: string(d.Body),
 			// }
+			// TODO check if additional transcoding ocrResult > JSON > ocrResult is needed
 			ocrResult := OcrResult{}
 			err := json.Unmarshal(d.Body, &ocrResult)
 			if err != nil {

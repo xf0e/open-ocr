@@ -6,6 +6,8 @@ import (
 	"github.com/couchbaselabs/logg"
 	"github.com/nu7hatch/gouuid"
 	"net/http"
+	"os"
+	"runtime/pprof"
 	"sync"
 )
 
@@ -27,7 +29,7 @@ var (
 )
 
 func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
+	pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
 	logg.LogTo("OCR_HTTP", "serveHttp called")
 	defer req.Body.Close()
 

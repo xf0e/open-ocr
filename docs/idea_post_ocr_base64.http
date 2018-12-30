@@ -37,7 +37,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-"img_url":"70a85667-60a7-4830-6251-a47586250d5f"
+"img_url":"abb4c4c8-d18d-4af1-7ed5-ed368a96e2d9"
 }
 
 

@@ -21,13 +21,6 @@ func init() {
 
 func main() {
 
-	/*agent := stackimpact.Start(stackimpact.Options{
-		AgentKey: "819507c0da027d68b0f6ee694dca6c3b389daeab",
-		AppName: "BasicW",
-		AppVersion: "1.0.0",
-		AppEnvironment: "dev",
-	})
-	*/
 	noOpFlagFunc := ocrworker.NoOpFlagFunction()
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(noOpFlagFunc)
 
@@ -40,11 +33,9 @@ func main() {
 			logg.LogPanic("Could not create rpc worker")
 		}
 
-		//span := agent.Profile()
 		if err := ocrWorker.Run(); err != nil {
 			logg.LogPanic("Error running worker: %v", err)
 		}
-		//defer span.Stop()
 
 		// this happens when connection is closed
 		err = <-ocrWorker.Done
