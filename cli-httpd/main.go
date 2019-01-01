@@ -26,6 +26,12 @@ func init() {
 
 func main() {
 
+	/*	rollbar.SetToken("")
+		rollbar.SetEnvironment("development")                 // defaults to "development"
+		rollbar.SetCodeVersion("v1")                         // optional Git hash/branch/tag (required for GitHub integration)
+		rollbar.SetServerHost("vega")                       // optional override; defaults to hostname
+		rollbar.SetServerRoot("github.com/xf0e/open-ocr")*/ // path of project (required for GitHub integration and non-project stacktrace collapsing)
+
 	var ampqAPIConfig = ocrworker.DefaultResManagerConfig()
 	var http_port int
 	flagFunc := func() {
@@ -79,6 +85,10 @@ func main() {
 			time.Sleep(3 * time.Second)
 		}
 	}()
+
+	//rollbar.Info("Message body goes here")
+	// rollbar.Wait()
+
 	// log.Println(http.ListenAndServe("localhost:6060", nil))
 	logg.LogError(http.ListenAndServe(listenAddr, nil))
 

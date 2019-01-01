@@ -196,9 +196,10 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						fmt.Println("Request processing took too long, aborting")
 						// TODO DELETE request by timeout, check for cleanup, check for faster reply. Set done status
 						ocrPostClient := NewOcrPostClient()
-						err := ocrPostClient.Post(requestID, ocrRequest.ReplyTo)
+						err := ocrPostClient.postOcrRequest(requestID, ocrRequest.ReplyTo)
 						if err != nil {
 							logg.LogError(err)
+							// rollbar.Critical(err)
 						}
 						break T
 					case t := <-ticker.C:
@@ -316,7 +317,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 		delete(requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
-		println(len(requestID))
+		println(len(timers))
 	}
 	println(ocrResult.Status)
 	return ocrResult, err

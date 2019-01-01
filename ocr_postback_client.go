@@ -17,7 +17,7 @@ func NewOcrPostClient() *OcrPostClient {
 	return &OcrPostClient{}
 }
 
-func (c *OcrPostClient) Post(requestID string, replyToAddress string) error {
+func (c *OcrPostClient) postOcrRequest(requestID string, replyToAddress string) error {
 	logg.LogTo("OCR_HTTP", "Post response called")
 
 	fmt.Println("URL:>", replyToAddress)
