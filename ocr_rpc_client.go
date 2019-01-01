@@ -45,12 +45,19 @@ func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
 func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (OcrResult, error) {
 	var err error
 
-	/* correlationUuidRaw, err := uuid.NewV4()
-	if err != nil {
-		return OcrResult{Text: "Internal Server Error: correlationUuidRaw is not generated", Status: "error"}, err
-	} */
-	correlationUuid := requestID
+	if ocrRequest.ReplyTo != "" {
+		logg.LogTo("OCR_CLIENT", "Automated response requested")
+		validURL, err := checkUrlForReplyTo(ocrRequest.ReplyTo)
+		if err != nil {
+			return OcrResult{}, err
+		}
+		ocrRequest.ReplyTo = validURL
+		// force set the deferred flag to drop the connection and deliver
+		// ocr automatically to the URL in ReplyTo tag
+		ocrRequest.Deferred = true
+	}
 
+	correlationUuid := requestID
 	logg.LogTo("OCR_CLIENT", "dialing %q", c.rabbitConfig.AmqpURI)
 	c.connection, err = amqp.Dial(c.rabbitConfig.AmqpURI)
 	if err != nil {
@@ -130,18 +137,6 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	ocrRequestJson, err := json.Marshal(ocrRequest)
 	if err != nil {
 		return OcrResult{}, err
-	}
-
-	if ocrRequest.ReplyTo != "" {
-		logg.LogTo("OCR_CLIENT", "Automated response requested")
-		validURL, err := checkUrlForReplyTo(ocrRequest.ReplyTo)
-		if err != nil {
-			return OcrResult{}, err
-		}
-		ocrRequest.ReplyTo = validURL
-		// force set the deferred flag to drop the connection and deliver
-		// ocr automatically to the URL in ReplyTo tag
-		ocrRequest.Deferred = true
 	}
 	if err = c.channel.Publish(
 		c.rabbitConfig.Exchange, // publish to an exchange

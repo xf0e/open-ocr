@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/couchbaselabs/logg"
+	"time"
 )
 
 type ocrQueueManager struct {
@@ -125,4 +126,22 @@ func schedulerByWorkerNumber(resManger *ocrQueueManager) bool {
 		resFlag = true
 	}
 	return resFlag
+}
+
+func SetResManagerState(ampqAPIConfig *AmqpAPIConfig) {
+	var boolValueChanged = true
+	var boolNewValue = false
+	var boolOldValue = true
+	for {
+		// only print the RESMAN output if the state has changed
+		boolValueChanged = boolOldValue != boolNewValue
+		if boolValueChanged {
+			boolOldValue = boolNewValue
+		}
+		ServiceCanAcceptMu.Lock()
+		ServiceCanAccept = CheckForAcceptRequest(ampqAPIConfig, boolValueChanged)
+		boolNewValue = ServiceCanAccept
+		ServiceCanAcceptMu.Unlock()
+		time.Sleep(3 * time.Second)
+	}
 }

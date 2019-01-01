@@ -7,7 +7,6 @@ import (
 	"github.com/xf0e/open-ocr"
 	"net/http"
 	_ "net/http/pprof"
-	"time"
 )
 
 // This assumes that there is a worker running
@@ -33,10 +32,10 @@ func main() {
 		rollbar.SetServerRoot("github.com/xf0e/open-ocr")*/ // path of project (required for GitHub integration and non-project stacktrace collapsing)
 
 	var ampqAPIConfig = ocrworker.DefaultResManagerConfig()
-	var http_port int
+	var httpPort int
 	flagFunc := func() {
 		flag.IntVar(
-			&http_port,
+			&httpPort,
 			"http_port",
 			8080,
 			"The http port to listen on, eg, 8081",
@@ -63,33 +62,17 @@ func main() {
 		http.ServeFile(w, r, "../refactoring.png")
 	})
 
-	listenAddr := fmt.Sprintf(":%d", http_port)
+	listenAddr := fmt.Sprintf(":%d", httpPort)
 
 	logg.LogTo("OCR_HTTP", "Starting listener on %v", listenAddr)
 
-	// start a goroutine which will decide if we have resources for future requests
+	// start a goroutine which will run forever and decide if we have resources for incoming requests
 	go func() {
-		var boolValueChanged = true
-		var boolNewValue = false
-		var boolOldValue = true
-		for {
-			// only print the RESMAN output if the state has changed
-			boolValueChanged = boolOldValue != boolNewValue
-			if boolValueChanged {
-				boolOldValue = boolNewValue
-			}
-			ocrworker.ServiceCanAcceptMu.Lock()
-			ocrworker.ServiceCanAccept = ocrworker.CheckForAcceptRequest(&ampqAPIConfig, boolValueChanged)
-			boolNewValue = ocrworker.ServiceCanAccept
-			ocrworker.ServiceCanAcceptMu.Unlock()
-			time.Sleep(3 * time.Second)
-		}
+		ocrworker.SetResManagerState(&ampqAPIConfig)
 	}()
 
-	//rollbar.Info("Message body goes here")
+	// rollbar.Info("Message body goes here")
 	// rollbar.Wait()
-
-	// log.Println(http.ListenAndServe("localhost:6060", nil))
 	logg.LogError(http.ListenAndServe(listenAddr, nil))
 
 }
