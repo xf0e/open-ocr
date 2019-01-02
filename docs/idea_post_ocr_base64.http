@@ -42,7 +42,7 @@ Content-Type: application/json
 
 
 ### tesseract base 64 PDF tesseract engine
-POST http://localhost:8080/ocr
+POST http://dms-t-to1:8080/ocr
 Content-Type: application/json
 
 {
@@ -50,13 +50,13 @@ Content-Type: application/json
   "engine":"sandwich",
   "engine_args":{"lang":"eng", "ocr_type":"combinedpdf","result_optimize":true},
   "deferred":true,
-  "reply_to":"http://artemil.de:9999"
+  "reply_to":"http://dms-t-to1:9999"
 }
 
 ###
 
 ### tesseract base 64 PDF tesseract engine
-POST http://localhost:8080/ocr
+POST http://dms-t-to1:8080/ocr
 Content-Type: application/json
 
 {

@@ -23,37 +23,14 @@ const (
 	memoryThreshold        uint64 = 95
 )
 
-// AmqpAPIConfig struct for rabbitMQ API
-type AmqpAPIConfig struct {
-	AmqpURI   string
-	Port      string
-	PathQueue string
-	PathStats string
-	QueueName string
-}
-
-// generates the URI for API of rabbitMQ
-func DefaultResManagerConfig() AmqpAPIConfig {
-
-	AmqpAPIConfig := AmqpAPIConfig{
-		AmqpURI:   "http://guest:guest@localhost:",
-		Port:      "15672",
-		PathQueue: "/api/queues/%2f/",
-		PathStats: "/api/nodes",
-		QueueName: "decode-ocr",
-	}
-	return AmqpAPIConfig
-
-}
-
 // checks if resources for incoming request are available
-func CheckForAcceptRequest(config *AmqpAPIConfig, statusChanged bool) bool {
+func CheckForAcceptRequest(config RabbitConfig, statusChanged bool) bool {
 	isAvailable := false
 	resManager := make([]ocrResManager, 0)
 	queueManager := new(ocrQueueManager)
 	var urlQueue, urlStat = "", ""
-	urlQueue += config.AmqpURI + config.Port + config.PathQueue + config.QueueName
-	urlStat += config.AmqpURI + config.Port + config.PathStats
+	urlQueue += config.AmqpAPIURI + config.APIPathQueue + config.APIQueueName
+	urlStat += config.AmqpAPIURI + config.APIPathStats
 	jsonQueueStat, err := url2bytes(urlQueue)
 	if err != nil {
 		logg.LogError(err)
@@ -128,7 +105,7 @@ func schedulerByWorkerNumber(resManger *ocrQueueManager) bool {
 	return resFlag
 }
 
-func SetResManagerState(ampqAPIConfig *AmqpAPIConfig) {
+func SetResManagerState(ampqAPIConfig RabbitConfig) {
 	var boolValueChanged = true
 	var boolNewValue = false
 	var boolOldValue = true

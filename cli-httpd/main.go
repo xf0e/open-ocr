@@ -31,7 +31,6 @@ func main() {
 		rollbar.SetServerHost("vega")                       // optional override; defaults to hostname
 		rollbar.SetServerRoot("github.com/xf0e/open-ocr")*/ // path of project (required for GitHub integration and non-project stacktrace collapsing)
 
-	var ampqAPIConfig = ocrworker.DefaultResManagerConfig()
 	var httpPort int
 	flagFunc := func() {
 		flag.IntVar(
@@ -68,7 +67,7 @@ func main() {
 
 	// start a goroutine which will run forever and decide if we have resources for incoming requests
 	go func() {
-		ocrworker.SetResManagerState(&ampqAPIConfig)
+		ocrworker.SetResManagerState(rabbitConfig)
 	}()
 
 	// rollbar.Info("Message body goes here")
