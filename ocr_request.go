@@ -13,6 +13,7 @@ type OcrRequest struct {
 	EngineArgs        map[string]interface{} `json:"engine_args"`
 	Deferred          bool                   `json:"deferred"`
 	ReplyTo           string                 `json:"reply_to"`
+	DocType           string                 `json:"doc_type"`
 
 	// decode ocr in http handler rather than putting in queue
 	InplaceDecode bool `json:"inplace_decode"`

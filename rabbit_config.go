@@ -67,7 +67,7 @@ func DefaultConfigFlagsOverride(flagFunction FlagFunction) RabbitConfig {
 	if len(AmqpURI) > 0 {
 		rabbitConfig.AmqpURI = AmqpURI
 	}
-	if len(AmqpURI) > 0 {
+	if len(AmqpAPIURI) > 0 {
 		rabbitConfig.AmqpAPIURI = AmqpAPIURI
 	}
 

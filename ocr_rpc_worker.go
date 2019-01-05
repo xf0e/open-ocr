@@ -33,6 +33,8 @@ func NewOcrRpcWorker(rc RabbitConfig) (*OcrRpcWorker, error) {
 func (w OcrRpcWorker) Run() error {
 
 	var err error
+	queueArgs := make(amqp.Table)
+	queueArgs["x-max-priority"] = uint8(9)
 
 	logg.LogTo("OCR_WORKER", "Run() called...")
 
@@ -77,7 +79,7 @@ func (w OcrRpcWorker) Run() error {
 		false,     // delete when unused
 		false,     // exclusive
 		false,     // noWait
-		nil,       // arguments
+		queueArgs, // arguments
 	)
 	if err != nil {
 		return err
@@ -90,7 +92,7 @@ func (w OcrRpcWorker) Run() error {
 		w.rabbitConfig.RoutingKey, // bindingKey
 		w.rabbitConfig.Exchange,   // sourceExchange
 		false,                     // noWait
-		nil,                       // arguments
+		queueArgs,                 // arguments
 	); err != nil {
 		return err
 	}
@@ -103,7 +105,7 @@ func (w OcrRpcWorker) Run() error {
 		false,      // exclusive
 		false,      // noLocal
 		false,      // noWait
-		nil,        // arguments
+		queueArgs,  // arguments
 	)
 	if err != nil {
 		return err
