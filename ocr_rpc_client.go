@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	RPCResponseTimeout   = time.Minute * 2
-	ResponseCacheTimeout = time.Minute * 3
+	RPCResponseTimeout   = time.Minute * 1
+	ResponseCacheTimeout = time.Minute * 1
 )
 
 type OcrRpcClient struct {
@@ -64,6 +64,8 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	var messagePriority uint8 = 1
 	if ocrRequest.DocType != "" {
 		logg.LogTo("OCR_CLIENT", "Message with higher priority requested: %s", ocrRequest.DocType)
+		// set highest priority for defined message id
+		// TODO do not hardcode DocType priority
 		if ocrRequest.DocType == "egvp" {
 			messagePriority = 9
 		}
@@ -190,8 +192,8 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 				Status: "processing",
 			}, nil
 		} else { // automatic delivery oder POST to the requester
-			timer := time.NewTimer(time.Second * 300)
-			ticker := time.NewTicker(time.Second * 20)
+			timer := time.NewTimer(time.Second * 30)
+			ticker := time.NewTicker(time.Second * 2)
 			done := make(chan bool, 1)
 			go func() {
 				<-timer.C
@@ -284,30 +286,34 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 	// defer c.connection.Close()
 	for d := range deliveries {
 		if d.CorrelationId == correlationUuid {
+			bodyLenToLog := len(d.Body)
 			defer c.connection.Close()
+			if bodyLenToLog > 32 {
+				bodyLenToLog = 32
+			}
 			logg.LogTo(
 				"OCR_CLIENT",
 				"got %dB delivery(first 32 bytes): [%v] %q.  Reply to: %v",
 				len(d.Body),
 				d.DeliveryTag,
-				d.Body[0:32],
+				d.Body[0:bodyLenToLog],
 				d.ReplyTo,
 			)
 			// ocrResult := OcrResult{
 			// 	Text: string(d.Body),
-			// }
+			// }+
 			// TODO check if additional transcoding ocrResult > JSON > ocrResult is needed
 			ocrResult := OcrResult{}
 			err := json.Unmarshal(d.Body, &ocrResult)
 			if err != nil {
 				msg := "Error unmarshaling json: %v.  Error: %v"
-				errMsg := fmt.Sprintf(msg, string(d.Body[0:32]), err)
+				errMsg := fmt.Sprintf(msg, string(d.Body[0:bodyLenToLog]), err)
 				logg.LogError(fmt.Errorf(errMsg))
 			}
 			ocrResult.Id = correlationUuid
 
 			logg.LogTo("OCR_CLIENT", "send result to rpcResponseChan")
-			// TODO: on request wich is beyond of timeout chanel is closed and the cli_http panics
+			// TODO: on request which is beyond of timeout chanel is closed and the cli_http panics
 			rpcResponseChan <- ocrResult
 			logg.LogTo("OCR_CLIENT", "sent result to rpcResponseChan")
 
@@ -323,6 +329,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 	requestsAndTimersMu.Lock()
 	if _, ok := requests[requestID]; !ok {
+		requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
 	ocrResult, err := CheckReply(requests[requestID], time.Second*2)

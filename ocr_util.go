@@ -118,6 +118,7 @@ func convertImageToPdf(inputFilename string) string {
 
 }
 
+// Checks if provided string is a valid URL
 func checkUrlForReplyTo(uri string) (string, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
