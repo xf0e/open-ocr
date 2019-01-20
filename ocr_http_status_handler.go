@@ -31,9 +31,9 @@ func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 
 	ocrResult, err := CheckOcrStatusByID(ocrRequest.ImgUrl)
 	if err != nil {
-		msg := "unable to perform OCR status check.  Error: %v"
+		msg := "unable to perform OCR status check. %v"
 		errMsg := fmt.Sprintf(msg, err)
-		logg.LogError(fmt.Errorf(errMsg))
+		logg.Warn(errMsg)
 		http.Error(w, errMsg, 500)
 		return
 	}
