@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var postTimeout = time.Duration(5 * time.Second)
+
 type OcrPostClient struct {
 }
 
@@ -33,7 +35,7 @@ func (c *OcrPostClient) postOcrRequest(requestID string, replyToAddress string) 
 	req.Header.Set("X-Custom-Header", "automated reply")
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: time.Duration(2 * time.Second)}
+	client := &http.Client{Timeout: postTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		logg.LogWarn("OCR_HTTP: ocr was not delivered. %s did not respond", replyToAddress)
