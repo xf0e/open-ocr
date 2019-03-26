@@ -25,12 +25,6 @@ func init() {
 
 func main() {
 
-	/*	rollbar.SetToken("")
-		rollbar.SetEnvironment("development")                 // defaults to "development"
-		rollbar.SetCodeVersion("v1")                         // optional Git hash/branch/tag (required for GitHub integration)
-		rollbar.SetServerHost("vega")                       // optional override; defaults to hostname
-		rollbar.SetServerRoot("github.com/xf0e/open-ocr")*/ // path of project (required for GitHub integration and non-project stacktrace collapsing)
-
 	var httpPort int
 	flagFunc := func() {
 		flag.IntVar(
@@ -70,8 +64,6 @@ func main() {
 		ocrworker.SetResManagerState(rabbitConfig)
 	}()
 
-	// rollbar.Info("Message body goes here")
-	// rollbar.Wait()
 	logg.LogError(http.ListenAndServe(listenAddr, nil))
 
 }
