@@ -6,3 +6,8 @@
 */cli-worker
 */cli-httpd
 .DS_Store
+/.idea/encodings.xml
+/.idea/dictionaries/grrr.xml
+/.idea/modules.xml
+/.idea/open-ocr.iml
+/.idea/vcs.xml
