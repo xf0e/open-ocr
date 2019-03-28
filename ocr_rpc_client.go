@@ -172,9 +172,12 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	); err != nil {
 		return OcrResult{}, nil
 	}
+	// TODO rewrite postClient to not check the status, just give it an ocrRequest of file
 	// TODO rewrite it also check if there are memory leak after global timeout
+	// TODO on deffered request if you get request by polling before it was
+	// TODO automaticaly delivered then atomatic deliver will POST empty request back after timeout
 	if ocrRequest.Deferred {
-		logg.LogTo("OCR_CLIENT", "Distributed request")
+		logg.LogTo("OCR_CLIENT", "Asynchronous request accepted")
 		timer := time.NewTimer(ResponseCacheTimeout)
 		requestsAndTimersMu.Lock()
 		requests[requestID] = rpcResponseChan
@@ -192,11 +195,12 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 				Status: "processing",
 			}, nil
 		} else { // automatic delivery oder POST to the requester
-			timer := time.NewTimer(time.Second * 30)
-			ticker := time.NewTicker(time.Second * 2)
+			timerWithPostAction := time.NewTimer(time.Second * 30)
+			// check interval for order to be ready to deliver
+			tickerWithPostAction := time.NewTicker(time.Second * 2)
 			done := make(chan bool, 1)
 			go func() {
-				<-timer.C
+				<-timerWithPostAction.C
 				done <- true
 			}()
 			go func() {
@@ -204,19 +208,31 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 				for {
 					select {
 					case <-done:
-						ticker.Stop()
+						tickerWithPostAction.Stop()
 						fmt.Println("Request processing took too long, aborting")
 						// TODO DELETE request by timeout, check for cleanup, check for faster reply. Set done status
 						ocrPostClient := NewOcrPostClient()
 						err := ocrPostClient.postOcrRequest(requestID, ocrRequest.ReplyTo)
 						if err != nil {
 							logg.LogError(err)
-							// rollbar.Critical(err)
 						}
 						break T
-					case t := <-ticker.C:
-						fmt.Println("checking if request id done: ", t)
-						// CheckOcrStatusByID(requestID)
+					case t := <-tickerWithPostAction.C:
+						logg.LogTo("OCR_CLIENT", "checking for request %s to be done %s", requestID, t)
+						ocrRes, err := CheckOcrStatusByID(requestID)
+						if err != nil {
+							logg.LogError(err)
+						} // only if status is done end the goroutine. otherwise continue polling
+						if ocrRes.Status == "done" {
+							logg.LogTo("OCR_CLIENT", "request %s is ready", requestID)
+							ocrPostClient := NewOcrPostClient()
+							err := ocrPostClient.postOcrRequest(requestID, ocrRequest.ReplyTo)
+							if err != nil {
+								logg.LogError(err)
+							}
+							tickerWithPostAction.Stop()
+							break T
+						}
 					}
 				}
 			}()

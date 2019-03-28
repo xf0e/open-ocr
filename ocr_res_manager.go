@@ -73,8 +73,11 @@ func CheckForAcceptRequest(config RabbitConfig, statusChanged bool) bool {
 		// logg.LogTo("OCR_RESMAN", "API URL %s", urlQueue)
 		// logg.LogTo("OCR_RESMAN", "API URL %s", urlStat)
 		if isAvailable {
-			logg.LogTo("OCR_RESMAN", "resources for request are available")
+			logg.LogTo("OCR_RESMAN", "open-ocr is operational with free resources. We are ready to serve.")
+		} else {
+			logg.LogTo("OCR_RESMAN", "open-ocr is alive but won't serve any requests. Workers are busy or not connected.")
 		}
+
 	}
 
 	return isAvailable

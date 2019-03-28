@@ -58,7 +58,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-"img_url":"5df7f0fc-df82-4148-6f67-ff926c0bb045"
+"img_url": "a2902898-7c1e-474a-68ef-ed807b0a0bed"
 }
 
 
@@ -168,7 +168,8 @@ Content-Type: application/json
   "engine_args":{"lang":"eng", "ocr_type":"combinedpdf","result_optimize":true},
   "deferred":true,
   "reply_to":"http://localhost:9999",
-  "doc_type": "eg"
+  "doc_type": "eg",
+  "num_pages": "12"
 }
 
 ###
