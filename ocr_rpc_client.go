@@ -40,7 +40,6 @@ var (
 )
 var (
 	numRetries uint8 = 3
-	tryCounter uint8 = 1
 )
 
 func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
@@ -220,6 +219,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 							logg.LogError(err)
 						}
 						ocrPostClient := NewOcrPostClient()
+						var tryCounter uint8 = 1
 						// try to deliver result up to 3 times
 						for ok := true; ok; ok = tryCounter <= numRetries {
 							err = ocrPostClient.postOcrRequest(ocrRes, ocrRequest.ReplyTo, tryCounter)
@@ -227,7 +227,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 								tryCounter++
 								logg.LogError(err)
 							} else {
-								tryCounter = numRetries
+								tryCounter = numRetries + 1
 							}
 						}
 						break T
@@ -242,6 +242,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						fmt.Println(ocrRes.Text)
 						if ocrRes.Status == "done" || ocrRes.Status == "error" {
 							logg.LogTo("OCR_CLIENT", "request %s is ready", requestID)
+							var tryCounter uint8 = 1
 							ocrPostClient := NewOcrPostClient()
 							for ok := true; ok; ok = tryCounter <= numRetries {
 								err = ocrPostClient.postOcrRequest(ocrRes, ocrRequest.ReplyTo, tryCounter)
@@ -249,7 +250,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 									tryCounter++
 									logg.LogError(err)
 								} else {
-									tryCounter = numRetries
+									tryCounter = numRetries + 1
 								}
 							}
 							tickerWithPostAction.Stop()
@@ -370,7 +371,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 		requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
-	ocrResult, err := CheckReply(requests[requestID], time.Second*2)
+	ocrResult, err := CheckReply(requests[requestID], time.Second*10)
 	if ocrResult.Status != "processing" {
 		// TODO race condition on requests, here we need to lock the requests map
 		// TODO CHECK IF CLOSE IS NECESSARY
