@@ -25,7 +25,7 @@ func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	err := decoder.Decode(&ocrRequest)
 	if err != nil {
 		logg.LogError(err)
-		http.Error(w, "unable to unmarshal json", 500)
+		http.Error(w, "unable to unmarshal json", 400)
 		return
 	}
 

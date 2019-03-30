@@ -39,7 +39,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	if !ServiceCanAcceptLocal {
 		err := "no resources available to process the request"
 		logg.LogError(fmt.Errorf(err))
-		http.Error(w, err, 500)
+		http.Error(w, err, 503)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	err := decoder.Decode(&ocrRequest)
 	if err != nil {
 		logg.LogError(err)
-		http.Error(w, "Unable to unmarshal json", 500)
+		http.Error(w, "Unable to unmarshal json", 400)
 		return
 	}
 
