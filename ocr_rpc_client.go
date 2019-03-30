@@ -198,7 +198,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 				Status: "processing",
 			}, nil
 		} else { // automatic delivery oder POST to the requester
-			timerWithPostAction := time.NewTimer(time.Second * 30)
+			timerWithPostAction := time.NewTimer(time.Second * 3600)
 			// check interval for order to be ready to deliver
 			tickerWithPostAction := time.NewTicker(time.Second * 2)
 			done := make(chan bool, 1)
@@ -371,9 +371,8 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 		requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
-	ocrResult, err := CheckReply(requests[requestID], time.Second*10)
+	ocrResult, err := CheckReply(requests[requestID], time.Second*20)
 	if ocrResult.Status != "processing" {
-		// TODO race condition on requests, here we need to lock the requests map
 		// TODO CHECK IF CLOSE IS NECESSARY
 		// close(requests[requestID])
 		delete(requests, requestID)

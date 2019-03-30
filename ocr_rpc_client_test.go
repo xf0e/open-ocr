@@ -31,6 +31,8 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 
 	rabbitConfig := rabbitConfigForTests()
 
+	requestID := "426d0ef9-a0c9-48cb-4562-f9d6f29a6ba5"
+
 	// kick off a worker
 	// this would normally happen on a different machine ..
 	ocrWorker, err := NewOcrRpcWorker(rabbitConfig)
@@ -48,7 +50,7 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 	for i := 0; i < 50; i++ {
 
 		ocrRequest := OcrRequest{ImgUrl: testImageUrl, EngineType: EngineMock}
-		decodeResult, err := ocrClient.DecodeImage(ocrRequest)
+		decodeResult, err := ocrClient.DecodeImage(ocrRequest, requestID)
 		if err != nil {
 			logg.LogTo("TEST", "err: %v", err)
 		}

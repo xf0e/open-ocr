@@ -18,6 +18,7 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 
 	engine := SandwichEngine{}
 	bytes, err := ioutil.ReadFile("docs/ocrimage.pdf")
+	//bytes, err := ioutil.ReadFile("docs/testimage.png")
 	assert.True(t, err == nil)
 
 	cFlags := make(map[string]interface{})
@@ -71,7 +72,7 @@ func TestSandwichEngineWithJson(t *testing.T) {
 }
 
 func TestNewsandwichEngineArgs(t *testing.T) {
-	testJson := `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_char_whitelist":"0123456789"},"ocr_type":"combinedpdf", "psm":"0", "lang":"jpn"}}`
+	testJson := `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_char_whitelist":"0123456789"},"ocr_type":"combinedpdf", "psm":"0", "lang":"eng"}}`
 	ocrRequest := OcrRequest{}
 	err := json.Unmarshal([]byte(testJson), &ocrRequest)
 	assert.True(t, err == nil)
@@ -80,7 +81,7 @@ func TestNewsandwichEngineArgs(t *testing.T) {
 	assert.Equals(t, len(engineArgs.configVars), 1)
 	assert.Equals(t, engineArgs.configVars["tessedit_char_whitelist"], "0123456789")
 	// assert.Equals(t, engineArgs.pageSegMode, "0")
-	assert.Equals(t, engineArgs.lang, "jpn")
+	assert.Equals(t, engineArgs.lang, "eng")
 
 }
 
@@ -92,7 +93,10 @@ func TestSandwichEngineWithFile(t *testing.T) {
 
 	engine := SandwichEngine{}
 	engineArgs := SandwichEngineArgs{}
-	result, err := engine.processImageFile("docs/ocrimage.pdf", "PDF", engineArgs)
+	engineArgs.ocrType = "combinedpdf"
+	engineArgs.ocrOptimize = true
+	engineArgs.lang = "deu"
+	result, err := engine.processImageFile("docs/testimage.pdf", "PDF", engineArgs)
 	logg.LogWarn("error %v", err)
 	assert.True(t, err == nil)
 	logg.LogTo("TEST", "result: %v", result)
