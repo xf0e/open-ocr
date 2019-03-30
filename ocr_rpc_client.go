@@ -38,6 +38,10 @@ var (
 	requests            = make(map[string]chan OcrResult)
 	timers              = make(map[string]*time.Timer)
 )
+var (
+	numRetries uint8 = 3
+	tryCounter uint8 = 1
+)
 
 func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
 	ocrRpcClient := &OcrRpcClient{
@@ -216,10 +220,15 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 							logg.LogError(err)
 						}
 						ocrPostClient := NewOcrPostClient()
-
-						err = ocrPostClient.postOcrRequest(ocrRes, ocrRequest.ReplyTo)
-						if err != nil {
-							logg.LogError(err)
+						// try to deliver result up to 3 times
+						for ok := true; ok; ok = tryCounter <= numRetries {
+							err = ocrPostClient.postOcrRequest(ocrRes, ocrRequest.ReplyTo, tryCounter)
+							if err != nil {
+								tryCounter++
+								logg.LogError(err)
+							} else {
+								tryCounter = numRetries
+							}
 						}
 						break T
 					case t := <-tickerWithPostAction.C:
@@ -234,9 +243,14 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						if ocrRes.Status == "done" || ocrRes.Status == "error" {
 							logg.LogTo("OCR_CLIENT", "request %s is ready", requestID)
 							ocrPostClient := NewOcrPostClient()
-							err := ocrPostClient.postOcrRequest(ocrRes, ocrRequest.ReplyTo)
-							if err != nil {
-								logg.LogError(err)
+							for ok := true; ok; ok = tryCounter <= numRetries {
+								err = ocrPostClient.postOcrRequest(ocrRes, ocrRequest.ReplyTo, tryCounter)
+								if err != nil {
+									tryCounter++
+									logg.LogError(err)
+								} else {
+									tryCounter = numRetries
+								}
 							}
 							tickerWithPostAction.Stop()
 							break T

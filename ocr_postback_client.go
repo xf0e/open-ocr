@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var postTimeout = time.Duration(5 * time.Second)
+var postTimeout = time.Duration(15 * time.Second)
 
 type OcrPostClient struct {
 }
@@ -18,9 +18,9 @@ func NewOcrPostClient() *OcrPostClient {
 	return &OcrPostClient{}
 }
 
-func (c *OcrPostClient) postOcrRequest(ocrResult OcrResult, replyToAddress string) error {
+func (c *OcrPostClient) postOcrRequest(ocrResult OcrResult, replyToAddress string, numTry uint8) error {
 	logg.LogTo("OCR_HTTP", "Post response called")
-	logg.LogTo("OCR_HTTP", "sending ocr to: %s ", replyToAddress)
+	logg.LogTo("OCR_HTTP", "sending for %d time the ocr to: %s ", numTry, replyToAddress)
 
 	jsonReply, err := json.Marshal(ocrResult)
 	if err != nil {
@@ -43,7 +43,7 @@ func (c *OcrPostClient) postOcrRequest(ocrResult OcrResult, replyToAddress strin
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logg.LogWarn("OCR_HTTP: ocr was not delivered. %s did not respond", replyToAddress)
+		logg.LogWarn("OCR_HTTP: ocr was probably not delivered. %s response body is empty", replyToAddress)
 		return err
 	}
 	logg.LogTo("OCR_HTTP", "response from ocr delivery %s: ", string(body))
