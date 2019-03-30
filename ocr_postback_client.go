@@ -18,7 +18,7 @@ func NewOcrPostClient() *OcrPostClient {
 	return &OcrPostClient{}
 }
 
-func (c *OcrPostClient) postOcrRequest(ocrResult OcrResult, replyToAddress string, numTry uint8) error {
+func (c *OcrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint8) error {
 	logg.LogTo("OCR_HTTP", "Post response called")
 	logg.LogTo("OCR_HTTP", "sending for %d time the ocr to: %s ", numTry, replyToAddress)
 
@@ -42,10 +42,11 @@ func (c *OcrPostClient) postOcrRequest(ocrResult OcrResult, replyToAddress strin
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
+	header := resp.StatusCode
 	if err != nil {
 		logg.LogWarn("OCR_HTTP: ocr was probably not delivered. %s response body is empty", replyToAddress)
 		return err
 	}
-	logg.LogTo("OCR_HTTP", "response from ocr delivery %s: ", string(body))
+	logg.LogTo("OCR_HTTP", "response code is %v from peer %v and the content upon ocr delivery %s: ", header, replyToAddress, string(body))
 	return err
 }

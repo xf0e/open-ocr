@@ -222,7 +222,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						var tryCounter uint8 = 1
 						// try to deliver result up to 3 times
 						for ok := true; ok; ok = tryCounter <= numRetries {
-							err = ocrPostClient.postOcrRequest(ocrRes, ocrRequest.ReplyTo, tryCounter)
+							err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
 							if err != nil {
 								tryCounter++
 								logg.LogError(err)
@@ -237,15 +237,12 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						if err != nil {
 							logg.LogError(err)
 						} // only if status is done end the goroutine. otherwise continue polling
-						fmt.Println(ocrRes.Status)
-						fmt.Println(ocrRes.Id)
-						fmt.Println(ocrRes.Text)
 						if ocrRes.Status == "done" || ocrRes.Status == "error" {
 							logg.LogTo("OCR_CLIENT", "request %s is ready", requestID)
 							var tryCounter uint8 = 1
 							ocrPostClient := NewOcrPostClient()
 							for ok := true; ok; ok = tryCounter <= numRetries {
-								err = ocrPostClient.postOcrRequest(ocrRes, ocrRequest.ReplyTo, tryCounter)
+								err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
 								if err != nil {
 									tryCounter++
 									logg.LogError(err)
