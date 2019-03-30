@@ -17,7 +17,7 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 	}
 
 	engine := SandwichEngine{}
-	bytes, err := ioutil.ReadFile("docs/ocrimage.pdf")
+	bytes, err := ioutil.ReadFile("docs/testimage.pdf")
 	//bytes, err := ioutil.ReadFile("docs/testimage.png")
 	assert.True(t, err == nil)
 
