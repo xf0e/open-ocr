@@ -18,11 +18,9 @@ func NewOcrPostClient() *OcrPostClient {
 	return &OcrPostClient{}
 }
 
-func (c *OcrPostClient) postOcrRequest(requestID string, replyToAddress string) error {
+func (c *OcrPostClient) postOcrRequest(ocrResult OcrResult, replyToAddress string) error {
 	logg.LogTo("OCR_HTTP", "Post response called")
 	logg.LogTo("OCR_HTTP", "sending ocr to: %s ", replyToAddress)
-
-	ocrResult, err := CheckOcrStatusByID(requestID)
 
 	jsonReply, err := json.Marshal(ocrResult)
 	if err != nil {

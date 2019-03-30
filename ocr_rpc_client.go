@@ -65,7 +65,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	if ocrRequest.DocType != "" {
 		logg.LogTo("OCR_CLIENT", "Message with higher priority requested: %s", ocrRequest.DocType)
 		// set highest priority for defined message id
-		// TODO do not hardcode DocType priority
+		// TODO do not hard code DocType priority
 		if ocrRequest.DocType == "egvp" {
 			messagePriority = 9
 		}
@@ -99,7 +99,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		return OcrResult{}, err
 	}
 
-	rpcResponseChan := make(chan OcrResult, 1)
+	rpcResponseChan := make(chan OcrResult)
 
 	callbackQueue, err := c.subscribeCallbackQueue(correlationUuid, rpcResponseChan)
 	if err != nil {
@@ -209,10 +209,15 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 					select {
 					case <-done:
 						tickerWithPostAction.Stop()
-						fmt.Println("Request processing took too long, aborting")
-						// TODO DELETE request by timeout, check for cleanup, check for faster reply. Set done status
+						fmt.Println("Request processing took too long.  Last try to deliver or aborting")
+						// TODO pass ocrRes by reference to the POST
+						ocrRes, err := CheckOcrStatusByID(requestID)
+						if err != nil {
+							logg.LogError(err)
+						}
 						ocrPostClient := NewOcrPostClient()
-						err := ocrPostClient.postOcrRequest(requestID, ocrRequest.ReplyTo)
+
+						err = ocrPostClient.postOcrRequest(ocrRes, ocrRequest.ReplyTo)
 						if err != nil {
 							logg.LogError(err)
 						}
@@ -223,10 +228,13 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						if err != nil {
 							logg.LogError(err)
 						} // only if status is done end the goroutine. otherwise continue polling
-						if ocrRes.Status == "done" {
+						fmt.Println(ocrRes.Status)
+						fmt.Println(ocrRes.Id)
+						fmt.Println(ocrRes.Text)
+						if ocrRes.Status == "done" || ocrRes.Status == "error" {
 							logg.LogTo("OCR_CLIENT", "request %s is ready", requestID)
 							ocrPostClient := NewOcrPostClient()
-							err := ocrPostClient.postOcrRequest(requestID, ocrRequest.ReplyTo)
+							err := ocrPostClient.postOcrRequest(ocrRes, ocrRequest.ReplyTo)
 							if err != nil {
 								logg.LogError(err)
 							}
@@ -351,7 +359,8 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 	ocrResult, err := CheckReply(requests[requestID], time.Second*2)
 	if ocrResult.Status != "processing" {
 		// TODO race condition on requests, here we need to lock the requests map
-		close(requests[requestID])
+		// TODO CHECK IF CLOSE IS NECESSARY
+		// close(requests[requestID])
 		delete(requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
