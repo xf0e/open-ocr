@@ -23,13 +23,13 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 
 	cFlags := make(map[string]interface{})
 	cFlags["tessedit_char_whitelist"] = "0123456789"
+	cFlags["ocr_type"] = "ocrlayeronly"
 
 	ocrRequest := OcrRequest{
 		ImgBytes:   bytes,
 		EngineType: EngineSandwichTesseract,
 		EngineArgs: cFlags,
 	}
-
 	assert.True(t, err == nil)
 	result, err := engine.ProcessRequest(ocrRequest)
 	assert.True(t, err == nil)

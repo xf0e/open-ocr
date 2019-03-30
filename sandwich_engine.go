@@ -123,14 +123,6 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 		return OcrResult{}, err
 	}
 
-	/*	defer func() {
-		logg.LogTo("OCR_SANDWICH", "step 0: deleting input file after convert it to pdf: %s",
-			tmpFileName)
-		if err := os.Remove(tmpFileName); err != nil {
-			logg.LogWarn("OCR_SANDWICH", err)
-		}
-	}()*/
-
 	// detect if file type is supported
 	buffer, err := readFirstBytes(tmpFileName, 64)
 	if err != nil {
