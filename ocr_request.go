@@ -14,6 +14,7 @@ type OcrRequest struct {
 	Deferred          bool                   `json:"deferred"`
 	ReplyTo           string                 `json:"reply_to"`
 	DocType           string                 `json:"doc_type"`
+	RequestId         string                 `json:"req_id"`
 
 	// decode ocr in http handler rather than putting in queue
 	InplaceDecode bool `json:"inplace_decode"`
@@ -64,5 +65,5 @@ func (ocrRequest *OcrRequest) downloadImgUrl() error {
 }
 
 func (ocrRequest OcrRequest) String() string {
-	return fmt.Sprintf("ImgUrl: %s, EngineType: %s, Preprocessors: %s", ocrRequest.ImgUrl, ocrRequest.EngineType, ocrRequest.PreprocessorChain)
+	return fmt.Sprintf("ImgUrl: %s, EngineType: %s, Preprocessors: %s, Request ID: %s", ocrRequest.ImgUrl, ocrRequest.EngineType, ocrRequest.PreprocessorChain, ocrRequest.RequestId)
 }

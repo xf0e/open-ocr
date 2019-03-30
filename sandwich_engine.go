@@ -107,14 +107,13 @@ func (t SandwichEngineArgs) Export() []string {
 }
 
 func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error) {
-
 	tmpFileName, err := func() (string, error) {
 		if ocrRequest.ImgBase64 != "" {
-			return t.tmpFileFromImageBase64(ocrRequest.ImgBase64)
+			return t.tmpFileFromImageBase64(ocrRequest.ImgBase64, ocrRequest.RequestId)
 		} else if ocrRequest.ImgUrl != "" {
-			return t.tmpFileFromImageUrl(ocrRequest.ImgUrl)
+			return t.tmpFileFromImageUrl(ocrRequest.ImgUrl, ocrRequest.RequestId)
 		} else {
-			return t.tmpFileFromImageBytes(ocrRequest.ImgBytes)
+			return t.tmpFileFromImageBytes(ocrRequest.ImgBytes, ocrRequest.RequestId)
 		}
 
 	}()
@@ -124,13 +123,13 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 		return OcrResult{}, err
 	}
 
-	defer func() {
+	/*	defer func() {
 		logg.LogTo("OCR_SANDWICH", "step 0: deleting input file after convert it to pdf: %s",
 			tmpFileName)
 		if err := os.Remove(tmpFileName); err != nil {
 			logg.LogWarn("OCR_SANDWICH", err)
 		}
-	}()
+	}()*/
 
 	// detect if file type is supported
 	buffer, err := readFirstBytes(tmpFileName, 64)
@@ -158,13 +157,15 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 	return ocrResult, err
 }
 
-func (t SandwichEngine) tmpFileFromImageBytes(imgBytes []byte) (string, error) {
+func (t SandwichEngine) tmpFileFromImageBytes(imgBytes []byte, tmpFileName string) (string, error) {
 
 	logg.LogTo("OCR_SANDWICH", "Use pdfsandwich with bytes image")
-
-	tmpFileName, err := createTempFileName()
-	if err != nil {
-		return "", err
+	var err error
+	if tmpFileName == "" {
+		tmpFileName, err = createTempFileName()
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// we have to write the contents of the image url to a temp
@@ -178,18 +179,19 @@ func (t SandwichEngine) tmpFileFromImageBytes(imgBytes []byte) (string, error) {
 
 }
 
-func (t SandwichEngine) tmpFileFromImageBase64(base64Image string) (string, error) {
+func (t SandwichEngine) tmpFileFromImageBase64(base64Image string, tmpFileName string) (string, error) {
 
 	logg.LogTo("OCR_SANDWICH", "Use pdfsandwich with base 64")
-
-	tmpFileName, err := createTempFileName()
-	if err != nil {
-		return "", err
+	var err error
+	if tmpFileName == "" {
+		tmpFileName, err = createTempFileName()
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// decoding into bytes the base64 string
 	decoded, decodeError := base64.StdEncoding.DecodeString(base64Image)
-
 	if decodeError != nil {
 		return "", err
 	}
@@ -203,13 +205,15 @@ func (t SandwichEngine) tmpFileFromImageBase64(base64Image string) (string, erro
 
 }
 
-func (t SandwichEngine) tmpFileFromImageUrl(imgUrl string) (string, error) {
+func (t SandwichEngine) tmpFileFromImageUrl(imgUrl string, tmpFileName string) (string, error) {
 
 	logg.LogTo("OCR_SANDWICH", "Use pdfsandwich with url")
-
-	tmpFileName, err := createTempFileName()
-	if err != nil {
-		return "", err
+	var err error
+	if tmpFileName == "" {
+		tmpFileName, err = createTempFileName()
+		if err != nil {
+			return "", err
+		}
 	}
 	// we have to write the contents of the image url to a temp
 	// file, because the leptonica lib can't seem to handle byte arrays
@@ -270,13 +274,12 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 			logg.LogTo("OCR_SANDWICH", "Error exec pdfsandwich: %v %v", err, string(output))
 			return OcrResult{Status: "error"}, err
 		}
-		tmpOutCombinedPdf, err := createTempFileName()
-		tmpOutCombinedPdf = fmt.Sprintf("%s%s", tmpOutCombinedPdf, "_comb.pdf")
+		tmpOutCombinedPdf := fmt.Sprintf("%s%s", inputFilename, "_comb.pdf")
 		if err != nil {
 			return OcrResult{Status: "error"}, err
 		}
 		defer func() {
-			logg.LogWarn("OCR_SANDWICH", "step 2: deleting file (pdftk run): %s",
+			logg.LogTo("OCR_SANDWICH", "step 2: deleting file (pdftk run): %s",
 				tmpOutCombinedPdf)
 			if err := os.Remove(tmpOutCombinedPdf); err != nil {
 				logg.LogWarn("OCR_SANDWICH", err)
@@ -297,13 +300,10 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		if engineArgs.ocrOptimize {
 			logg.LogTo("OCR_SANDWICH", "%s", "optimizing was requested. perform selected operation")
 			var compressedArgs []string
-			tmpOutCompressedPdf, err := createTempFileName()
-			if err != nil {
-				return OcrResult{Status: "error"}, err
-			}
+			tmpOutCompressedPdf := inputFilename
 			tmpOutCompressedPdf = fmt.Sprintf("%s%s", tmpOutCompressedPdf, "_compr.pdf")
 			defer func() {
-				logg.LogWarn("OCR_SANDWICH", "step 3: deleting compressed result file (gs run): %s",
+				logg.LogTo("OCR_SANDWICH", "step 3: deleting compressed result file (gs run): %s",
 					tmpOutCompressedPdf)
 				if err := os.Remove(tmpOutCompressedPdf); err != nil {
 					logg.LogWarn("OCR_SANDWICH", err)
@@ -361,7 +361,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		}
 		// pdftotext will create %filename%.txt
 		defer func() {
-			logg.LogWarn("OCR_SANDWICH", "step 2: deleting file (pdftotext run): %s",
+			logg.LogTo("OCR_SANDWICH", "step 2: deleting file (pdftotext run): %s",
 				textFile)
 			if err := os.Remove(textFile); err != nil {
 				logg.LogWarn("OCR_SANDWICH", err)
