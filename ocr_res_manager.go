@@ -24,10 +24,9 @@ const (
 )
 
 // checks if resources for incoming request are available
-func CheckForAcceptRequest(config RabbitConfig, statusChanged bool) bool {
+func CheckForAcceptRequest(queueManager ocrQueueManager, resManager []ocrResManager, config RabbitConfig, statusChanged bool) bool {
+
 	isAvailable := false
-	resManager := make([]ocrResManager, 0)
-	queueManager := new(ocrQueueManager)
 	var urlQueue, urlStat = "", ""
 	urlQueue += config.AmqpAPIURI + config.APIPathQueue + config.APIQueueName
 	urlStat += config.AmqpAPIURI + config.APIPathStats
@@ -59,7 +58,7 @@ func CheckForAcceptRequest(config RabbitConfig, statusChanged bool) bool {
 	}
 
 	flagForResources := schedulerByMemoryLoad(resManager)
-	flagForQueue := schedulerByWorkerNumber(queueManager)
+	flagForQueue := schedulerByWorkerNumber(&queueManager)
 	if flagForQueue && flagForResources {
 		isAvailable = true
 	}
@@ -109,9 +108,11 @@ func schedulerByWorkerNumber(resManger *ocrQueueManager) bool {
 }
 
 func SetResManagerState(ampqAPIConfig RabbitConfig) {
-	var boolValueChanged = true
+	resManager := make([]ocrResManager, 0)
+	queueManager := new(ocrQueueManager)
+	var boolValueChanged = false
 	var boolNewValue = false
-	var boolOldValue = true
+	var boolOldValue = false
 	for {
 		// only print the RESMAN output if the state has changed
 		boolValueChanged = boolOldValue != boolNewValue
@@ -119,9 +120,9 @@ func SetResManagerState(ampqAPIConfig RabbitConfig) {
 			boolOldValue = boolNewValue
 		}
 		ServiceCanAcceptMu.Lock()
-		ServiceCanAccept = CheckForAcceptRequest(ampqAPIConfig, boolValueChanged)
+		ServiceCanAccept = CheckForAcceptRequest(*queueManager, resManager, ampqAPIConfig, boolValueChanged)
 		boolNewValue = ServiceCanAccept
 		ServiceCanAcceptMu.Unlock()
-		time.Sleep(3 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
