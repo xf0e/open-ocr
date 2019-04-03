@@ -346,7 +346,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 			ocrResult := OcrResult{}
 			err := json.Unmarshal(d.Body, &ocrResult)
 			if err != nil {
-				msg := "Error unmarshaling json: %v.  Error: %v"
+				msg := "Error unmarshalling json: %v.  Error: %v"
 				errMsg := fmt.Sprintf(msg, string(d.Body[0:bodyLenToLog]), err)
 				logg.LogError(fmt.Errorf(errMsg))
 			}
