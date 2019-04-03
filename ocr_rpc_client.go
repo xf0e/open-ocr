@@ -10,8 +10,12 @@ import (
 )
 
 const (
-	RPCResponseTimeout   = time.Minute * 1
-	ResponseCacheTimeout = time.Minute * 1
+	RPCResponseTimeout   = time.Second * 20
+	ResponseCacheTimeout = time.Minute * 61
+	// do not set higher that ResponseCacheTimeout
+	timerWithPostActionDelay = time.Minute * 60
+	// check interval for request to be ready
+	tickerWithPostActionInterval = time.Second * 2
 )
 
 type OcrRpcClient struct {
@@ -198,9 +202,9 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 				Status: "processing",
 			}, nil
 		} else { // automatic delivery oder POST to the requester
-			timerWithPostAction := time.NewTimer(time.Second * 3600)
+			timerWithPostAction := time.NewTimer(timerWithPostActionDelay)
 			// check interval for order to be ready to deliver
-			tickerWithPostAction := time.NewTicker(time.Second * 2)
+			tickerWithPostAction := time.NewTicker(tickerWithPostActionInterval)
 			done := make(chan bool, 1)
 			go func() {
 				<-timerWithPostAction.C
@@ -368,7 +372,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 		requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
-	ocrResult, err := CheckReply(requests[requestID], time.Second*20)
+	ocrResult, err := CheckReply(requests[requestID], RPCResponseTimeout)
 	if ocrResult.Status != "processing" {
 		// TODO CHECK IF CLOSE IS NECESSARY
 		// close(requests[requestID])
