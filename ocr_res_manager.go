@@ -23,29 +23,44 @@ const (
 	memoryThreshold        uint64 = 95
 )
 
+func NewOcrQueueManager() *ocrQueueManager {
+	return &ocrQueueManager{}
+}
+
+func NewOcrResManager() []ocrResManager {
+	resManager := make([]ocrResManager, 0)
+	return resManager
+}
+
+var (
+	queueManager *ocrQueueManager
+	resManager   []ocrResManager
+)
+
 // checks if resources for incoming request are available
-func CheckForAcceptRequest(queueManager ocrQueueManager, resManager []ocrResManager, config RabbitConfig, statusChanged bool) bool {
+func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) bool {
 
 	isAvailable := false
-	var urlQueue, urlStat = "", ""
-	urlQueue += config.AmqpAPIURI + config.APIPathQueue + config.APIQueueName
-	urlStat += config.AmqpAPIURI + config.APIPathStats
 	jsonQueueStat, err := url2bytes(urlQueue)
 	if err != nil {
-		logg.LogError(err)
+		msg := "Can't get Que stats : %v"
+		errMsg := fmt.Sprintf(msg, err)
+		_ = logg.LogError(fmt.Errorf(errMsg))
 		return false
 	}
 	jsonResStat, err := url2bytes(urlStat)
 	if err != nil {
-		logg.LogError(err)
+		msg := "Can't get RabbitMQ memory stats: %v"
+		errMsg := fmt.Sprintf(msg, err)
+		_ = logg.LogError(fmt.Errorf(errMsg))
 		return false
 	}
 
-	err = json.Unmarshal(jsonQueueStat, &queueManager)
+	err = json.Unmarshal(jsonQueueStat, queueManager)
 	if err != nil {
 		msg := "Error unmarshaling json: %v"
 		errMsg := fmt.Sprintf(msg, err)
-		logg.LogError(fmt.Errorf(errMsg))
+		_ = logg.LogError(fmt.Errorf(errMsg))
 		return false
 	}
 
@@ -53,12 +68,12 @@ func CheckForAcceptRequest(queueManager ocrQueueManager, resManager []ocrResMana
 	if err != nil {
 		msg := "Error unmarshaling json: %v"
 		errMsg := fmt.Sprintf(msg, err)
-		logg.LogError(fmt.Errorf(errMsg))
+		_ = logg.LogError(fmt.Errorf(errMsg))
 		return false
 	}
 
-	flagForResources := schedulerByMemoryLoad(resManager)
-	flagForQueue := schedulerByWorkerNumber(&queueManager)
+	flagForResources := schedulerByMemoryLoad()
+	flagForQueue := schedulerByWorkerNumber()
 	if flagForQueue && flagForResources {
 		isAvailable = true
 	}
@@ -83,7 +98,7 @@ func CheckForAcceptRequest(queueManager ocrQueueManager, resManager []ocrResMana
 }
 
 // computes the ratio of total available memory and used memory and returns a bool value if a threshold is reached
-func schedulerByMemoryLoad(resManager []ocrResManager) bool {
+func schedulerByMemoryLoad() bool {
 	resFlag := false
 	var memTotalAvailable uint64
 	var memTotalInUse uint64
@@ -99,20 +114,24 @@ func schedulerByMemoryLoad(resManager []ocrResManager) bool {
 }
 
 // if the number of messages in the queue too high we should not accept the new messages
-func schedulerByWorkerNumber(resManger *ocrQueueManager) bool {
+func schedulerByWorkerNumber() bool {
 	resFlag := false
-	if (resManger.NumMessages) < (resManger.NumConsumers * factorForMessageAccept) {
+	if (queueManager.NumMessages) < (queueManager.NumConsumers * factorForMessageAccept) {
 		resFlag = true
 	}
 	return resFlag
 }
 
 func SetResManagerState(ampqAPIConfig RabbitConfig) {
-	resManager := make([]ocrResManager, 0)
-	queueManager := new(ocrQueueManager)
+	resManager = NewOcrResManager()
+	queueManager = NewOcrQueueManager()
+	var urlQueue, urlStat = "", ""
+	urlQueue += ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathQueue + ampqAPIConfig.APIQueueName
+	urlStat += ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathStats
+
 	var boolValueChanged = false
 	var boolNewValue = false
-	var boolOldValue = false
+	var boolOldValue = true
 	for {
 		// only print the RESMAN output if the state has changed
 		boolValueChanged = boolOldValue != boolNewValue
@@ -120,9 +139,9 @@ func SetResManagerState(ampqAPIConfig RabbitConfig) {
 			boolOldValue = boolNewValue
 		}
 		ServiceCanAcceptMu.Lock()
-		ServiceCanAccept = CheckForAcceptRequest(*queueManager, resManager, ampqAPIConfig, boolValueChanged)
+		ServiceCanAccept = CheckForAcceptRequest(urlQueue, urlStat, boolValueChanged)
 		boolNewValue = ServiceCanAccept
 		ServiceCanAcceptMu.Unlock()
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 	}
 }
