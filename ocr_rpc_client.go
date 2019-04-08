@@ -13,7 +13,8 @@ const (
 	RPCResponseTimeout   = time.Second * 20
 	ResponseCacheTimeout = time.Minute * 61
 	// do not set higher that ResponseCacheTimeout
-	timerWithPostActionDelay = time.Minute * 60
+	//timerWithPostActionDelay = time.Minute * 60
+	timerWithPostActionDelay = time.Second * 20
 	// check interval for request to be ready
 	tickerWithPostActionInterval = time.Second * 2
 )
@@ -202,21 +203,24 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 				Status: "processing",
 			}, nil
 		} else { // automatic delivery oder POST to the requester
-			timerWithPostAction := time.NewTimer(timerWithPostActionDelay)
 			// check interval for order to be ready to deliver
 			tickerWithPostAction := time.NewTicker(tickerWithPostActionInterval)
 			done := make(chan bool, 1)
-			go func() {
-				<-timerWithPostAction.C
+			// TODO: memory leak here? are we leaking timers?
+			timerWithPostAction := time.AfterFunc(timerWithPostActionDelay, func() {
+				fmt.Printf("Request processing took too long.\n")
 				done <- true
-			}()
+			})
+			defer timerWithPostAction.Stop()
+
 			go func() {
 			T:
 				for {
 					select {
 					case <-done:
 						tickerWithPostAction.Stop()
-						fmt.Println("Request processing took too long.  Last try to deliver or aborting")
+						timerWithPostAction.Stop()
+						fmt.Println(" Last try to deliver or aborting")
 						// TODO pass ocrRes by reference to the POST
 						ocrRes, err := CheckOcrStatusByID(requestID)
 						if err != nil {
@@ -255,6 +259,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 								}
 							}
 							tickerWithPostAction.Stop()
+							timerWithPostAction.Stop()
 							break T
 						}
 					}
