@@ -56,7 +56,9 @@ func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
 
 func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (OcrResult, error) {
 	var err error
-
+	logg.LogTo("OCR_CLIENT", "incoming request: %s, %v, %s, %s, %v, %v, %s, %s, %s", ocrRequest.RequestId,
+		ocrRequest.Deferred, ocrRequest.DocType, ocrRequest.EngineArgs, ocrRequest.InplaceDecode, ocrRequest.PageNumber,
+		ocrRequest.ReplyTo, ocrRequest.UserAgent, ocrRequest.EngineType)
 	if ocrRequest.ReplyTo != "" {
 		logg.LogTo("OCR_CLIENT", "Automated response requested")
 		validURL, err := checkUrlForReplyTo(ocrRequest.ReplyTo)

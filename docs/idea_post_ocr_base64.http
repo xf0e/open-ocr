@@ -72,7 +72,9 @@ Content-Type: application/json
   "engine_args":{"lang":"eng", "ocr_type":"combinedpdf","result_optimize":true},
   "deferred":true,
   "reply_to":"http://localhost:9999",
-  "doc_type": "egvp"
+  "doc_type": "egvp",
+  "user_agent": "droidlove",
+  "page_number": 13
 }
 
 ###
@@ -85,7 +87,7 @@ Content-Type: application/json
   "engine":"sandwich",
   "engine_args":{"lang":"eng", "ocr_type":"combinedpdf","result_optimize":true},
   "deferred":true,
-  "reply_to":"http://localhost:9999",
+  "reply_to":"htdtp://localhost:9999",
   "doc_type": "eg"
 }
 
