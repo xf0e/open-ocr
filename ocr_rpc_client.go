@@ -14,7 +14,7 @@ const (
 	ResponseCacheTimeout = time.Minute * 61
 	// do not set higher that ResponseCacheTimeout
 	//timerWithPostActionDelay = time.Minute * 60
-	timerWithPostActionDelay = time.Second * 20
+	timerWithPostActionDelay = time.Minute * 1
 	// check interval for request to be ready
 	tickerWithPostActionInterval = time.Second * 2
 )
