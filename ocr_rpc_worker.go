@@ -3,10 +3,9 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"time"
-
-	"github.com/couchbaselabs/logg"
+	"github.com/rs/zerolog/log"
 	"github.com/streadway/amqp"
+	"time"
 )
 
 type OcrRpcWorker struct {
@@ -36,12 +35,21 @@ func (w OcrRpcWorker) Run() error {
 	queueArgs := make(amqp.Table)
 	queueArgs["x-max-priority"] = uint8(9)
 
-	logg.LogTo("OCR_WORKER", "Run() called...")
+	log.Info().
+		Str("component", "OCR_WORKER").
+		Msg("Run() called...")
 
-	logg.LogTo("OCR_WORKER", "dialing %q", w.rabbitConfig.AmqpURI)
+	log.Info().
+		Str("component", "OCR_WORKER").
+		Str("host", w.rabbitConfig.AmqpURI).
+		Msg("dialing rabbitMq")
+
 	w.conn, err = amqp.Dial(w.rabbitConfig.AmqpURI)
 	if err != nil {
-		logg.LogTo("OCR_WORKER", "error connecting to rabbitmq %v", err)
+		log.Warn().
+			Str("component", "OCR_WORKER").
+			Err(err).
+			Msg("error connecting to rabbitMq")
 		return err
 	}
 
@@ -49,10 +57,10 @@ func (w OcrRpcWorker) Run() error {
 		fmt.Printf("closing: %s", <-w.conn.NotifyClose(make(chan *amqp.Error)))
 	}()
 
-	logg.LogTo("OCR_WORKER", "got Connection, getting Channel")
+	log.Info().Str("component", "OCR_WORKER").Msg("got Connection, getting channel")
 	w.channel, err = w.conn.Channel()
 	// setting the prefetchCount to 1 reduces the Memory Consumption by the worker
-	w.channel.Qos(1, 0, true)
+	err = w.channel.Qos(1, 0, true)
 	if err != nil {
 		return err
 	}
@@ -85,7 +93,8 @@ func (w OcrRpcWorker) Run() error {
 		return err
 	}
 
-	logg.LogTo("OCR_WORKER", "binding to: %v", w.rabbitConfig.RoutingKey)
+	log.Info().Str("component", "OCR_WORKER").Str("RoutingKey", w.rabbitConfig.RoutingKey).
+		Msg("binding to routing key")
 
 	if err = w.channel.QueueBind(
 		queue.Name,                // name of the queue
@@ -97,7 +106,8 @@ func (w OcrRpcWorker) Run() error {
 		return err
 	}
 
-	logg.LogTo("OCR_WORKER", "Queue bound to Exchange, starting Consume (consumer tag %q)", tag)
+	log.Info().Str("component", "OCR_WORKER").Str("ConsumerTag", tag).
+		Msg("Queue bound to Exchange, starting Consume tag")
 	deliveries, err := w.channel.Consume(
 		queue.Name, // name
 		tag,        // consumerTag,
@@ -126,7 +136,7 @@ func (w *OcrRpcWorker) Shutdown() error {
 		return fmt.Errorf("AMQP connection close error: %s", err)
 	}
 
-	defer logg.LogTo("OCR_WORKER", "Shutdown OK")
+	defer log.Info().Str("component", "OCR_WORKER").Msg("Shutdown OK")
 
 	// wait for handle() to exit
 	return <-w.Done
@@ -134,35 +144,40 @@ func (w *OcrRpcWorker) Shutdown() error {
 
 func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) {
 	for d := range deliveries {
-		logg.LogTo(
-			"OCR_WORKER",
-			"got %d byte delivery: [%v]. Routing key: %v  Reply to: %v",
-			len(d.Body),
-			d.DeliveryTag,
-			d.RoutingKey,
-			d.ReplyTo,
-		)
+		log.Info().Str("component", "OCR_WORKER").
+			Int("msg_size", len(d.Body)).
+			Uint8("DeliveryMode", d.DeliveryMode).
+			Uint8("Priority", d.Priority).
+			Str("CorrelationId", d.CorrelationId).
+			Str("ReplyTo", d.ReplyTo).
+			Str("ConsumerTag", d.ConsumerTag).
+			Uint64("DeliveryTag", d.DeliveryTag).
+			Str("Exchange", d.Exchange).
+			Str("RoutingKey", d.RoutingKey).
+			Msg("got delivery")
 		// reply from engine here
 		// id is not set, Text is set, Status is set
 		ocrResult, err := w.resultForDelivery(d)
 		if err != nil {
-			msg := "Error generating ocr result.  Error: %v"
-			logg.LogError(fmt.Errorf(msg, err))
+			log.Error().Err(err).Str("component", "OCR_WORKER").Msg("Error generating ocr result")
 		}
 
-		// logg.LogTo("OCR_WORKER", "Sending rpc response: %v", ocrResult)
 		err = w.sendRpcResponse(ocrResult, d.ReplyTo, d.CorrelationId)
 		if err != nil {
-			msg := "Error returning ocr result: %v.  Error: %v"
-			logg.LogError(fmt.Errorf(msg, ocrResult, err))
+			log.Error().Err(err).Str("component", "OCR_WORKER").
+				Str("id", ocrResult.Id).Msg("Error generating ocr result")
+
 			// if we can't send our response, let's just abort
 			done <- err
 			break
 		}
-		d.Ack(false)
+		err = d.Ack(false)
+		if err != nil {
+			log.Warn().Str("component", "OCR_WORKER").Err(err).Msg("Ack() was not successful")
+		}
 
 	}
-	logg.LogTo("OCR_WORKER", "handle: deliveries channel closed")
+	log.Info().Str("component", "OCR_WORKER").Msg("handle: deliveries channel closed")
 	done <- fmt.Errorf("handle: deliveries channel closed")
 }
 
@@ -173,9 +188,11 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	ocrResult := OcrResult{}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {
-		msg := "Error unmarshaling json: %v.  Error: %v"
-		errMsg := fmt.Sprintf(msg, string(d.Body), err)
-		logg.LogError(fmt.Errorf(errMsg))
+		msg := "Error unmarshalling json: %v.  Error: %v"
+		errMsg := fmt.Sprintf(msg, string(d.CorrelationId), err)
+		log.Error().Err(err).Caller().
+			Str("Id", d.CorrelationId).
+			Msg("error unmarshalling json delivery")
 		ocrResult.Text = errMsg
 		return ocrResult, err
 	}
@@ -185,8 +202,12 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	ocrResult, err = ocrEngine.ProcessRequest(ocrRequest)
 	if err != nil {
 		msg := "Error processing image url: %v.  Error: %v"
-		errMsg := fmt.Sprintf(msg, ocrRequest.ImgUrl, err)
-		logg.LogError(fmt.Errorf(errMsg))
+		errMsg := fmt.Sprintf(msg, ocrRequest.RequestId, err)
+		log.Error().Err(err).
+			Str("Id", ocrResult.Id).
+			Str("ImgUrl", ocrRequest.ImgUrl).
+			Msg("Error processing image")
+
 		ocrResult.Text = errMsg
 		return ocrResult, err
 	}
@@ -211,7 +232,9 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 		defer confirmDeliveryWorker(ack, nack)
 	}
 
-	logg.LogTo("OCR_WORKER", "sendRpcResponse to: %v", replyTo)
+	log.Info().Str("component", "OCR_WORKER").
+		Str("Id", correlationId).
+		Str("replyTo", replyTo).Msg("sendRpcResponse to")
 	// ocr worker is publishing back the decoded text
 	body, err := json.Marshal(r)
 	if err != nil {
@@ -237,21 +260,24 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 	); err != nil {
 		return err
 	}
-	logg.LogTo("OCR_WORKER", "sendRpcResponse succeeded")
+	log.Info().Str("component", "OCR_WORKER").Str("Id", correlationId).
+		Msg("sendRpcResponse succeeded")
 	return nil
 
 }
 
 func confirmDeliveryWorker(ack, nack chan uint64) {
-	logg.LogTo("OCR_WORKER", "awaiting delivery confirmation ...")
+	log.Info().Str("component", "OCR_WORKER").Msg("awaiting delivery confirmation...")
 	select {
 	case tag := <-ack:
-		logg.LogTo("OCR_WORKER", "confirmed delivery, tag: %v", tag)
+		log.Info().Str("component", "OCR_WORKER").Uint64("tag", tag).
+			Msg("confirmed delivery")
 	case tag := <-nack:
-		logg.LogTo("OCR_WORKER", "failed to confirm delivery: %v", tag)
+		log.Info().Str("component", "OCR_WORKER").Uint64("tag", tag).
+			Msg("failed to confirm delivery")
 	case <-time.After(RPCResponseTimeout):
 		// this is bad, the worker will probably be dysfunctional
 		// at this point, so panic
-		logg.LogPanic("timeout trying to confirm delivery")
+		log.Panic().Str("component", "OCR_WORKER").Msg("timeout trying to confirm delivery. Worker panic")
 	}
 }

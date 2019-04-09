@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/couchbaselabs/logg"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -50,7 +49,9 @@ func main() {
 
 		// this happens when connection is closed
 		err = <-ocrWorker.Done
-		logg.LogError(fmt.Errorf("OCR Worker failed with error: %v", err))
+		log.Error().
+			Str("component", "OCR_WORKER").Err(err).
+			Msg("OCR Worker failed with error")
 	}
 
 }
