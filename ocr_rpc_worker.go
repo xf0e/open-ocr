@@ -261,7 +261,7 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 		return err
 	}
 	log.Info().Str("component", "OCR_WORKER").Str("Id", correlationId).
-		Msg("sendRpcResponse succeeded")
+		Str("replyTo", replyTo).Msg("sendRpcResponse succeeded")
 	return nil
 
 }
