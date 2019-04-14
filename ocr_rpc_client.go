@@ -212,39 +212,39 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
 		tickerWithPostAction := time.NewTicker(tickerWithPostActionInterval)
-		done := make(chan bool, 1)
+		//done := make(chan bool, 1)
 		// TODO: memory leak here? are we leaking timers?
-		timerWithPostAction := time.AfterFunc(timerWithPostActionDelay, func() {
+		/* timerWithPostAction := time.AfterFunc(timerWithPostActionDelay, func() {
 			fmt.Printf("Request processing took too long.\n")
 			done <- true
-		})
-		defer timerWithPostAction.Stop()
+		})*/
+		//defer timerWithPostAction.Stop()
 
 		go func() {
 		T:
 			for {
 				select {
-				case <-done:
-					tickerWithPostAction.Stop()
-					timerWithPostAction.Stop()
-					fmt.Println(" Last try to deliver or aborting")
-					ocrRes, err := CheckOcrStatusByID(requestID)
-					if err != nil {
-						logg.LogError(err)
-					}
-					ocrPostClient := newOcrPostClient()
-					var tryCounter uint8 = 1
-					// try to deliver result up to 3 times
-					for ok := true; ok; ok = tryCounter <= numRetries {
-						err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
-						if err != nil {
-							tryCounter++
-							logg.LogError(err)
-						} else {
-							tryCounter = numRetries + 1
-						}
-					}
-					break T
+				/*				case <-done:
+								tickerWithPostAction.Stop()
+								//timerWithPostAction.Stop()
+								fmt.Println(" Last try to deliver or aborting")
+								ocrRes, err := CheckOcrStatusByID(requestID)
+								if err != nil {
+									logg.LogError(err)
+								}
+								ocrPostClient := newOcrPostClient()
+								var tryCounter uint8 = 1
+								// try to deliver result up to 3 times
+								for ok := true; ok; ok = tryCounter <= numRetries {
+									err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
+									if err != nil {
+										tryCounter++
+										logg.LogError(err)
+									} else {
+										tryCounter = numRetries + 1
+									}
+								}
+								break T*/
 				case t := <-tickerWithPostAction.C:
 					logg.LogTo("OCR_CLIENT", "checking for request %s to be done %s", requestID, t)
 					ocrRes, err := CheckOcrStatusByID(requestID)
@@ -265,7 +265,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 							}
 						}
 						tickerWithPostAction.Stop()
-						timerWithPostAction.Stop()
+						//timerWithPostAction.Stop()
 						break T
 					}
 				}
@@ -277,7 +277,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			Status: "processing",
 		}, nil
 	} else {
-		return CheckReply(rpcResponseChan, RPCResponseTimeout)
+		return CheckReply(rpcResponseChan, ResponseCacheTimeout)
 	}
 }
 
@@ -383,13 +383,14 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 		requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
-	ocrResult, err := CheckReply(requests[requestID], RPCResponseTimeout)
+	ocrResult, err := CheckReply(requests[requestID], ResponseCacheTimeout)
 	if ocrResult.Status != "processing" {
 		delete(requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
 	}
 	requestsAndTimersMu.Unlock()
+	//ocrResult.ID = requestID
 	return ocrResult, err
 }
 

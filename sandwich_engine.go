@@ -258,14 +258,14 @@ func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutMinutes
 
 	cmd := exec.CommandContext(ctx, commandToRun, cmdArgs...)
 	output, err := cmd.CombinedOutput()
-	if err != nil {
+	/*if err != nil {
 		errMsg := fmt.Sprintf(string(output), err)
 		err := fmt.Errorf(errMsg)
 		log.Error().Str("component", "OCR_SANDWICH").
 			Str("command", commandToRun).
 			Err(err).Msg("Error exec external command")
 		return string(output), err
-	}
+	}*/
 	if ctx.Err() == context.DeadlineExceeded {
 		err = fmt.Errorf("command timed out: %v", err)
 	}
