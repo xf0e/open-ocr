@@ -228,7 +228,6 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 					tickerWithPostAction.Stop()
 					timerWithPostAction.Stop()
 					fmt.Println(" Last try to deliver or aborting")
-					// TODO pass ocrRes by reference to the POST
 					ocrRes, err := CheckOcrStatusByID(requestID)
 					if err != nil {
 						logg.LogError(err)
@@ -262,7 +261,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 								tryCounter++
 								logg.LogError(err)
 							} else {
-								tryCounter = numRetries + 1
+								break
 							}
 						}
 						tickerWithPostAction.Stop()
@@ -386,8 +385,6 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 	}
 	ocrResult, err := CheckReply(requests[requestID], RPCResponseTimeout)
 	if ocrResult.Status != "processing" {
-		// TODO CHECK IF CLOSE IS NECESSARY
-		// close(requests[requestID])
 		delete(requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)

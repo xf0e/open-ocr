@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/rs/zerolog/log"
+	"github.com/segmentio/ksuid"
 	"github.com/streadway/amqp"
 	"time"
 )
@@ -16,7 +17,10 @@ type OcrRpcWorker struct {
 	Done         chan error
 }
 
-const tag = "foo" // TODO: should be unique for each worker instance (eg, uuid)
+var (
+	// tag is based on ksuid K-Sortable Globally Unique IDs
+	tag = ksuid.New().String()
+)
 
 func NewOcrRpcWorker(rc RabbitConfig) (*OcrRpcWorker, error) {
 	ocrRpcWorker := &OcrRpcWorker{
@@ -37,10 +41,12 @@ func (w OcrRpcWorker) Run() error {
 
 	log.Info().
 		Str("component", "OCR_WORKER").
+		Str("tag", tag).
 		Msg("Run() called...")
 
 	log.Info().
 		Str("component", "OCR_WORKER").
+		Str("tag", tag).
 		Str("host", w.rabbitConfig.AmqpURI).
 		Msg("dialing rabbitMq")
 
@@ -49,6 +55,7 @@ func (w OcrRpcWorker) Run() error {
 		log.Warn().
 			Str("component", "OCR_WORKER").
 			Err(err).
+			Str("tag", tag).
 			Msg("error connecting to rabbitMq")
 		return err
 	}
@@ -57,7 +64,9 @@ func (w OcrRpcWorker) Run() error {
 		fmt.Printf("closing: %s", <-w.conn.NotifyClose(make(chan *amqp.Error)))
 	}()
 
-	log.Info().Str("component", "OCR_WORKER").Msg("got Connection, getting channel")
+	log.Info().Str("component", "OCR_WORKER").
+		Str("tag", tag).
+		Msg("got Connection, getting channel")
 	w.channel, err = w.conn.Channel()
 	// setting the prefetchCount to 1 reduces the Memory Consumption by the worker
 	err = w.channel.Qos(1, 0, true)
@@ -94,6 +103,7 @@ func (w OcrRpcWorker) Run() error {
 	}
 
 	log.Info().Str("component", "OCR_WORKER").Str("RoutingKey", w.rabbitConfig.RoutingKey).
+		Str("tag", tag).
 		Msg("binding to routing key")
 
 	if err = w.channel.QueueBind(
@@ -106,7 +116,7 @@ func (w OcrRpcWorker) Run() error {
 		return err
 	}
 
-	log.Info().Str("component", "OCR_WORKER").Str("ConsumerTag", tag).
+	log.Info().Str("component", "OCR_WORKER").Str("tag", tag).
 		Msg("Queue bound to Exchange, starting Consume tag")
 	deliveries, err := w.channel.Consume(
 		queue.Name, // name
@@ -129,14 +139,16 @@ func (w OcrRpcWorker) Run() error {
 func (w *OcrRpcWorker) Shutdown() error {
 	// will close() the deliveries channel
 	if err := w.channel.Cancel(w.tag, true); err != nil {
-		return fmt.Errorf("worker cancel failed: %s", err)
+		return fmt.Errorf("worker with tag %s cancel failed: %s", tag, err)
 	}
 
 	if err := w.conn.Close(); err != nil {
-		return fmt.Errorf("AMQP connection close error: %s", err)
+		return fmt.Errorf("AMQP connection with worker %s close error: %s", tag, err)
 	}
 
-	defer log.Info().Str("component", "OCR_WORKER").Msg("Shutdown OK")
+	defer log.Info().Str("component", "OCR_WORKER").
+		Str("tag", tag).
+		Msg("Shutdown OK")
 
 	// wait for handle() to exit
 	return <-w.Done
@@ -145,6 +157,7 @@ func (w *OcrRpcWorker) Shutdown() error {
 func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) {
 	for d := range deliveries {
 		log.Info().Str("component", "OCR_WORKER").
+			Str("tag", tag).
 			Int("msg_size", len(d.Body)).
 			Uint8("DeliveryMode", d.DeliveryMode).
 			Uint8("Priority", d.Priority).
@@ -159,13 +172,17 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 		// id is not set, Text is set, Status is set
 		ocrResult, err := w.resultForDelivery(d)
 		if err != nil {
-			log.Error().Err(err).Str("component", "OCR_WORKER").Msg("Error generating ocr result")
+			log.Error().Err(err).Str("component", "OCR_WORKER").
+				Str("tag", tag).
+				Msg("Error generating ocr result")
 		}
 
 		err = w.sendRpcResponse(ocrResult, d.ReplyTo, d.CorrelationId)
 		if err != nil {
 			log.Error().Err(err).Str("component", "OCR_WORKER").
-				Str("id", ocrResult.ID).Msg("Error generating ocr result")
+				Str("id", ocrResult.ID).
+				Str("tag", tag).
+				Msg("Error generating ocr result")
 
 			// if we can't send our response, let's just abort
 			done <- err
@@ -173,11 +190,15 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 		}
 		err = d.Ack(false)
 		if err != nil {
-			log.Warn().Str("component", "OCR_WORKER").Err(err).Msg("Ack() was not successful")
+			log.Warn().Str("component", "OCR_WORKER").Err(err).
+				Str("tag", tag).
+				Msg("Ack() was not successful")
 		}
 
 	}
-	log.Info().Str("component", "OCR_WORKER").Msg("handle: deliveries channel closed")
+	log.Info().Str("component", "OCR_WORKER").
+		Str("tag", tag).
+		Msg("handle: deliveries channel closed")
 	done <- fmt.Errorf("handle: deliveries channel closed")
 }
 
@@ -192,6 +213,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 		errMsg := fmt.Sprintf(msg, string(d.CorrelationId), err)
 		log.Error().Err(err).Caller().
 			Str("Id", d.CorrelationId).
+			Str("tag", tag).
 			Msg("error unmarshalling json delivery")
 		ocrResult.Text = errMsg
 		return ocrResult, err
@@ -205,6 +227,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 		errMsg := fmt.Sprintf(msg, ocrRequest.RequestID, err)
 		log.Error().Err(err).
 			Str("Id", ocrResult.ID).
+			Str("tag", tag).
 			Str("ImgUrl", ocrRequest.ImgUrl).
 			Msg("Error processing image")
 
@@ -233,6 +256,7 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 	}
 
 	log.Info().Str("component", "OCR_WORKER").
+		Str("tag", tag).
 		Str("Id", correlationId).
 		Str("replyTo", replyTo).Msg("sendRpcResponse to")
 	// ocr worker is publishing back the decoded text
@@ -261,13 +285,17 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 		return err
 	}
 	log.Info().Str("component", "OCR_WORKER").Str("Id", correlationId).
-		Str("replyTo", replyTo).Msg("sendRpcResponse succeeded")
+		Str("tag", tag).
+		Str("replyTo", replyTo).
+		Msg("sendRpcResponse succeeded")
 	return nil
 
 }
 
 func confirmDeliveryWorker(ack, nack chan uint64) {
-	log.Info().Str("component", "OCR_WORKER").Msg("awaiting delivery confirmation...")
+	log.Info().Str("component", "OCR_WORKER").
+		Str("tag", tag).
+		Msg("awaiting delivery confirmation...")
 	select {
 	case tag := <-ack:
 		log.Info().Str("component", "OCR_WORKER").Uint64("tag", tag).
