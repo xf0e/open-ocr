@@ -14,7 +14,7 @@ type OcrRequest struct {
 	Deferred          bool                   `json:"deferred"`
 	ReplyTo           string                 `json:"reply_to"`
 	DocType           string                 `json:"doc_type"`
-	RequestId         string                 `json:"req_id"`
+	RequestID         string                 `json:"req_id"`
 	PageNumber        uint16                 `json:"page_number"`
 	UserAgent         string                 `json:"user_agent"`
 
@@ -67,5 +67,5 @@ func (ocrRequest *OcrRequest) downloadImgUrl() error {
 }
 
 func (ocrRequest OcrRequest) String() string {
-	return fmt.Sprintf("ImgUrl: %s, EngineType: %s, Preprocessors: %s, Request ID: %s", ocrRequest.ImgUrl, ocrRequest.EngineType, ocrRequest.PreprocessorChain, ocrRequest.RequestId)
+	return fmt.Sprintf("ImgUrl: %s, EngineType: %s, Preprocessors: %s, Request ID: %s", ocrRequest.ImgUrl, ocrRequest.EngineType, ocrRequest.PreprocessorChain, ocrRequest.RequestID)
 }

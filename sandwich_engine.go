@@ -111,11 +111,11 @@ func (t SandwichEngineArgs) Export() []string {
 func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error) {
 	tmpFileName, err := func() (string, error) {
 		if ocrRequest.ImgBase64 != "" {
-			return t.tmpFileFromImageBase64(ocrRequest.ImgBase64, ocrRequest.RequestId)
+			return t.tmpFileFromImageBase64(ocrRequest.ImgBase64, ocrRequest.RequestID)
 		} else if ocrRequest.ImgUrl != "" {
-			return t.tmpFileFromImageUrl(ocrRequest.ImgUrl, ocrRequest.RequestId)
+			return t.tmpFileFromImageURL(ocrRequest.ImgUrl, ocrRequest.RequestID)
 		} else {
-			return t.tmpFileFromImageBytes(ocrRequest.ImgBytes, ocrRequest.RequestId)
+			return t.tmpFileFromImageBytes(ocrRequest.ImgBytes, ocrRequest.RequestID)
 		}
 
 	}()
@@ -203,7 +203,7 @@ func (t SandwichEngine) tmpFileFromImageBase64(base64Image string, tmpFileName s
 
 }
 
-func (t SandwichEngine) tmpFileFromImageUrl(imgUrl string, tmpFileName string) (string, error) {
+func (t SandwichEngine) tmpFileFromImageURL(imgURL string, tmpFileName string) (string, error) {
 
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with url")
 	var err error
@@ -215,7 +215,7 @@ func (t SandwichEngine) tmpFileFromImageUrl(imgUrl string, tmpFileName string) (
 	}
 	// we have to write the contents of the image url to a temp
 	// file, because the leptonica lib can't seem to handle byte arrays
-	err = saveUrlContentToFileName(imgUrl, tmpFileName)
+	err = saveUrlContentToFileName(imgURL, tmpFileName)
 	if err != nil {
 		return "", err
 	}

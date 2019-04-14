@@ -118,8 +118,8 @@ func convertImageToPdf(inputFilename string) string {
 
 }
 
-// Checks if provided string is a valid URL
-func checkUrlForReplyTo(uri string) (string, error) {
+// checkURLForReplyTo Checks if provided string is a valid URL
+func checkURLForReplyTo(uri string) (string, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
 		logg.LogWarn("OCR_CLIENT", "provided("+u.String()+") URI address is not valid")

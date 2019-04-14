@@ -11,14 +11,14 @@ import (
 
 var postTimeout = time.Duration(15 * time.Second)
 
-type OcrPostClient struct {
+type ocrPostClient struct {
 }
 
-func NewOcrPostClient() *OcrPostClient {
-	return &OcrPostClient{}
+func newOcrPostClient() *ocrPostClient {
+	return &ocrPostClient{}
 }
 
-func (c *OcrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint8) error {
+func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint8) error {
 	logg.LogTo("OCR_HTTP", "Post response called")
 	logg.LogTo("OCR_HTTP", "sending for %d time the ocr to: %s ", numTry, replyToAddress)
 

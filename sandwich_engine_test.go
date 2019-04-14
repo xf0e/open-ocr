@@ -72,9 +72,9 @@ func TestSandwichEngineWithJson(t *testing.T) {
 }
 
 func TestNewsandwichEngineArgs(t *testing.T) {
-	testJson := `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_char_whitelist":"0123456789"},"ocr_type":"combinedpdf", "psm":"0", "lang":"eng"}}`
+	testJSON := `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_char_whitelist":"0123456789"},"ocr_type":"combinedpdf", "psm":"0", "lang":"eng"}}`
 	ocrRequest := OcrRequest{}
-	err := json.Unmarshal([]byte(testJson), &ocrRequest)
+	err := json.Unmarshal([]byte(testJSON), &ocrRequest)
 	assert.True(t, err == nil)
 	engineArgs, err := NewSandwichEngineArgs(ocrRequest)
 	assert.True(t, err == nil)

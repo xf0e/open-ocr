@@ -165,7 +165,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 		err = w.sendRpcResponse(ocrResult, d.ReplyTo, d.CorrelationId)
 		if err != nil {
 			log.Error().Err(err).Str("component", "OCR_WORKER").
-				Str("id", ocrResult.Id).Msg("Error generating ocr result")
+				Str("id", ocrResult.ID).Msg("Error generating ocr result")
 
 			// if we can't send our response, let's just abort
 			done <- err
@@ -202,9 +202,9 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	ocrResult, err = ocrEngine.ProcessRequest(ocrRequest)
 	if err != nil {
 		msg := "Error processing image url: %v.  Error: %v"
-		errMsg := fmt.Sprintf(msg, ocrRequest.RequestId, err)
+		errMsg := fmt.Sprintf(msg, ocrRequest.RequestID, err)
 		log.Error().Err(err).
-			Str("Id", ocrResult.Id).
+			Str("Id", ocrResult.ID).
 			Str("ImgUrl", ocrRequest.ImgUrl).
 			Msg("Error processing image")
 

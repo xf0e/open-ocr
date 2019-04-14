@@ -23,11 +23,11 @@ const (
 	memoryThreshold        uint64 = 95
 )
 
-func NewOcrQueueManager() *ocrQueueManager {
+func newOcrQueueManager() *ocrQueueManager {
 	return &ocrQueueManager{}
 }
 
-func NewOcrResManager() []ocrResManager {
+func newOcrResManager() []ocrResManager {
 	resManager := make([]ocrResManager, 0)
 	return resManager
 }
@@ -122,9 +122,11 @@ func schedulerByWorkerNumber() bool {
 	return resFlag
 }
 
+// SetResManagerState returns the boolean of resource manager if memory of rabbitMQ and the number
+// messages is not to high which is depends on formula factor * number of connected workers
 func SetResManagerState(ampqAPIConfig RabbitConfig) {
-	resManager = NewOcrResManager()
-	queueManager = NewOcrQueueManager()
+	resManager = newOcrResManager()
+	queueManager = newOcrQueueManager()
 	var urlQueue, urlStat = "", ""
 	urlQueue += ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathQueue + ampqAPIConfig.APIQueueName
 	urlStat += ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathStats
