@@ -12,6 +12,11 @@ type OcrRequest struct {
 	PreprocessorArgs  map[string]interface{} `json:"preprocessor-args"`
 	EngineArgs        map[string]interface{} `json:"engine_args"`
 	Deferred          bool                   `json:"deferred"`
+	ReplyTo           string                 `json:"reply_to"`
+	DocType           string                 `json:"doc_type"`
+	RequestID         string                 `json:"req_id"`
+	PageNumber        uint16                 `json:"page_number"`
+	UserAgent         string                 `json:"user_agent"`
 
 	// decode ocr in http handler rather than putting in queue
 	InplaceDecode bool `json:"inplace_decode"`
@@ -62,5 +67,5 @@ func (ocrRequest *OcrRequest) downloadImgUrl() error {
 }
 
 func (ocrRequest OcrRequest) String() string {
-	return fmt.Sprintf("ImgUrl: %s, EngineType: %s, Preprocessors: %s", ocrRequest.ImgUrl, ocrRequest.EngineType, ocrRequest.PreprocessorChain)
+	return fmt.Sprintf("ImgUrl: %s, EngineType: %s, Preprocessors: %s, Request ID: %s", ocrRequest.ImgUrl, ocrRequest.EngineType, ocrRequest.PreprocessorChain, ocrRequest.RequestID)
 }

@@ -1,10 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"github.com/couchbaselabs/logg"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
 	_ "net/http/pprof"
+	"time"
 )
 
 // This assumes that there is a rabbit mq running
@@ -17,38 +19,39 @@ func init() {
 	logg.LogKeys["OCR_HTTP"] = true
 	logg.LogKeys["OCR_TESSERACT"] = true
 	logg.LogKeys["OCR_SANDWICH"] = true
+
+	zerolog.TimeFieldFormat = time.StampMilli
+
 }
 
 func main() {
 
-	/*agent := stackimpact.Start(stackimpact.Options{
-		AgentKey: "819507c0da027d68b0f6ee694dca6c3b389daeab",
-		AppName: "BasicW",
-		AppVersion: "1.0.0",
-		AppEnvironment: "dev",
-	})
-	*/
 	noOpFlagFunc := ocrworker.NoOpFlagFunction()
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(noOpFlagFunc)
 
 	// infinite loop, since sometimes worker <-> rabbitmq connection
 	// gets broken.  see https://github.com/tleyden/open-ocr/issues/4
 	for {
-		logg.LogTo("OCR_WORKER", "Creating new OCR Worker")
+		log.Info().
+			Str("component", "OCR_WORKER").
+			Msg("Creating new OCR Worker")
+
 		ocrWorker, err := ocrworker.NewOcrRpcWorker(rabbitConfig)
 		if err != nil {
-			logg.LogPanic("Could not create rpc worker")
+			log.Panic().Str("component", "OCR_WORKER").
+				Msg("Could not create rpc worker")
 		}
 
-		//span := agent.Profile()
 		if err := ocrWorker.Run(); err != nil {
-			logg.LogPanic("Error running worker: %v", err)
+			log.Panic().Str("component", "OCR_WORKER").
+				Msgf("Error running worker: %v", err)
 		}
-		//defer span.Stop()
 
 		// this happens when connection is closed
 		err = <-ocrWorker.Done
-		logg.LogError(fmt.Errorf("OCR Worker failed with error: %v", err))
+		log.Error().
+			Str("component", "OCR_WORKER").Err(err).
+			Msg("OCR Worker failed with error")
 	}
 
 }
