@@ -1,6 +1,7 @@
 package ocrworker
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"github.com/rs/zerolog/log"
@@ -9,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // This variant of the SandwichEngine calls pdfsandwich via exec
@@ -245,6 +247,31 @@ func (t SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs Sandwi
 
 }
 
+func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutMinutes time.Duration) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeOutMinutes*time.Minute)
+	defer cancel()
+
+	log.Info().Str("component", "OCR_SANDWICH").
+		Str("command", commandToRun).
+		Interface("cmdArgs", cmdArgs).
+		Msg("running external command")
+
+	cmd := exec.CommandContext(ctx, commandToRun, cmdArgs...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		errMsg := fmt.Sprintf(string(output), err)
+		err := fmt.Errorf(errMsg)
+		log.Error().Str("component", "OCR_SANDWICH").
+			Str("command", commandToRun).
+			Err(err).Msg("Error exec external command")
+		return string(output), err
+	}
+	if ctx.Err() == context.DeadlineExceeded {
+		err = fmt.Errorf("command timed out: %v", err)
+	}
+	return string(output), err
+}
+
 func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs) (OcrResult, error) {
 
 	fileToDeliver := "temp.file"
@@ -265,17 +292,18 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 	}
 
 	ocrType := strings.ToUpper(engineArgs.ocrType)
+
 	switch ocrType {
 	case "COMBINEDPDF":
 		cmdArgs, ocrLayerFile = t.buildCmdLineArgs(inputFilename, engineArgs)
-		cmd := exec.Command("pdfsandwich", cmdArgs...)
-		output, err := cmd.CombinedOutput()
+		output, err := runExternalCmd("pdfsandwich", cmdArgs, 1)
 		if err != nil {
 			errMsg := fmt.Sprintf(string(output), err)
 			err := fmt.Errorf(errMsg)
-			log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec pdfsandwich")
+			log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command")
 			return OcrResult{Status: "error"}, err
 		}
+
 		tmpOutCombinedPdf := fmt.Sprintf("%s%s", inputFilename, "_comb.pdf")
 
 		defer func() {
