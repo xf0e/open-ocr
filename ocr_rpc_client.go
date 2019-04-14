@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	// Timeout for getting the result from channel
+	// RPCResponseTimeout sets timeout for getting the result from channel
 	RPCResponseTimeout = time.Second * 20
-	// Global timeout for request
+	// ResponseCacheTimeout sets global timeout for request
 	ResponseCacheTimeout = time.Minute * 61
 	// do not set higher that ResponseCacheTimeout
 	// timerWithPostActionDelay = time.Minute * 60
