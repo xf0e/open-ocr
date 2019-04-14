@@ -56,6 +56,7 @@ func NewSandwichEngineArgs(ocrRequest OcrRequest) (*SandwichEngineArgs, error) {
 		engineArgs.configVars = configVarsMap
 
 	}
+
 	// language
 	lang := ocrRequest.EngineArgs["lang"]
 	if lang != nil {
@@ -151,8 +152,10 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 		log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("error getting engineArgs")
 		return OcrResult{Text: "can not build arguments", Status: "error"}, err
 	}
+	// getting timeout for request
+	configTimeOut := ocrRequest.TimeOut
 
-	ocrResult, err := t.processImageFile(tmpFileName, uplFileType, *engineArgs)
+	ocrResult, err := t.processImageFile(tmpFileName, uplFileType, *engineArgs, configTimeOut)
 
 	return ocrResult, err
 }
@@ -247,8 +250,8 @@ func (t SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs Sandwi
 
 }
 
-func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutMinutes time.Duration) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeOutMinutes*time.Minute)
+func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds time.Duration) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeOutSeconds)
 	defer cancel()
 
 	log.Info().Str("component", "OCR_SANDWICH").
@@ -258,21 +261,16 @@ func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutMinutes
 
 	cmd := exec.CommandContext(ctx, commandToRun, cmdArgs...)
 	output, err := cmd.CombinedOutput()
-	/*if err != nil {
-		errMsg := fmt.Sprintf(string(output), err)
-		err := fmt.Errorf(errMsg)
-		log.Error().Str("component", "OCR_SANDWICH").
-			Str("command", commandToRun).
-			Err(err).Msg("Error exec external command")
-		return string(output), err
-	}*/
 	if ctx.Err() == context.DeadlineExceeded {
-		err = fmt.Errorf("command timed out: %v", err)
+		err = fmt.Errorf("command timed out, terminated: %v", err)
+		// on deadline cancellation the output doesnt matter
+		return "", err
 	}
+	// err = "command timed out, terminated: signal: killed"
 	return string(output), err
 }
 
-func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs) (OcrResult, error) {
+func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
 
 	fileToDeliver := "temp.file"
 	cmdArgs := []string{}
@@ -296,11 +294,16 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 	switch ocrType {
 	case "COMBINEDPDF":
 		cmdArgs, ocrLayerFile = t.buildCmdLineArgs(inputFilename, engineArgs)
-		output, err := runExternalCmd("pdfsandwich", cmdArgs, 1)
+		output, err := runExternalCmd("pdfsandwich", cmdArgs, time.Duration(configTimeOut)*time.Second)
 		if err != nil {
-			errMsg := fmt.Sprintf(string(output), err)
-			err := fmt.Errorf(errMsg)
-			log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command")
+			errMsg := string(output)
+			if errMsg != "" {
+				errMsg = fmt.Sprintf(string(output), err)
+				err := fmt.Errorf(errMsg)
+				log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command, time limit reached")
+				return OcrResult{Status: "error"}, err
+			}
+			log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command, time limit reached")
 			return OcrResult{Status: "error"}, err
 		}
 

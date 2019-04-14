@@ -9,14 +9,12 @@ import (
 	"time"
 )
 
-const (
+var (
 	// RPCResponseTimeout sets timeout for getting the result from channel
 	RPCResponseTimeout = time.Second * 20
-	// ResponseCacheTimeout sets global timeout for request
-	ResponseCacheTimeout = time.Minute * 61
-	// do not set higher that ResponseCacheTimeout
-	// timerWithPostActionDelay = time.Minute * 60
-	timerWithPostActionDelay = time.Minute * 1
+	// ResponseCacheTimeout sets global timeout in seconds for request
+	// engine will be killed after reaching the time limit, user will get timeout error
+	ResponseCacheTimeout uint = 240
 	// check interval for request to be ready
 	tickerWithPostActionInterval = time.Second * 2
 )
@@ -85,7 +83,12 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		}
 
 	}
+	// setting the timeout for worker if not set or to high
+	if ocrRequest.TimeOut >= uint(3600) || ocrRequest.TimeOut == 0 {
+		ocrRequest.TimeOut = ResponseCacheTimeout
+	}
 
+	// setting rabbitMQ correlation ID. There is no reason to be different from requestID
 	correlationUUID := requestID
 	logg.LogTo("OCR_CLIENT", "dialing %q", c.rabbitConfig.AmqpURI)
 	c.connection, err = amqp.Dial(c.rabbitConfig.AmqpURI)
@@ -192,7 +195,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	// TODO automaticaly delivered then atomatic deliver will POST empty request back after timeout
 	if ocrRequest.Deferred {
 		logg.LogTo("OCR_CLIENT", "Asynchronous request accepted")
-		timer := time.NewTimer(ResponseCacheTimeout)
+		timer := time.NewTimer(time.Duration(ResponseCacheTimeout) * time.Second)
 		requestsAndTimersMu.Lock()
 		requests[requestID] = rpcResponseChan
 		timers[requestID] = timer
@@ -211,73 +214,44 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		}
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
-		tickerWithPostAction := time.NewTicker(tickerWithPostActionInterval)
-		//done := make(chan bool, 1)
-		// TODO: memory leak here? are we leaking timers?
-		/* timerWithPostAction := time.AfterFunc(timerWithPostActionDelay, func() {
-			fmt.Printf("Request processing took too long.\n")
-			done <- true
-		})*/
-		//defer timerWithPostAction.Stop()
+		// tickerWithPostAction := time.NewTicker(tickerWithPostActionInterval)
 
-		go func() {
-		T:
-			for {
-				select {
-				/*				case <-done:
-								tickerWithPostAction.Stop()
-								//timerWithPostAction.Stop()
-								fmt.Println(" Last try to deliver or aborting")
-								ocrRes, err := CheckOcrStatusByID(requestID)
-								if err != nil {
-									logg.LogError(err)
-								}
-								ocrPostClient := newOcrPostClient()
+		/*		go func() {
+				T:
+					for {
+						select {
+						case t := <-tickerWithPostAction.C:
+							logg.LogTo("OCR_CLIENT", "checking for request %s to be done %s", requestID, t)
+							ocrRes, err := CheckOcrStatusByID(requestID)
+							if err != nil {
+								logg.LogError(err)
+							} // only if status is done end the goroutine. otherwise continue polling
+							if ocrRes.Status == "done" || ocrRes.Status == "error" {
+								logg.LogTo("OCR_CLIENT", "request %s is ready", requestID)
 								var tryCounter uint8 = 1
-								// try to deliver result up to 3 times
+								ocrPostClient := newOcrPostClient()
 								for ok := true; ok; ok = tryCounter <= numRetries {
 									err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
 									if err != nil {
 										tryCounter++
 										logg.LogError(err)
 									} else {
-										tryCounter = numRetries + 1
+										break
 									}
 								}
-								break T*/
-				case t := <-tickerWithPostAction.C:
-					logg.LogTo("OCR_CLIENT", "checking for request %s to be done %s", requestID, t)
-					ocrRes, err := CheckOcrStatusByID(requestID)
-					if err != nil {
-						logg.LogError(err)
-					} // only if status is done end the goroutine. otherwise continue polling
-					if ocrRes.Status == "done" || ocrRes.Status == "error" {
-						logg.LogTo("OCR_CLIENT", "request %s is ready", requestID)
-						var tryCounter uint8 = 1
-						ocrPostClient := newOcrPostClient()
-						for ok := true; ok; ok = tryCounter <= numRetries {
-							err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
-							if err != nil {
-								tryCounter++
-								logg.LogError(err)
-							} else {
-								break
+								tickerWithPostAction.Stop()
+								break T
 							}
 						}
-						tickerWithPostAction.Stop()
-						//timerWithPostAction.Stop()
-						break T
 					}
-				}
-			}
-		}()
+				}()*/
 		// initial response to the caller to inform it with request id
 		return OcrResult{
 			ID:     requestID,
 			Status: "processing",
 		}, nil
 	} else {
-		return CheckReply(rpcResponseChan, ResponseCacheTimeout)
+		return CheckReply(rpcResponseChan, time.Duration(ResponseCacheTimeout)*time.Second)
 	}
 }
 
@@ -350,9 +324,6 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 				d.Body[0:bodyLenToLog],
 				d.ReplyTo,
 			)
-			// ocrResult := OcrResult{
-			// 	Text: string(d.Body),
-			// }+
 			// TODO check if additional transcoding ocrResult > JSON > ocrResult is needed
 			ocrResult := OcrResult{}
 			err := json.Unmarshal(d.Body, &ocrResult)
@@ -364,7 +335,6 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 			ocrResult.ID = correlationUuid
 
 			logg.LogTo("OCR_CLIENT", "send result to rpcResponseChan")
-			// TODO: on request which is beyond of timeout chanel is closed and the cli_http panics
 			rpcResponseChan <- ocrResult
 			logg.LogTo("OCR_CLIENT", "sent result to rpcResponseChan")
 
@@ -383,14 +353,13 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 		requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
-	ocrResult, err := CheckReply(requests[requestID], ResponseCacheTimeout)
+	ocrResult, err := CheckReply(requests[requestID], time.Duration(ResponseCacheTimeout)*time.Second)
 	if ocrResult.Status != "processing" {
 		delete(requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
 	}
 	requestsAndTimersMu.Unlock()
-	//ocrResult.ID = requestID
 	return ocrResult, err
 }
 
@@ -401,7 +370,7 @@ func CheckReply(rpcResponseChan chan OcrResult, timeout time.Duration) (OcrResul
 	select {
 	case ocrResult := <-rpcResponseChan:
 		return ocrResult, nil
-	case <-time.After(timeout):
+	case <-time.After(timeout + time.Second*120): // add additional 120 seconds to be sure the worker terminates first
 		return OcrResult{Text: "Timeout waiting for RPC response", Status: "error"}, nil
 	}
 }
