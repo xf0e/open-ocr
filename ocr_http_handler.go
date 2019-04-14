@@ -77,7 +77,7 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 
 	var requestIDRaw, _ = uuid.NewV4()
 	requestID := requestIDRaw.String()
-	ocrResult := NewOcrResult(requestID)
+	ocrResult := newOcrResult(requestID)
 	ocrRequest.RequestID = requestID
 	switch ocrRequest.InplaceDecode {
 	case true:

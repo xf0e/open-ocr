@@ -10,10 +10,12 @@ import (
 )
 
 const (
-	RPCResponseTimeout   = time.Second * 20
+	// Timeout for getting the result from channel
+	RPCResponseTimeout = time.Second * 20
+	// Global timeout for request
 	ResponseCacheTimeout = time.Minute * 61
 	// do not set higher that ResponseCacheTimeout
-	//timerWithPostActionDelay = time.Minute * 60
+	// timerWithPostActionDelay = time.Minute * 60
 	timerWithPostActionDelay = time.Minute * 1
 	// check interval for request to be ready
 	tickerWithPostActionInterval = time.Second * 2
@@ -31,7 +33,7 @@ type OcrResult struct {
 	ID     string `json:"id"`
 }
 
-func NewOcrResult(id string) OcrResult {
+func newOcrResult(id string) OcrResult {
 	ocrResult := &OcrResult{}
 	ocrResult.Status = "processing"
 	ocrResult.ID = id
@@ -54,6 +56,8 @@ func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
 	return ocrRpcClient, nil
 }
 
+// DecodeImage is the main function to do a ocr on incoming request.
+// It's handling the parameter and the whole workflow
 func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (OcrResult, error) {
 	var err error
 	logg.LogTo("OCR_CLIENT", "incoming request: %s, %v, %s, %s, %v, %v, %s, %s, %s", ocrRequest.RequestID,
@@ -82,7 +86,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 
 	}
 
-	correlationUuid := requestID
+	correlationUUID := requestID
 	logg.LogTo("OCR_CLIENT", "dialing %q", c.rabbitConfig.AmqpURI)
 	c.connection, err = amqp.Dial(c.rabbitConfig.AmqpURI)
 	if err != nil {
@@ -111,7 +115,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 
 	rpcResponseChan := make(chan OcrResult)
 
-	callbackQueue, err := c.subscribeCallbackQueue(correlationUuid, rpcResponseChan)
+	callbackQueue, err := c.subscribeCallbackQueue(correlationUUID, rpcResponseChan)
 	if err != nil {
 		return OcrResult{}, err
 	}
@@ -176,7 +180,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			DeliveryMode:    amqp.Transient,  // 1=non-persistent, 2=persistent
 			Priority:        messagePriority, // 0-9
 			ReplyTo:         callbackQueue.Name,
-			CorrelationId:   correlationUuid,
+			CorrelationId:   correlationUUID,
 			// a bunch of application/implementation-specific fields
 		},
 	); err != nil {
