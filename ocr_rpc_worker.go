@@ -220,7 +220,6 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	}
 
 	ocrEngine := NewOcrEngine(ocrRequest.EngineType)
-
 	ocrResult, err = ocrEngine.ProcessRequest(ocrRequest)
 	if err != nil {
 		msg := "Error processing image url: %v.  Error: %v"

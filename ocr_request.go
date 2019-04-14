@@ -17,6 +17,7 @@ type OcrRequest struct {
 	RequestID         string                 `json:"req_id"`
 	PageNumber        uint16                 `json:"page_number"`
 	UserAgent         string                 `json:"user_agent"`
+	TimeOut           uint                   `json:"time_out"`
 
 	// decode ocr in http handler rather than putting in queue
 	InplaceDecode bool `json:"inplace_decode"`

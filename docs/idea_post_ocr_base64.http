@@ -58,7 +58,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-"img_url": "a2902898-7c1e-474a-68ef-ed807b0a0bed"
+"img_url": "c4b8361b-7ce3-4895-70e9-26091377a7dd"
 }
 
 
@@ -144,18 +144,72 @@ Content-Type: application/json
   "reply_to":"http://localhost:9999"
 }
 
-###
+
+### tesseract base 64 PDF tesseract engine
+POST http://localhost:8080/ocr-status
+Content-Type: application/json
+
+{
+  "img_url": "93ca1222-c48f-4949-5ccb-89cba752c324"
+}
+
+
+### big
 
 POST http://localhost:8080/ocr
 Content-Type: application/json
 
 {
-  "img_url":"http://bit.ly/ocrimage",
+  "img_url":"http://localhost:9898/big.pdf",
   "engine":"sandwich",
   "engine_args":{"lang":"eng", "ocr_type":"combinedpdf","result_optimize":true},
   "deferred":true,
   "reply_to":"http://localhost:9999",
   "doc_type": "egvp"
+}
+
+### small
+
+POST http://localhost:8080/ocr
+Content-Type: application/json
+
+{
+  "img_url":"http://localhost:9898/small.pdf",
+  "engine":"sandwich",
+  "engine_args":{"lang":"eng", "ocr_type":"combinedpdf","result_optimize":true},
+  "deferred":true,
+  "reply_to":"http://localhost:9999",
+  "doc_type": "egvp"
+}
+
+
+### small
+
+POST http://localhost:8080/ocr
+Content-Type: application/json
+
+{
+  "img_url":"http://localhost:9898/small.pdf",
+  "engine":"sandwich",
+  "engine_args":{"lang":"eng", "ocr_type":"combinedpdf","result_optimize":true},
+  "deferred":false,
+  "doc_type": "egvp"
+}
+
+
+### malformed reques for debug purposes
+
+POST http://localhost:8080/ocr
+Content-Type: application/json
+
+{
+  "img_base64":"dGVzdAo=",
+  "engine":"sandwich",
+  "engine_args":{"lang":"eng", "ocr_type":"txt","result_optimize":true},
+  "deferred":true,
+  "reply_to":"http://localhost:9999",
+  "doc_type": "eg",
+  "num_pages": "12"
 }
 
 ###
@@ -175,6 +229,3 @@ Content-Type: application/json
 }
 
 ###
-
-
-
