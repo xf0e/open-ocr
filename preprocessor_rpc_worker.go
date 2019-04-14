@@ -3,6 +3,7 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/segmentio/ksuid"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -21,7 +22,7 @@ type PreprocessorRpcWorker struct {
 	preprocessorMap map[string]Preprocessor
 }
 
-const preprocessor_tag = "preprocessor" // TODO: should be unique for each worker instance (eg, uuid)
+var preprocessorTag = ksuid.New().String()
 
 func NewPreprocessorRpcWorker(rc RabbitConfig, preprocessor string) (*PreprocessorRpcWorker, error) {
 
@@ -39,7 +40,7 @@ func NewPreprocessorRpcWorker(rc RabbitConfig, preprocessor string) (*Preprocess
 		rabbitConfig:    rc,
 		conn:            nil,
 		channel:         nil,
-		tag:             preprocessor_tag,
+		tag:             preprocessorTag,
 		Done:            make(chan error),
 		bindingKey:      preprocessor,
 		preprocessorMap: preprocessorMap,
@@ -107,15 +108,15 @@ func (w PreprocessorRpcWorker) Run() error {
 		return err
 	}
 
-	logg.LogTo("PREPROCESSOR_WORKER", "Queue bound to Exchange, starting Consume (consumer tag %q, binding key: %v)", preprocessor_tag, w.bindingKey)
+	logg.LogTo("PREPROCESSOR_WORKER", "Queue bound to Exchange, starting Consume (consumer tag %q, binding key: %v)", preprocessorTag, w.bindingKey)
 	deliveries, err := w.channel.Consume(
-		queue.Name,       // name
-		preprocessor_tag, // consumerTag,
-		true,             // noAck
-		false,            // exclusive
-		false,            // noLocal
-		false,            // noWait
-		nil,              // arguments
+		queue.Name,      // name
+		preprocessorTag, // consumerTag,
+		true,            // noAck
+		false,           // exclusive
+		false,           // noLocal
+		false,           // noWait
+		nil,             // arguments
 	)
 	if err != nil {
 		return err
