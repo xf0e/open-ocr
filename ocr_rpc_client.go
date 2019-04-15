@@ -17,6 +17,8 @@ var (
 	ResponseCacheTimeout uint = 240
 	// check interval for request to be ready
 	tickerWithPostActionInterval = time.Second * 2
+	//timeout for checking wich checkRerply(), only get from channel in seconds
+	timeoutForCheckReply uint = 2
 )
 
 type OcrRpcClient struct {
@@ -196,13 +198,16 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	if ocrRequest.Deferred {
 		logg.LogTo("OCR_CLIENT", "Asynchronous request accepted")
 		timer := time.NewTimer(time.Duration(ResponseCacheTimeout) * time.Second)
+		fmt.Println("loking vrequestsAndTimersMu")
 		requestsAndTimersMu.Lock()
 		requests[requestID] = rpcResponseChan
 		timers[requestID] = timer
+		fmt.Println("unloking vrequestsAndTimersMu")
 		requestsAndTimersMu.Unlock()
 		// deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
 		if ocrRequest.ReplyTo == "" {
+			// thi go routine will cancel the request after global timeout if client stopped polling
 			go func() {
 				<-timer.C
 				CheckOcrStatusByID(requestID)
@@ -214,37 +219,37 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		}
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
-		// tickerWithPostAction := time.NewTicker(tickerWithPostActionInterval)
+		tickerWithPostAction := time.NewTicker(tickerWithPostActionInterval)
 
-		/*		go func() {
-				T:
-					for {
-						select {
-						case t := <-tickerWithPostAction.C:
-							logg.LogTo("OCR_CLIENT", "checking for request %s to be done %s", requestID, t)
-							ocrRes, err := CheckOcrStatusByID(requestID)
+		go func() {
+		T:
+			for {
+				select {
+				case t := <-tickerWithPostAction.C:
+					logg.LogTo("OCR_CLIENT", "checking for request %s to be done %s", requestID, t)
+					ocrRes, err := CheckOcrStatusByID(requestID)
+					if err != nil {
+						logg.LogError(err)
+					} // only if status is done end the goroutine. otherwise continue polling
+					if ocrRes.Status == "done" || ocrRes.Status == "error" {
+						logg.LogTo("OCR_CLIENT", "request %s is ready", requestID)
+						var tryCounter uint8 = 1
+						ocrPostClient := newOcrPostClient()
+						for ok := true; ok; ok = tryCounter <= numRetries {
+							err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
 							if err != nil {
+								tryCounter++
 								logg.LogError(err)
-							} // only if status is done end the goroutine. otherwise continue polling
-							if ocrRes.Status == "done" || ocrRes.Status == "error" {
-								logg.LogTo("OCR_CLIENT", "request %s is ready", requestID)
-								var tryCounter uint8 = 1
-								ocrPostClient := newOcrPostClient()
-								for ok := true; ok; ok = tryCounter <= numRetries {
-									err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
-									if err != nil {
-										tryCounter++
-										logg.LogError(err)
-									} else {
-										break
-									}
-								}
-								tickerWithPostAction.Stop()
-								break T
+							} else {
+								break
 							}
 						}
+						tickerWithPostAction.Stop()
+						break T
 					}
-				}()*/
+				}
+			}
+		}()
 		// initial response to the caller to inform it with request id
 		return OcrResult{
 			ID:     requestID,
@@ -348,17 +353,22 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 }
 
 func CheckOcrStatusByID(requestID string) (OcrResult, error) {
+	fmt.Println("loking vrequestsAndTimersMu CheckOcrStatusByID")
 	requestsAndTimersMu.Lock()
 	if _, ok := requests[requestID]; !ok {
+		fmt.Println("unloking vrequestsAndTimersMu with id mismatch CheckOcrStatusByID")
 		requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
-	ocrResult, err := CheckReply(requests[requestID], time.Duration(ResponseCacheTimeout)*time.Second)
+	ocrResult, err := CheckReply(requests[requestID], time.Duration(timeoutForCheckReply)*time.Second)
 	if ocrResult.Status != "processing" {
+		fmt.Println("deleting requests and timers")
 		delete(requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
 	}
+	ocrResult.ID = requestID
+	fmt.Println("unloking vrequestsAndTimersMu CheckOcrStatusByID")
 	requestsAndTimersMu.Unlock()
 	return ocrResult, err
 }
@@ -370,8 +380,8 @@ func CheckReply(rpcResponseChan chan OcrResult, timeout time.Duration) (OcrResul
 	select {
 	case ocrResult := <-rpcResponseChan:
 		return ocrResult, nil
-	case <-time.After(timeout + time.Second*120): // add additional 120 seconds to be sure the worker terminates first
-		return OcrResult{Text: "Timeout waiting for RPC response", Status: "error"}, nil
+	case <-time.After(timeout):
+		return OcrResult{Text: "", Status: "processing"}, nil
 	}
 }
 
