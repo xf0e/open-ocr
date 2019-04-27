@@ -2,11 +2,10 @@ package ocrworker
 
 import (
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"os"
 	"os/exec"
-
-	"github.com/couchbaselabs/logg"
 )
 
 type StrokeWidthTransformer struct {
@@ -37,13 +36,10 @@ func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
 
 	// run DecodeText binary on it (if not in path, print warning and do nothing)
 	darkOnLightSetting := s.extractDarkOnLightParam(*ocrRequest)
-	logg.LogTo(
-		"PREPROCESSOR_WORKER",
-		"DetectText on %s -> %s with %s",
-		tmpFileNameInput,
-		tmpFileNameOutput,
-		darkOnLightSetting,
-	)
+	log.Info().Str("component", "PREPROCESSOR_WORKER").
+		Str("tmpFileNameInput", tmpFileNameInput).Str("tmpFileNameOutput", tmpFileNameOutput).
+		Str("darkOnLightSetting", darkOnLightSetting).Msg("DetectText")
+
 	out, err := exec.Command(
 		"DetectText",
 		tmpFileNameInput,
@@ -51,9 +47,8 @@ func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
 		darkOnLightSetting,
 	).CombinedOutput()
 	if err != nil {
-		logg.LogFatal("Error running command: %s.  out: %s", err, out)
+		log.Error().Err(err).Msg(string(out))
 	}
-	logg.LogTo("PREPROCESSOR_WORKER", "output: %v", string(out))
 
 	// read bytes from output file into ocrRequest.ImgBytes
 	resultBytes, err := ioutil.ReadFile(tmpFileNameOutput)
@@ -69,7 +64,8 @@ func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
 
 func (s StrokeWidthTransformer) extractDarkOnLightParam(ocrRequest OcrRequest) string {
 
-	logg.LogTo("PREPROCESSOR_WORKER", "extract dark on light param")
+	log.Info().Str("component", "PREPROCESSOR_WORKER").
+		Msg("extract dark on light param")
 
 	val := "1"
 
@@ -82,8 +78,7 @@ func (s StrokeWidthTransformer) extractDarkOnLightParam(ocrRequest OcrRequest) s
 		}
 	}
 
-	logg.LogTo("PREPROCESSOR_WORKER", "return val: %s", val)
+	log.Info().Str("component", "PREPROCESSOR_WORKER").Str("val", val).Msg("return value")
 
 	return val
-
 }

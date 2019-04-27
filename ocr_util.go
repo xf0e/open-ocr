@@ -2,7 +2,7 @@ package ocrworker
 
 import (
 	"fmt"
-	"github.com/couchbaselabs/logg"
+	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -85,7 +85,9 @@ func readFirstBytes(filePath string, nBytesToRead uint) ([]byte, error) {
 
 // detect uploaded file type
 func detectFileType(buffer []byte) string {
-	logg.LogTo("OCR_SANDWICH", "OK, this is buffer: %v", buffer)
+	log.Info().Str("component", "OCR_DETECTFILETYPE").
+		Interface("buffer", buffer).
+		Msg("check file type; see buffer")
 	fileType := ""
 	if len(buffer) > 3 &&
 		buffer[0] == 0x25 && buffer[1] == 0x50 &&
@@ -104,13 +106,14 @@ func detectFileType(buffer []byte) string {
 // if sandwich engine gets a TIFF image instead of PDF file
 // we need to convert the input file to pdf first since pdfsandwich can't handle images
 func convertImageToPdf(inputFilename string) string {
-	logg.LogTo("OCR_SANDWICH", "got image file instead of pdf, trying to convert it...")
+	log.Info().Str("component", "OCR_IMAGECONVERT").Msg("got image file instead of pdf, trying to convert it...")
 
 	tmpFileImgToPdf := fmt.Sprintf("%s%s", inputFilename, ".pdf")
 	cmd := exec.Command("convert", inputFilename, tmpFileImgToPdf)
-	output, err := cmd.CombinedOutput()
+	_, err := cmd.CombinedOutput()
 	if err != nil {
-		logg.LogWarn("OCR_SANDWICH", "error exec convert for transforming TIFF to PDF: %v %v", err, string(output))
+		log.Warn().Str("component", "OCR_IMAGECONVERT").Err(err).
+			Msg("error exec convert for transforming TIFF to PDF")
 		return ""
 	}
 
@@ -122,7 +125,6 @@ func convertImageToPdf(inputFilename string) string {
 func checkURLForReplyTo(uri string) (string, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
-		logg.LogWarn("OCR_CLIENT", "provided("+u.String()+") URI address is not valid")
 		return "", err
 	} else if u.Scheme == "" || u.Host == "" {
 		errorText := "provided(" + u.String() + ") URI must be an absolute URL"

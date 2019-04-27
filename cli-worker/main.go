@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/couchbaselabs/logg"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
@@ -13,15 +12,7 @@ import (
 // To test it, fire up a web server and send it a curl request
 
 func init() {
-	logg.LogKeys["OCR"] = true
-	logg.LogKeys["OCR_CLIENT"] = true
-	logg.LogKeys["OCR_WORKER"] = true
-	logg.LogKeys["OCR_HTTP"] = true
-	logg.LogKeys["OCR_TESSERACT"] = true
-	logg.LogKeys["OCR_SANDWICH"] = true
-
 	zerolog.TimeFieldFormat = time.StampMilli
-
 }
 
 func main() {

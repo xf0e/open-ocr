@@ -1,20 +1,13 @@
 package ocrworker
 
 import (
+	"github.com/rs/zerolog/log"
 	"testing"
 
 	"github.com/couchbaselabs/go.assert"
-	"github.com/couchbaselabs/logg"
 )
 
 func init() {
-	logg.LogKeys["TEST"] = true
-	logg.LogKeys["OCR"] = true
-	logg.LogKeys["OCR_CLIENT"] = true
-	logg.LogKeys["OCR_WORKER"] = true
-	logg.LogKeys["PREPROCESSOR_WORKER"] = true
-	logg.LogKeys["OCR_HTTP"] = true
-	logg.LogKeys["OCR_TESSERACT"] = true
 }
 
 func rabbitConfigForTests() RabbitConfig {
@@ -37,13 +30,13 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 	// this would normally happen on a different machine ..
 	ocrWorker, err := NewOcrRpcWorker(rabbitConfig)
 	if err != nil {
-		logg.LogTo("TEST", "err: %v", err)
+		log.Error().Str("component", "TEST").Err(err)
 	}
 	ocrWorker.Run()
 
 	ocrClient, err := NewOcrRpcClient(rabbitConfig)
 	if err != nil {
-		logg.LogTo("TEST", "err: %v", err)
+		log.Error().Str("component", "TEST").Err(err)
 	}
 	assert.True(t, err == nil)
 
@@ -52,10 +45,10 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 		ocrRequest := OcrRequest{ImgUrl: testImageUrl, EngineType: EngineMock}
 		decodeResult, err := ocrClient.DecodeImage(ocrRequest, requestID)
 		if err != nil {
-			logg.LogTo("TEST", "err: %v", err)
+			log.Error().Str("component", "TEST").Err(err)
 		}
 		assert.True(t, err == nil)
-		logg.LogTo("TEST", "decodeResult: %v", decodeResult)
+		log.Info().Str("component", "TEST").Str("decodeResult", decodeResult.Text)
 		assert.Equals(t, decodeResult.Text, MOCK_ENGINE_RESPONSE)
 
 	}

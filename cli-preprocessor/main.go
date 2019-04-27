@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"time"
 
-	"github.com/couchbaselabs/logg"
 	"github.com/xf0e/open-ocr"
 )
 
@@ -12,13 +13,7 @@ import (
 // To test it, fire up a webserver and send it a curl request
 
 func init() {
-	logg.LogKeys["OCR"] = true
-	logg.LogKeys["OCR_CLIENT"] = true
-	logg.LogKeys["OCR_WORKER"] = true
-	logg.LogKeys["PREPROCESSOR_WORKER"] = true
-	logg.LogKeys["OCR_HTTP"] = true
-	logg.LogKeys["OCR_TESSERACT"] = true
-	logg.LogKeys["OCR_SANDWICH"] = true
+	zerolog.TimeFieldFormat = time.StampMilli
 }
 
 func main() {
@@ -39,19 +34,22 @@ func main() {
 	// inifinite loop, since sometimes worker <-> rabbitmq connection
 	// gets broken.  see https://github.com/tleyden/open-ocr/issues/4
 	for {
-		logg.LogTo("PREPROCESSOR_WORKER", "Creating new Preprocessor Worker")
+		log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("creating new preprocessor worker")
 		preprocessorWorker, err := ocrworker.NewPreprocessorRpcWorker(
 			rabbitConfig,
 			preprocessor,
 		)
 		if err != nil {
-			logg.LogPanic("Could not create rpc worker: %v", err)
+			log.Panic().Err(err).Str("component", "MAIN_PREPROSSOR").Msg("could not create rpc worker")
 		}
-		preprocessorWorker.Run()
+		err = preprocessorWorker.Run()
+		if err != nil {
+			log.Error().Err(err).Str("component", "MAIN_PREPROSSOR").Msg("preprocessor worker failed")
+		}
 
 		// this happens when connection is closed
 		err = <-preprocessorWorker.Done
-		logg.LogError(fmt.Errorf("Preprocessor Worker failed with error: %v", err))
+		log.Error().Err(err).Str("component", "MAIN_PREPROSSOR").Msg("preprocessor worker failed")
 	}
 
 }

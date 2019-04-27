@@ -3,12 +3,12 @@ package ocrworker
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/couchbaselabs/go.assert"
-	"github.com/couchbaselabs/logg"
 )
 
 // This test assumes that rabbit mq is running
@@ -18,7 +18,7 @@ func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 
 	err := spawnOcrWorker(rabbitConfig)
 	if err != nil {
-		logg.LogPanic("Could not spawn ocr worker")
+		log.Panic().Msg("Could not spawn ocr worker")
 	}
 
 	// add a handler to serve up an image from the filesystem.
@@ -30,7 +30,7 @@ func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 
 	go http.ListenAndServe(":8081", nil)
 
-	logg.LogTo("TEST", "test1")
+	log.Info().Str("component", "TEST").Msg("test1")
 
 	ocrRequest := OcrRequest{
 		ImgUrl:     "http://localhost:8081/img",
@@ -38,17 +38,17 @@ func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 	}
 	jsonBytes, err := json.Marshal(ocrRequest)
 	if err != nil {
-		logg.LogPanic("Could not marshal OcrRequest")
+		log.Panic().Msg("Could not marshal OcrRequest")
 	}
 
 	reader := bytes.NewReader(jsonBytes)
 
 	resp, err := http.Post("http://localhost:8081/ocr", "application/json", reader)
 	assert.True(t, err == nil)
-	logg.LogTo("TEST", "resp: %v", resp)
+	log.Info().Str("component", "TEST").Interface("resp", resp)
 
 	// connect to it via http client
-	logg.LogTo("TEST", "Sleep for 60s")
+	log.Info().Str("component", "TEST").Msg("Sleep for 60s")
 	time.Sleep(time.Second * 60)
 
 	// make sure get expected result

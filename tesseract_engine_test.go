@@ -2,12 +2,12 @@ package ocrworker
 
 import (
 	"encoding/json"
+	"github.com/rs/zerolog/log"
 	"testing"
 
 	"io/ioutil"
 
 	"github.com/couchbaselabs/go.assert"
-	"github.com/couchbaselabs/logg"
 )
 
 func TestTesseractEngineWithRequest(t *testing.T) {
@@ -32,7 +32,7 @@ func TestTesseractEngineWithRequest(t *testing.T) {
 	assert.True(t, err == nil)
 	result, err := engine.ProcessRequest(ocrRequest)
 	assert.True(t, err == nil)
-	logg.LogTo("TEST", "result: %v", result)
+	log.Info().Str("component", "TEST").Interface("result", result)
 
 }
 
@@ -50,7 +50,7 @@ func TestTesseractEngineWithJson(t *testing.T) {
 	testJsons = append(testJsons, `{"engine":"tesseract", "engine_args":{"config_vars":{"tessedit_create_hocr":"1", "tessedit_pageseg_mode":"1"}, "-psm":"3"}}`)
 
 	for _, testJson := range testJsons {
-		logg.LogTo("TEST", "testJson: %v", testJson)
+		log.Info().Str("component", "TEST").Interface("testJson", testJson)
 		ocrRequest := OcrRequest{}
 		err := json.Unmarshal([]byte(testJson), &ocrRequest)
 		assert.True(t, err == nil)
@@ -59,10 +59,10 @@ func TestTesseractEngineWithJson(t *testing.T) {
 		ocrRequest.ImgBytes = bytes
 		engine := NewOcrEngine(ocrRequest.EngineType)
 		result, err := engine.ProcessRequest(ocrRequest)
-		logg.LogTo("TEST", "err: %v", err)
-		assert.True(t, err == nil)
-		logg.LogTo("TEST", "result: %v", result)
+		log.Error().Err(err).Str("component", "TEST")
 
+		assert.True(t, err == nil)
+		log.Info().Str("component", "TEST").Interface("result", result)
 	}
 
 }
@@ -91,6 +91,6 @@ func TestTesseractEngineWithFile(t *testing.T) {
 	engineArgs := TesseractEngineArgs{}
 	result, err := engine.processImageFile("docs/testimage.png", engineArgs)
 	assert.True(t, err == nil)
-	logg.LogTo("TEST", "result: %v", result)
+	log.Info().Str("component", "TEST").Interface("result", result)
 
 }

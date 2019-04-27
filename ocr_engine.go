@@ -2,9 +2,8 @@ package ocrworker
 
 import (
 	"encoding/json"
+	"github.com/rs/zerolog/log"
 	"strings"
-
-	"github.com/couchbaselabs/logg"
 )
 
 type OcrEngineType int
@@ -63,7 +62,7 @@ func (e *OcrEngineType) UnmarshalJSON(b []byte) (err error) {
 		case "MOCK":
 			*e = EngineMock
 		default:
-			logg.LogWarn("Unexpected OcrEngineType json: %v", engineString)
+			log.Warn().Str("engineString", engineString).Msg("Unexpected OcrEngineType json")
 			*e = EngineMock
 		}
 		return nil

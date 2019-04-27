@@ -3,8 +3,8 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/couchbaselabs/logg"
 	"github.com/nu7hatch/gouuid"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"runtime/pprof"
@@ -29,8 +29,8 @@ var (
 )
 
 func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
-	logg.LogTo("OCR_HTTP", "serveHttp called")
+	_ = pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
+	log.Info().Str("component", "OCR_HTTP").Msg("serveHttp called")
 	defer req.Body.Close()
 
 	ServiceCanAcceptMu.Lock()
@@ -38,7 +38,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	ServiceCanAcceptMu.Unlock()
 	if !ServiceCanAcceptLocal {
 		err := "no resources available to process the request"
-		logg.LogError(fmt.Errorf(err))
+		log.Error().Err(fmt.Errorf(err)).Str("component", "OCR_HTTP")
 		http.Error(w, err, 503)
 		return
 	}
@@ -47,7 +47,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&ocrRequest)
 	if err != nil {
-		logg.LogError(err)
+		log.Error().Err(err).Str("component", "OCR_HTTP")
 		http.Error(w, "Unable to unmarshal json", 400)
 		return
 	}
@@ -57,20 +57,21 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	if err != nil {
 		msg := "Unable to perform OCR decode.  Error: %v"
 		errMsg := fmt.Sprintf(msg, err)
-		logg.LogError(fmt.Errorf(errMsg))
+		log.Error().Err(err).Str("component", "OCR_HTTP").Msg("Unable to perform OCR decode")
 		http.Error(w, errMsg, 500)
 		return
 	}
-	// log the whole result
-	// logg.LogTo("OCR_HTTP", "ocrResult: %v", ocrResult)
+
 	w.Header().Set("Content-Type", "application/json")
 	js, err := json.Marshal(ocrResult)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write(js)
-
+	_, err = w.Write(js)
+	if err != nil {
+		log.Error().Err(err).Str("component", "OCR_HTTP").Msg("http write() failed")
+	}
 }
 
 func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResult, error) {
@@ -88,24 +89,22 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 		ocrResult, err := ocrEngine.ProcessRequest(ocrRequest)
 
 		if err != nil {
-			msg := "Error processing ocr request.  Error: %v"
-			errMsg := fmt.Sprintf(msg, err)
-			logg.LogError(fmt.Errorf(errMsg))
+			log.Error().Err(err).Str("component", "OCR_HTTP").Msg("Error processing ocr request")
 			return OcrResult{}, err
 		}
 
 		return ocrResult, nil
 	default:
-		// add a new job to rabbitmq and wait for worker to respond w/ result
+		// add a new job to rabbitMQ and wait for worker to respond w/ result
 		ocrClient, err := NewOcrRpcClient(rabbitConfig)
 		if err != nil {
-			logg.LogError(err)
+			log.Error().Err(err).Str("component", "OCR_HTTP")
 			return OcrResult{}, err
 		}
 
 		ocrResult, err = ocrClient.DecodeImage(ocrRequest, requestID)
 		if err != nil {
-			logg.LogError(err)
+			log.Error().Err(err).Str("component", "OCR_HTTP")
 			return OcrResult{}, err
 		}
 

@@ -38,7 +38,6 @@ func NewSandwichEngineArgs(ocrRequest OcrRequest) (*SandwichEngineArgs, error) {
 
 	if configVarsMapInterfaceOrig != nil {
 
-		//logg.LogTo("OCR_SANDWICH", "got configVarsMap: %v type: %T", configVarsMapInterfaceOrig, configVarsMapInterfaceOrig)
 		log.Info().Str("component", "OCR_SANDWICH").Interface("configVarsMap", configVarsMapInterfaceOrig).
 			Msg("got configVarsMap")
 
@@ -300,10 +299,10 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 			if errMsg != "" {
 				errMsg = fmt.Sprintf(string(output), err)
 				err := fmt.Errorf(errMsg)
-				log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command, time limit reached")
+				log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command")
 				return OcrResult{Status: "error"}, err
 			}
-			log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command, time limit reached")
+			log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command")
 			return OcrResult{Status: "error"}, err
 		}
 

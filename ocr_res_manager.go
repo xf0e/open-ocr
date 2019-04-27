@@ -2,8 +2,7 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/couchbaselabs/logg"
+	"github.com/rs/zerolog/log"
 	"time"
 )
 
@@ -43,32 +42,24 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	isAvailable := false
 	jsonQueueStat, err := url2bytes(urlQueue)
 	if err != nil {
-		msg := "Can't get Que stats : %v"
-		errMsg := fmt.Sprintf(msg, err)
-		_ = logg.LogError(fmt.Errorf(errMsg))
+		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("can't get Que stats")
 		return false
 	}
 	jsonResStat, err := url2bytes(urlStat)
 	if err != nil {
-		msg := "Can't get RabbitMQ memory stats: %v"
-		errMsg := fmt.Sprintf(msg, err)
-		_ = logg.LogError(fmt.Errorf(errMsg))
+		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("can't get RabbitMQ memory stats")
 		return false
 	}
 
 	err = json.Unmarshal(jsonQueueStat, queueManager)
 	if err != nil {
-		msg := "Error unmarshaling json: %v"
-		errMsg := fmt.Sprintf(msg, err)
-		_ = logg.LogError(fmt.Errorf(errMsg))
+		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshaling json")
 		return false
 	}
 
 	err = json.Unmarshal(jsonResStat, &resManager)
 	if err != nil {
-		msg := "Error unmarshaling json: %v"
-		errMsg := fmt.Sprintf(msg, err)
-		_ = logg.LogError(fmt.Errorf(errMsg))
+		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshaling json")
 		return false
 	}
 
@@ -79,17 +70,17 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	}
 
 	if statusChanged {
-		logg.LogTo("OCR_RESMAN", "Queue statistics: messages size %v, number consumers %v, number messages %v,	memory stats %v",
-			queueManager.MessageBytes,
-			queueManager.NumConsumers,
-			queueManager.NumMessages,
-			resManager)
-		// logg.LogTo("OCR_RESMAN", "API URL %s", urlQueue)
-		// logg.LogTo("OCR_RESMAN", "API URL %s", urlStat)
+		log.Info().Str("component", "OCR_RESMAN").
+			Uint("MessageBytes", queueManager.MessageBytes).
+			Uint("NumConsumers", queueManager.NumConsumers).
+			Uint("NumMessages", queueManager.NumMessages).
+			Interface("resManager", resManager).
+			Msg("OCR_RESMAN stats")
+
 		if isAvailable {
-			logg.LogTo("OCR_RESMAN", "open-ocr is operational with free resources. We are ready to serve.")
+			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is operational with free resources. We are ready to serve")
 		} else {
-			logg.LogTo("OCR_RESMAN", "open-ocr is alive but won't serve any requests. Workers are busy or not connected.")
+			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is alive but won't serve any requests. Workers are busy or not connected")
 		}
 
 	}

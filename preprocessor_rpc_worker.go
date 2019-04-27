@@ -3,12 +3,12 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"github.com/segmentio/ksuid"
 	"io/ioutil"
 	"os"
 	"os/exec"
 
-	"github.com/couchbaselabs/logg"
 	"github.com/streadway/amqp"
 )
 
@@ -51,10 +51,11 @@ func NewPreprocessorRpcWorker(rc RabbitConfig, preprocessor string) (*Preprocess
 func (w PreprocessorRpcWorker) Run() error {
 
 	var err error
+	log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("Run() called...")
+	log.Info().Str("component", "PREPROCESSOR_WORKER").
+		Str("AmqpURI", w.rabbitConfig.AmqpURI).
+		Msg("dialing amqpURI...")
 
-	logg.LogTo("PREPROCESSOR_WORKER", "Run() called...")
-
-	logg.LogTo("PREPROCESSOR_WORKER", "dialing %q", w.rabbitConfig.AmqpURI)
 	w.conn, err = amqp.Dial(w.rabbitConfig.AmqpURI)
 	if err != nil {
 		return err
@@ -64,7 +65,7 @@ func (w PreprocessorRpcWorker) Run() error {
 		fmt.Printf("closing: %s", <-w.conn.NotifyClose(make(chan *amqp.Error)))
 	}()
 
-	logg.LogTo("PREPROCESSOR_WORKER", "got Connection, getting Channel")
+	log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("got Connection, getting Channel")
 	w.channel, err = w.conn.Channel()
 	if err != nil {
 		return err
@@ -108,7 +109,10 @@ func (w PreprocessorRpcWorker) Run() error {
 		return err
 	}
 
-	logg.LogTo("PREPROCESSOR_WORKER", "Queue bound to Exchange, starting Consume (consumer tag %q, binding key: %v)", preprocessorTag, w.bindingKey)
+	log.Info().Str("component", "PREPROCESSOR_WORKER").
+		Str("preprocessorTag", preprocessorTag).
+		Str("bindingKey", w.bindingKey).
+		Msg("Queue bound to Exchange, starting Consume")
 	deliveries, err := w.channel.Consume(
 		queue.Name,      // name
 		preprocessorTag, // consumerTag,
@@ -137,7 +141,7 @@ func (w *PreprocessorRpcWorker) Shutdown() error {
 		return fmt.Errorf("AMQP connection close error: %s", err)
 	}
 
-	defer logg.LogTo("PREPROCESSOR_WORKER", "Shutdown OK")
+	defer log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("Shutdown OK")
 
 	// wait for handle() to exit
 	return <-w.Done
@@ -145,23 +149,19 @@ func (w *PreprocessorRpcWorker) Shutdown() error {
 
 func (w *PreprocessorRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) {
 	for d := range deliveries {
-		logg.LogTo(
-			"PREPROCESSOR_WORKER",
-			"got %d byte delivery: [%v]. Routing key: %s Reply to: %v",
-			len(d.Body),
-			d.DeliveryTag,
-			d.RoutingKey,
-			d.ReplyTo,
-		)
+		log.Info().Str("component", "PREPROCESSOR_WORKER").
+			Int("size", len(d.Body)).
+			Uint64("DeliveryTag", d.DeliveryTag).
+			Str("ReplyTo", d.ReplyTo).
+			Msg("got delivery")
 
 		err := w.handleDelivery(d)
 		if err != nil {
-			msg := "Error handling delivery in preprocessor.  Error: %v"
-			logg.LogError(fmt.Errorf(msg, err))
+			log.Error().Err(err).Str("component", "PREPROCESSOR_WORKER").Msg("Error handling delivery in preprocessor.")
 		}
 
 	}
-	logg.LogTo("PREPROCESSOR_WORKER", "handle: deliveries channel closed")
+	log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("handle: deliveries channel closed")
 	done <- fmt.Errorf("handle: deliveries channel closed")
 }
 
@@ -169,13 +169,15 @@ func (w *PreprocessorRpcWorker) preprocessImage(ocrRequest *OcrRequest) error {
 
 	descriptor := w.bindingKey // eg, "stroke-width-transform"
 	preprocessor := w.preprocessorMap[descriptor]
-	logg.LogTo("PREPROCESSOR_WORKER", "Preproces %v via %v", ocrRequest, descriptor)
+	log.Info().Str("component", "PREPROCESSOR_WORKER").
+		Str("ocrRequest", ocrRequest.RequestID).Str("descriptor", descriptor).
+		Msg("Preprocess request via descriptor")
 
 	err := preprocessor.preprocess(ocrRequest)
 	if err != nil {
-		msg := "Error doing %s on: %v.  Error: %v"
-		errMsg := fmt.Sprintf(msg, descriptor, ocrRequest, err)
-		logg.LogError(fmt.Errorf(errMsg))
+		msg := "Error doing %s on: %v."
+		errMsg := fmt.Sprintf(msg, descriptor, ocrRequest)
+		log.Error().Err(err).Str("component", "PREPROCESSOR_WORKER").Msg(errMsg)
 		return err
 	}
 	return nil
@@ -212,9 +214,9 @@ func (w *PreprocessorRpcWorker) strokeWidthTransform(ocrRequest *OcrRequest) err
 		darkOnLightSetting,
 	).CombinedOutput()
 	if err != nil {
-		logg.LogFatal("Error running command: %s.  out: %s", err, out)
+		log.Error().Err(err).Str("component", "PREPROCESSOR_WORKER").Msg(string(out))
 	}
-	logg.LogTo("PREPROCESSOR_WORKER", "output: %v", string(out))
+	log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("finish DetectText")
 
 	// read bytes from output file into ocrRequest.ImgBytes
 	resultBytes, err := ioutil.ReadFile(tmpFileNameOutput)
@@ -233,22 +235,21 @@ func (w *PreprocessorRpcWorker) handleDelivery(d amqp.Delivery) error {
 	ocrRequest := OcrRequest{}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {
-		msg := "Error unmarshaling json: %v.  Error: %v"
-		errMsg := fmt.Sprintf(msg, string(d.Body), err)
-		logg.LogError(fmt.Errorf(errMsg))
+		msg := "Error unmarshaling json: %v."
+		errMsg := fmt.Sprintf(msg, string(d.Body))
+		log.Error().Err(err).Str("component", "PREPROCESSOR_WORKER").Msg(errMsg)
 		return err
 	}
 
-	logg.LogTo("PREPROCESSOR_WORKER", "ocrRequest before: %v", ocrRequest)
 	routingKey := ocrRequest.nextPreprocessor(w.rabbitConfig.RoutingKey)
-	logg.LogTo("PREPROCESSOR_WORKER", "publishing with routing key %q", routingKey)
-	logg.LogTo("PREPROCESSOR_WORKER", "ocrRequest after: %v", ocrRequest)
+	log.Info().Str("component", "PREPROCESSOR_WORKER").Str("routingKey", routingKey).
+		Msg("publishing with routing key")
 
 	err = w.preprocessImage(&ocrRequest)
 	if err != nil {
-		msg := "Error preprocessing image: %v.  Error: %v"
-		errMsg := fmt.Sprintf(msg, ocrRequest, err)
-		logg.LogError(fmt.Errorf(errMsg))
+		msg := "Error preprocessing image: %v."
+		errMsg := fmt.Sprintf(msg, ocrRequest)
+		log.Error().Err(err).Str("component", "PREPROCESSOR_WORKER").Msg(errMsg)
 		return err
 	}
 
@@ -257,7 +258,8 @@ func (w *PreprocessorRpcWorker) handleDelivery(d amqp.Delivery) error {
 		return err
 	}
 
-	logg.LogTo("PREPROCESSOR_WORKER", "sendRpcResponse to: %v", routingKey)
+	log.Info().Str("component", "PREPROCESSOR_WORKER").Str("routingKey", routingKey).
+		Msg("sendRpcResponse via routingKey")
 
 	if err := w.channel.Publish(
 		w.rabbitConfig.Exchange, // publish to an exchange
@@ -278,7 +280,7 @@ func (w *PreprocessorRpcWorker) handleDelivery(d amqp.Delivery) error {
 	); err != nil {
 		return err
 	}
-	logg.LogTo("PREPROCESSOR_WORKER", "handleDelivery succeeded")
+	log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("handleDelivery succeeded")
 
 	return nil
 }
