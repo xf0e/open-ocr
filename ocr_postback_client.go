@@ -3,7 +3,7 @@ package ocrworker
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/couchbaselabs/logg"
+	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -19,8 +19,11 @@ func newOcrPostClient() *ocrPostClient {
 }
 
 func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint8) error {
-	logg.LogTo("OCR_HTTP", "Post response called")
-	logg.LogTo("OCR_HTTP", "sending for %d time the ocr to: %s ", numTry, replyToAddress)
+	log.Info().Str("component", "OCR_HTTP").Msg("post response called")
+	log.Info().Str("component", "OCR_HTTP").
+		Uint8("try", numTry).
+		Str("replyToAddress", replyToAddress).
+		Msg("sending for the ocr back to requester")
 
 	jsonReply, err := json.Marshal(ocrResult)
 	if err != nil {
@@ -28,6 +31,9 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 	}
 
 	req, err := http.NewRequest("POST", replyToAddress, bytes.NewBuffer(jsonReply))
+	if err != nil {
+		log.Error().Str("component", "OCR_HTTP").Err(err).Msg("forming POST reply error")
+	}
 	req.Close = true
 	req.Header.Set("User-Agent", "open-ocr/1.5")
 	req.Header.Set("X-Custom-Header", "automated reply")
@@ -36,17 +42,31 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 	client := &http.Client{Timeout: postTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
-		logg.LogWarn("OCR_HTTP: ocr was not delivered. %s did not respond", replyToAddress)
+		log.Warn().Err(err).Str("component", "OCR_HTTP").
+			Str("replyToAddress", replyToAddress).
+			Msg("ocr was not delivered. Target did not respond")
 		return err
 	}
-	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	header := resp.StatusCode
 	if err != nil {
-		logg.LogWarn("OCR_HTTP: ocr was probably not delivered. %s response body is empty", replyToAddress)
+		log.Warn().Err(err).Str("component", "OCR_HTTP").
+			Str("replyToAddress", replyToAddress).
+			Msg("ocr was probably not delivered, response body is empty")
 		return err
 	}
-	logg.LogTo("OCR_HTTP", "response code is %v from peer %v and the content upon ocr delivery %s: ", header, replyToAddress, string(body))
+	log.Info().Str("component", "OCR_HTTP").
+		Int("RESPONSE_CODE", header).
+		Str("replyToAddress", replyToAddress).
+		Str("body(trimmed to 32 bytes)", string(body[0:32])).
+		Msg("target responded")
+
+	err = resp.Body.Close()
+	if err != nil {
+		log.Warn().
+			Str("component", "OCR_HTTP").
+			Err(err)
+	}
 	return err
 }

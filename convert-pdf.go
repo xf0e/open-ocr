@@ -11,7 +11,7 @@ package ocrworker
 
 import (
 	"fmt"
-	"github.com/couchbaselabs/logg"
+	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -41,12 +41,8 @@ func (c ConvertPdf) preprocess(ocrRequest *OcrRequest) error {
 		return err
 	}
 
-	logg.LogTo(
-		"PREPROCESSOR_WORKER",
-		"Convert PDF %s -> %s",
-		tmpFileNameInput,
-		tmpFileNameOutput,
-	)
+	log.Info().Str("component", "PREPROCESSOR_WORKER").Str("tmpFileNameInput", tmpFileNameInput).
+		Str("tmpFileNameOutput", tmpFileNameOutput).Msg("Convert PDF")
 
 	var gsArgs []string
 	gsArgs = append(gsArgs,
@@ -57,11 +53,11 @@ func (c ConvertPdf) preprocess(ocrRequest *OcrRequest) error {
 		"-sDEVICE=tiffg4",
 		tmpFileNameInput,
 	)
-	logg.LogTo("PREPROCESSOR_WORKER", "output: %s", gsArgs)
+	log.Info().Str("component", "PREPROCESSOR_WORKER").Interface("gsArgs", gsArgs)
 
 	out, err := exec.Command("gs", gsArgs...).CombinedOutput()
 	if err != nil {
-		logg.LogFatal("Error running command: %s. out: %s", err, out)
+		log.Error().Err(err).Str("component", "PREPROCESSOR_CONVERTPDF").Msg(string(out))
 	}
 
 	// read bytes from output file

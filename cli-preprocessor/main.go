@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"github.com/rs/zerolog/log"
 
 	"github.com/couchbaselabs/logg"
 	"github.com/xf0e/open-ocr"
@@ -12,13 +12,7 @@ import (
 // To test it, fire up a webserver and send it a curl request
 
 func init() {
-	logg.LogKeys["OCR"] = true
-	logg.LogKeys["OCR_CLIENT"] = true
-	logg.LogKeys["OCR_WORKER"] = true
-	logg.LogKeys["PREPROCESSOR_WORKER"] = true
-	logg.LogKeys["OCR_HTTP"] = true
-	logg.LogKeys["OCR_TESSERACT"] = true
-	logg.LogKeys["OCR_SANDWICH"] = true
+
 }
 
 func main() {
@@ -47,11 +41,14 @@ func main() {
 		if err != nil {
 			logg.LogPanic("Could not create rpc worker: %v", err)
 		}
-		preprocessorWorker.Run()
+		err = preprocessorWorker.Run()
+		if err != nil {
+			log.Error().Err(err).Str("compoent", "MAIN_PREPROSSOR").Msg("preprocessor worker failed")
+		}
 
 		// this happens when connection is closed
 		err = <-preprocessorWorker.Done
-		logg.LogError(fmt.Errorf("Preprocessor Worker failed with error: %v", err))
+		log.Error().Err(err).Str("compoent", "MAIN_PREPROSSOR").Msg("preprocessor worker failed")
 	}
 
 }

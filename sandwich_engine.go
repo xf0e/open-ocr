@@ -38,7 +38,6 @@ func NewSandwichEngineArgs(ocrRequest OcrRequest) (*SandwichEngineArgs, error) {
 
 	if configVarsMapInterfaceOrig != nil {
 
-		//logg.LogTo("OCR_SANDWICH", "got configVarsMap: %v type: %T", configVarsMapInterfaceOrig, configVarsMapInterfaceOrig)
 		log.Info().Str("component", "OCR_SANDWICH").Interface("configVarsMap", configVarsMapInterfaceOrig).
 			Msg("got configVarsMap")
 

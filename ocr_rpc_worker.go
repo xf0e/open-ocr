@@ -205,7 +205,6 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 
 	ocrRequest := OcrRequest{}
-	// ocrResult := OcrResult{Status: "error"}
 	ocrResult := OcrResult{}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {

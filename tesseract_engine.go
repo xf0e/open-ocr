@@ -3,11 +3,10 @@ package ocrworker
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"os"
 	"os/exec"
-
-	"github.com/couchbaselabs/logg"
 )
 
 // This variant of the TesseractEngine calls tesseract via exec
@@ -33,7 +32,9 @@ func NewTesseractEngineArgs(ocrRequest OcrRequest) (*TesseractEngineArgs, error)
 
 	if configVarsMapInterfaceOrig != nil {
 
-		logg.LogTo("OCR_TESSERACT", "got configVarsMap: %v type: %T", configVarsMapInterfaceOrig, configVarsMapInterfaceOrig)
+		log.Info().Str("component", "OCR_TESSERACT").
+			Interface("configVarsMapInterfaceOrig", configVarsMapInterfaceOrig).
+			Interface("configVarsMapInterfaceOrig", configVarsMapInterfaceOrig).Msg("got configVarsMap")
 
 		configVarsMapInterface := configVarsMapInterfaceOrig.(map[string]interface{})
 
@@ -109,7 +110,7 @@ func (t TesseractEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error
 	}()
 
 	if err != nil {
-		logg.LogTo("OCR_TESSERACT", "error getting tmpFileName")
+		log.Error().Err(err).Str("component", "OCR_TESSERACT").Msg("error getting tmpFileName")
 		return OcrResult{}, err
 	}
 
@@ -117,7 +118,7 @@ func (t TesseractEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error
 
 	engineArgs, err := NewTesseractEngineArgs(ocrRequest)
 	if err != nil {
-		logg.LogTo("OCR_TESSERACT", "error getting engineArgs")
+		log.Error().Err(err).Str("component", "OCR_TESSERACT").Msg("error getting engineArgs")
 		return OcrResult{}, err
 	}
 
@@ -129,7 +130,7 @@ func (t TesseractEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error
 
 func (t TesseractEngine) tmpFileFromImageBytes(imgBytes []byte) (string, error) {
 
-	logg.LogTo("OCR_TESSERACT", "Use tesseract with bytes image")
+	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with bytes image")
 
 	tmpFileName, err := createTempFileName()
 	if err != nil {
@@ -149,7 +150,7 @@ func (t TesseractEngine) tmpFileFromImageBytes(imgBytes []byte) (string, error) 
 
 func (t TesseractEngine) tmpFileFromImageBase64(base64Image string) (string, error) {
 
-	logg.LogTo("OCR_TESSERACT", "Use tesseract with base 64")
+	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with base 64")
 
 	tmpFileName, err := createTempFileName()
 	if err != nil {
@@ -174,7 +175,7 @@ func (t TesseractEngine) tmpFileFromImageBase64(base64Image string) (string, err
 
 func (t TesseractEngine) tmpFileFromImageUrl(imgUrl string) (string, error) {
 
-	logg.LogTo("OCR_TESSERACT", "Use tesseract with url")
+	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with url")
 
 	tmpFileName, err := createTempFileName()
 	if err != nil {
@@ -204,13 +205,14 @@ func (t TesseractEngine) processImageFile(inputFilename string, engineArgs Tesse
 	cflags := engineArgs.Export()
 	cmdArgs := []string{inputFilename, tmpOutFileBaseName}
 	cmdArgs = append(cmdArgs, cflags...)
-	logg.LogTo("OCR_TESSERACT", "cmdArgs: %v", cmdArgs)
+	log.Info().Str("component", "OCR_TESSERACT").Interface("cmdArgs", cmdArgs)
 
 	// exec tesseract
 	cmd := exec.Command("tesseract", cmdArgs...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		logg.LogTo("OCR_TESSERACT", "Error exec tesseract: %v %v", err, string(output))
+		log.Error().Err(err).Str("component", "OCR_TESSERACT").Str("component", "OCR_TESSERACT").
+			Msg(string(output))
 		return OcrResult{}, err
 	}
 
@@ -220,7 +222,8 @@ func (t TesseractEngine) processImageFile(inputFilename string, engineArgs Tesse
 	defer os.Remove(outFile)
 
 	if err != nil {
-		logg.LogTo("OCR_TESSERACT", "Error getting data from out file: %v", err)
+		log.Error().Err(err).Str("component", "OCR_TESSERACT").
+			Str("file_name", tmpOutFileBaseName).Msg("Error getting data from out file")
 		return OcrResult{}, err
 	}
 
@@ -235,7 +238,8 @@ func findOutfile(outfileBaseName string, fileExtensions []string) (string, error
 	for _, fileExtension := range fileExtensions {
 
 		outFile := fmt.Sprintf("%v.%v", outfileBaseName, fileExtension)
-		logg.LogTo("OCR_TESSERACT", "checking if exists: %v", outFile)
+		log.Info().Str("component", "OCR_TESSERACT").Str("outFile", outFile).
+			Msg("check if file exists")
 
 		if _, err := os.Stat(outFile); err == nil {
 			return outFile, nil
