@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/couchbaselabs/logg"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
 	"net/http"
 	_ "net/http/pprof"
+	"time"
 )
 
 // This assumes that there is a worker running
@@ -14,13 +16,7 @@ import (
 // curl -X POST -H "Content-Type: application/json" -d '{"img_url":"http://localhost:8081/img","engine":0}' http://localhost:8081/ocr
 
 func init() {
-	logg.LogKeys["OCR"] = true
-	logg.LogKeys["OCR_CLIENT"] = true
-	logg.LogKeys["OCR_WORKER"] = true
-	logg.LogKeys["OCR_HTTP"] = true
-	logg.LogKeys["OCR_TESSERACT"] = true
-	logg.LogKeys["OCR_SANDWICH"] = true
-	logg.LogKeys["OCR_RESMAN"] = true
+	zerolog.TimeFieldFormat = time.StampMilli
 }
 
 func main() {
@@ -57,13 +53,13 @@ func main() {
 
 	listenAddr := fmt.Sprintf(":%d", httpPort)
 
-	logg.LogTo("OCR_HTTP", "Starting listener on %v", listenAddr)
+	log.Info().Str("component", "OCR_HTTP").Str("listenAddr", listenAddr).Msg("Starting listener...")
 
 	// start a goroutine which will run forever and decide if we have resources for incoming requests
 	go func() {
 		ocrworker.SetResManagerState(rabbitConfig)
 	}()
 
-	logg.LogError(http.ListenAndServe(listenAddr, nil))
+	log.Error().Err(http.ListenAndServe(listenAddr, nil)).Str("component", "OCR_HTTP")
 
 }

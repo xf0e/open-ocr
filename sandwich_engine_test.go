@@ -2,12 +2,12 @@ package ocrworker
 
 import (
 	"encoding/json"
+	"github.com/rs/zerolog/log"
 	"testing"
 
 	"io/ioutil"
 
 	"github.com/couchbaselabs/go.assert"
-	"github.com/couchbaselabs/logg"
 )
 
 func TestSandwichEngineWithRequest(t *testing.T) {
@@ -33,7 +33,7 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 	assert.True(t, err == nil)
 	result, err := engine.ProcessRequest(ocrRequest)
 	assert.True(t, err == nil)
-	logg.LogTo("TEST", "result: %v", result)
+	log.Info().Str("component", "TEST").Interface("result", result)
 
 }
 
@@ -54,7 +54,7 @@ func TestSandwichEngineWithJson(t *testing.T) {
 	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"lang":"deu", "ocr_type":"combinedpdf","result_optimize":false}}`)
 
 	for _, testJson := range testJsons {
-		logg.LogTo("TEST", "testJson: %v", testJson)
+		log.Info().Str("component", "TEST").Interface("testJson", testJson)
 		ocrRequest := OcrRequest{}
 		err := json.Unmarshal([]byte(testJson), &ocrRequest)
 		assert.True(t, err == nil)
@@ -63,9 +63,9 @@ func TestSandwichEngineWithJson(t *testing.T) {
 		ocrRequest.ImgBytes = bytes
 		engine := NewOcrEngine(ocrRequest.EngineType)
 		result, err := engine.ProcessRequest(ocrRequest)
-		logg.LogTo("TEST", "err: %v", err)
+		log.Error().Err(err).Str("component", "TEST")
 		assert.True(t, err == nil)
-		logg.LogTo("TEST", "result: %v", result)
+		log.Info().Str("component", "TEST").Interface("result", result)
 
 	}
 
@@ -96,9 +96,10 @@ func TestSandwichEngineWithFile(t *testing.T) {
 	engineArgs.ocrType = "combinedpdf"
 	engineArgs.ocrOptimize = true
 	engineArgs.lang = "deu"
-	result, err := engine.processImageFile("docs/testimage.pdf", "PDF", engineArgs)
-	logg.LogWarn("error %v", err)
+	result, err := engine.processImageFile("docs/testimage.pdf", "PDF", engineArgs, 20)
+	log.Warn().Err(err).Str("component", "TEST")
 	assert.True(t, err == nil)
-	logg.LogTo("TEST", "result: %v", result)
+
+	log.Info().Str("component", "TEST").Interface("result", result)
 
 }

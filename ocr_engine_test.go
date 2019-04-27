@@ -2,10 +2,10 @@ package ocrworker
 
 import (
 	"encoding/json"
+	"github.com/rs/zerolog/log"
 	"testing"
 
 	"github.com/couchbaselabs/go.assert"
-	"github.com/couchbaselabs/logg"
 )
 
 func TestOcrEngineTypeJson(t *testing.T) {
@@ -14,10 +14,11 @@ func TestOcrEngineTypeJson(t *testing.T) {
 	ocrRequest := OcrRequest{}
 	err := json.Unmarshal([]byte(testJson), &ocrRequest)
 	if err != nil {
-		logg.LogError(err)
+		log.Error().Str("component", "TEST").Err(err)
+
 	}
 	assert.True(t, err == nil)
 	assert.Equals(t, ocrRequest.EngineType, EngineTesseract)
-	logg.LogTo("TEST", "ocrRequest: %v", ocrRequest)
+	log.Error().Str("component", "TEST").Interface("ocrRequest", ocrRequest)
 
 }
