@@ -3,8 +3,10 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/streadway/amqp"
+	"os"
 	"sync"
 	"time"
 )
@@ -60,8 +62,11 @@ func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
 // It's handling the parameter and the whole workflow
 func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (OcrResult, error) {
 	var err error
+
+	log := zerolog.New(os.Stdout).With().
+		Str("RequestID", requestID).Timestamp().Logger()
+
 	log.Info().Str("component", "OCR_CLIENT").
-		Str("RequestID", ocrRequest.RequestID).
 		Bool("Deferred", ocrRequest.Deferred).
 		Str("DocType", ocrRequest.DocType).
 		Interface("EngineArgs", ocrRequest.EngineArgs).
@@ -242,7 +247,6 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 				select {
 				case t := <-tickerWithPostAction.C:
 					log.Info().Str("component", "OCR_CLIENT").
-						Str("requestID", requestID).
 						Str("time", t.String()).
 						Msg("checking for request %s to be done")
 
@@ -252,7 +256,6 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 					} // only if status is done end the goroutine. otherwise continue polling
 					if ocrRes.Status == "done" || ocrRes.Status == "error" {
 						log.Info().Str("component", "OCR_CLIENT").
-							Str("requestID", requestID).
 							Msg("request is ready")
 
 						var tryCounter uint8 = 1
@@ -333,6 +336,9 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationUUID string, rpcResponse
 }
 
 func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correlationUuid string, rpcResponseChan chan OcrResult) {
+	// correlationUuid is the same as RequestID
+	log := zerolog.New(os.Stdout).With().
+		Str("RequestID", correlationUuid).Timestamp().Logger()
 	log.Info().Str("component", "OCR_CLIENT").Msg("looping over deliveries...:")
 	// TODO this defer is probably a memory leak
 	// defer c.connection.Close()

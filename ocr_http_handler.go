@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/nu7hatch/gouuid"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
@@ -80,6 +81,9 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 	requestID := requestIDRaw.String()
 	ocrResult := newOcrResult(requestID)
 	ocrRequest.RequestID = requestID
+	// set the context for zerolog, RequestID will be printed on each logging event
+	log := zerolog.New(os.Stdout).With().
+		Str("RequestID", requestID).Timestamp().Logger()
 	switch ocrRequest.InplaceDecode {
 	case true:
 		// inplace decode: short circuit rabbitmq, and just call

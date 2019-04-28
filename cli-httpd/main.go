@@ -60,6 +60,8 @@ func main() {
 		ocrworker.SetResManagerState(rabbitConfig)
 	}()
 
-	log.Error().Err(http.ListenAndServe(listenAddr, nil)).Str("component", "OCR_HTTP")
+	if err := http.ListenAndServe(listenAddr, nil); err != nil {
+		log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_http has failed to start")
+	}
 
 }

@@ -3,9 +3,11 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/ksuid"
 	"github.com/streadway/amqp"
+	"os"
 	"time"
 )
 
@@ -161,7 +163,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 			Int("msg_size", len(d.Body)).
 			Uint8("DeliveryMode", d.DeliveryMode).
 			Uint8("Priority", d.Priority).
-			Str("CorrelationId", d.CorrelationId).
+			Str("RequestID", d.CorrelationId).
 			Str("ReplyTo", d.ReplyTo).
 			Str("ConsumerTag", d.ConsumerTag).
 			Uint64("DeliveryTag", d.DeliveryTag).
@@ -173,6 +175,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 		ocrResult, err := w.resultForDelivery(d)
 		if err != nil {
 			log.Error().Err(err).Str("component", "OCR_WORKER").
+				Str("RequestID", ocrResult.ID).
 				Str("tag", tag).
 				Msg("Error generating ocr result")
 		}
@@ -180,7 +183,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 		err = w.sendRpcResponse(ocrResult, d.ReplyTo, d.CorrelationId)
 		if err != nil {
 			log.Error().Err(err).Str("component", "OCR_WORKER").
-				Str("id", ocrResult.ID).
+				Str("RequestID", ocrResult.ID).
 				Str("tag", tag).
 				Msg("Error generating ocr result")
 
@@ -211,7 +214,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 		msg := "Error unmarshalling json: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, string(d.CorrelationId), err)
 		log.Error().Err(err).Caller().
-			Str("Id", d.CorrelationId).
+			Str("RequestID", d.CorrelationId).
 			Str("tag", tag).
 			Msg("error unmarshalling json delivery")
 		ocrResult.Text = errMsg
@@ -224,7 +227,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 		msg := "Error processing image url: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, ocrRequest.RequestID, err)
 		log.Error().Err(err).
-			Str("Id", ocrResult.ID).
+			Str("RequestID", ocrResult.ID).
 			Str("tag", tag).
 			Str("ImgUrl", ocrRequest.ImgUrl).
 			Msg("Error processing image")
@@ -238,6 +241,9 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 }
 
 func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationId string) error {
+	// RequestID is the same as correlationId
+	log := zerolog.New(os.Stdout).With().
+		Str("RequestID", correlationId).Timestamp().Logger()
 
 	if w.rabbitConfig.Reliable {
 		// Do not use w.rabbitConfig.Reliable=true due to major issues
@@ -255,7 +261,6 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 
 	log.Info().Str("component", "OCR_WORKER").
 		Str("tag", tag).
-		Str("Id", correlationId).
 		Str("replyTo", replyTo).Msg("sendRpcResponse to")
 	// ocr worker is publishing back the decoded text
 	body, err := json.Marshal(r)
@@ -282,7 +287,7 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 	); err != nil {
 		return err
 	}
-	log.Info().Str("component", "OCR_WORKER").Str("Id", correlationId).
+	log.Info().Str("component", "OCR_WORKER").
 		Str("tag", tag).
 		Str("replyTo", replyTo).
 		Msg("sendRpcResponse succeeded")

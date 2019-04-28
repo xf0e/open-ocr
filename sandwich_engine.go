@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"os"
@@ -28,6 +29,9 @@ type SandwichEngineArgs struct {
 }
 
 func NewSandwichEngineArgs(ocrRequest OcrRequest) (*SandwichEngineArgs, error) {
+	log := zerolog.New(os.Stdout).With().
+		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
+
 	engineArgs := &SandwichEngineArgs{}
 
 	if ocrRequest.EngineArgs == nil {
@@ -111,6 +115,10 @@ func (t SandwichEngineArgs) Export() []string {
 }
 
 func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error) {
+
+	log := zerolog.New(os.Stdout).With().
+		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
+
 	tmpFileName, err := func() (string, error) {
 		if ocrRequest.ImgBase64 != "" {
 			return t.tmpFileFromImageBase64(ocrRequest.ImgBase64, ocrRequest.RequestID)
@@ -270,6 +278,9 @@ func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds
 }
 
 func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
+	// inputFilename is the same as RequestID
+	log := zerolog.New(os.Stdout).With().
+		Str("RequestID", inputFilename).Timestamp().Logger()
 
 	fileToDeliver := "temp.file"
 	cmdArgs := []string{}
