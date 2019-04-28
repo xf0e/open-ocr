@@ -102,7 +102,8 @@ Content-Type: application/json
 "engine_args":{"lang":"eng", "ocr_type":"txt","result_optimize":true},
 "deferred":false,
 "reply_to":"http://localhost:9999",
-"doc_type": "eg"
+"doc_type": "eg",
+"time_out": 2
 }
 
 
@@ -209,7 +210,9 @@ Content-Type: application/json
   "deferred":true,
   "reply_to":"http://localhost:9999",
   "doc_type": "eg",
-  "num_pages": "12"
+  "page_number": 2,
+  "time_out": 24,
+  "user_agent": "0xdeadbeef"
 }
 
 ###

@@ -75,6 +75,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		Str("ReplyTo", ocrRequest.ReplyTo).
 		Str("UserAgent", ocrRequest.UserAgent).
 		Str("EngineType", string(ocrRequest.EngineType)).
+		Uint("TimeOut", ocrRequest.TimeOut).
 		Msg("incoming request")
 
 	if ocrRequest.ReplyTo != "" {
