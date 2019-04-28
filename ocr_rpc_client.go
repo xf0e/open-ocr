@@ -248,7 +248,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 				case t := <-tickerWithPostAction.C:
 					logger.Info().Str("component", "OCR_CLIENT").
 						Str("time", t.String()).
-						Msg("checking for request %s to be done")
+						Msg("checking for request to be done")
 
 					ocrRes, err := CheckOcrStatusByID(requestID)
 					if err != nil {
@@ -355,7 +355,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 				Hex("payload(32 Bytes)", d.Body[0:bodyLenToLog]).
 				Str("ReplyTo", d.ReplyTo).
 				Msg("got delivery")
-			// TODO check if additional transcoding ocrResult > JSON > ocrResult is needed
+
 			ocrResult := OcrResult{}
 			err := json.Unmarshal(d.Body, &ocrResult)
 			if err != nil {
