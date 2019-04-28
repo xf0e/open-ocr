@@ -281,7 +281,8 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			Status: "processing",
 		}, nil
 	} else {
-		return CheckReply(rpcResponseChan, time.Duration(ResponseCacheTimeout)*time.Second)
+		// in case it works, error checking is needed
+		return CheckOcrStatusByID(requestID)
 	}
 }
 
@@ -386,7 +387,11 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 		requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
-	ocrResult, err := CheckReply(requests[requestID], time.Duration(timeoutForCheckReply)*time.Second)
+	//ocrResult, err := CheckReply(requests[requestID], time.Duration(timeoutForCheckReply)*time.Second)
+
+	log.Info().Str("component", "OCR_CLIENT").Msg("checking for response ")
+
+	ocrResult := <-requests[requestID]
 	if ocrResult.Status != "processing" {
 		fmt.Println("deleting requests and timers")
 		delete(requests, requestID)
@@ -396,19 +401,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 	ocrResult.ID = requestID
 	fmt.Println("unloking vrequestsAndTimersMu CheckOcrStatusByID")
 	requestsAndTimersMu.Unlock()
-	return ocrResult, err
-}
-
-// CheckReply checks the status of deferred request and reply to the requester with
-// status or, if done, with orc text
-func CheckReply(rpcResponseChan chan OcrResult, timeout time.Duration) (OcrResult, error) {
-	log.Info().Str("component", "OCR_CLIENT").Msg("checking for response ")
-	select {
-	case ocrResult := <-rpcResponseChan:
-		return ocrResult, nil
-	case <-time.After(timeout):
-		return OcrResult{Text: "", Status: "processing"}, nil
-	}
+	return ocrResult, nil
 }
 
 func confirmDelivery(ack, nack chan uint64) {
