@@ -337,9 +337,9 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationUUID string, rpcResponse
 
 func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correlationUuid string, rpcResponseChan chan OcrResult) {
 	// correlationUuid is the same as RequestID
-	log := zerolog.New(os.Stdout).With().
+	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", correlationUuid).Timestamp().Logger()
-	log.Info().Str("component", "OCR_CLIENT").Msg("looping over deliveries...:")
+	logger.Info().Str("component", "OCR_CLIENT").Msg("looping over deliveries...:")
 	// TODO this defer is probably a memory leak
 	// defer c.connection.Close()
 	for d := range deliveries {
@@ -349,7 +349,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 			if bodyLenToLog > 32 {
 				bodyLenToLog = 32
 			}
-			log.Info().Str("component", "OCR_CLIENT").
+			logger.Info().Str("component", "OCR_CLIENT").
 				Int("size", len(d.Body)).
 				Uint64("DeliveryTag", d.DeliveryTag).
 				Hex("payload(32 Bytes)", d.Body[0:bodyLenToLog]).
@@ -361,17 +361,17 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 			if err != nil {
 				msg := "Error unmarshalling json: %v.  Error: %v"
 				errMsg := fmt.Sprintf(msg, string(d.Body[0:bodyLenToLog]), err)
-				log.Error().Err(fmt.Errorf(errMsg))
+				logger.Error().Err(fmt.Errorf(errMsg))
 			}
 			ocrResult.ID = correlationUuid
 
-			log.Info().Str("component", "OCR_CLIENT").Msg("send result to rpcResponseChan")
+			logger.Info().Str("component", "OCR_CLIENT").Msg("send result to rpcResponseChan")
 			rpcResponseChan <- ocrResult
-			log.Info().Str("component", "OCR_CLIENT").Msg("sent result to rpcResponseChan")
+			logger.Info().Str("component", "OCR_CLIENT").Msg("sent result to rpcResponseChan")
 			return
 
 		} else {
-			log.Info().Str("component", "OCR_CLIENT").Str("CorrelationId", d.CorrelationId).
+			logger.Info().Str("component", "OCR_CLIENT").Str("CorrelationId", d.CorrelationId).
 				Msg("ignoring delivery w/ correlation id")
 		}
 

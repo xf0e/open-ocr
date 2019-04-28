@@ -279,14 +279,14 @@ func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds
 
 func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
 	// inputFilename is the same as RequestID
-	log := zerolog.New(os.Stdout).With().
+	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", inputFilename).Timestamp().Logger()
 
 	fileToDeliver := "temp.file"
 	cmdArgs := []string{}
 	ocrLayerFile := ""
 
-	log.Info().Str("component", "OCR_SANDWICH").
+	logger.Info().Str("component", "OCR_SANDWICH").
 		Str("file_name", inputFilename).
 		Msg("input file name")
 
@@ -294,7 +294,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		inputFilename = convertImageToPdf(inputFilename)
 		if inputFilename == "" {
 			err := fmt.Errorf("can not convert input image to intermediate pdf")
-			log.Error().Err(err).Msg("Error exec pdfsandwich")
+			logger.Error().Err(err).Msg("Error exec pdfsandwich")
 			return OcrResult{Status: "error"}, err
 		}
 	}
@@ -310,48 +310,48 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 			if errMsg != "" {
 				errMsg = fmt.Sprintf(string(output), err)
 				err := fmt.Errorf(errMsg)
-				log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command")
+				logger.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command")
 				return OcrResult{Status: "error"}, err
 			}
-			log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command")
+			logger.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command")
 			return OcrResult{Status: "error"}, err
 		}
 
 		tmpOutCombinedPdf := fmt.Sprintf("%s%s", inputFilename, "_comb.pdf")
 
 		defer func() {
-			log.Info().Str("component", "OCR_SANDWICH").Str("file_name", tmpOutCombinedPdf).
+			logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", tmpOutCombinedPdf).
 				Msg("step 2: deleting file (pdftk run)")
 			if err := os.Remove(tmpOutCombinedPdf); err != nil {
-				log.Warn().Err(err).Str("component", "OCR_SANDWICH")
+				logger.Warn().Err(err).Str("component", "OCR_SANDWICH")
 			}
 		}()
 
 		var combinedArgs []string
 		// pdftk FILE_only_TEXT-LAYER.pdf multistamp FILE_ORIGINAL_IMAGE.pdf output FILE_OUTPUT_IMAGE_AND_TEXT_LAYER.pdf
 		combinedArgs = append(combinedArgs, ocrLayerFile, "multistamp", inputFilename, "output", tmpOutCombinedPdf)
-		log.Info().Str("component", "OCR_SANDWICH").Interface("combinedArgs", combinedArgs).
+		logger.Info().Str("component", "OCR_SANDWICH").Interface("combinedArgs", combinedArgs).
 			Msg("Arguments for pdftk to combine pdf files")
 
 		outPdftk, errPdftk := exec.Command("pdftk", combinedArgs...).CombinedOutput()
 		if errPdftk != nil {
-			log.Error().Err(errPdftk).Str("component", "OCR_SANDWICH").
+			logger.Error().Err(errPdftk).Str("component", "OCR_SANDWICH").
 				Str("file_name", string(outPdftk)).
 				Msg("Error running command")
 			return OcrResult{Status: "error"}, err
 		}
 
 		if engineArgs.ocrOptimize {
-			log.Info().Str("component", "OCR_SANDWICH").
+			logger.Info().Str("component", "OCR_SANDWICH").
 				Msg("optimizing was requested, perform selected operation")
 			var compressedArgs []string
 			tmpOutCompressedPdf := inputFilename
 			tmpOutCompressedPdf = fmt.Sprintf("%s%s", tmpOutCompressedPdf, "_compr.pdf")
 			defer func() {
-				log.Info().Str("component", "OCR_SANDWICH").Str("file_name", tmpOutCompressedPdf).
+				logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", tmpOutCompressedPdf).
 					Msg("step 3: deleting compressed result file (gs run)")
 				if err := os.Remove(tmpOutCompressedPdf); err != nil {
-					log.Warn().Str("component", "OCR_SANDWICH").Err(err)
+					logger.Warn().Str("component", "OCR_SANDWICH").Err(err)
 				}
 			}()
 
@@ -366,7 +366,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 				"-sOutputFile="+tmpOutCompressedPdf,
 				tmpOutCombinedPdf,
 			)
-			log.Info().Str("component", "OCR_SANDWICH").
+			logger.Info().Str("component", "OCR_SANDWICH").
 				Str("file_name", tmpOutCompressedPdf).
 				Str("file_name", tmpOutCombinedPdf).
 				Interface("compressedArgs", compressedArgs).
@@ -374,7 +374,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 
 			outQpdf, errQpdf := exec.Command("gs", compressedArgs...).CombinedOutput()
 			if errQpdf != nil {
-				log.Error().Err(errQpdf).Str("component", "OCR_SANDWICH").
+				logger.Error().Err(errQpdf).Str("component", "OCR_SANDWICH").
 					Str("outQpdf", string(outQpdf)).
 					Msg("Error running command")
 				return OcrResult{Status: "error"}, err
@@ -391,7 +391,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		if err != nil {
 			errMsg := fmt.Sprintf(string(output), err)
 			err := fmt.Errorf(errMsg)
-			log.Error().Err(err).Str("component", "OCR_SANDWICH").
+			logger.Error().Err(err).Str("component", "OCR_SANDWICH").
 				Msg("error exec pdfsandwich")
 			return OcrResult{Status: "error"}, err
 		}
@@ -403,26 +403,26 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		if err != nil {
 			errMsg := fmt.Sprintf(string(output), err)
 			err := fmt.Errorf(errMsg)
-			log.Error().Err(err).Str("component", "OCR_SANDWICH").
+			logger.Error().Err(err).Str("component", "OCR_SANDWICH").
 				Msg("error exec pdfsandwich")
 			return OcrResult{Status: "error"}, err
 		}
-		log.Info().Str("component", "OCR_SANDWICH").Msg("extracting text from ocr")
+		logger.Info().Str("component", "OCR_SANDWICH").Msg("extracting text from ocr")
 		textFile := fmt.Sprintf("%s%s", strings.TrimSuffix(ocrLayerFile, filepath.Ext(ocrLayerFile)), ".txt")
 		cmdArgsPdfToText := exec.Command("pdftotext", ocrLayerFile)
 		outputPdfToText, err := cmdArgsPdfToText.CombinedOutput()
 		if err != nil {
 			errMsg := fmt.Sprintf(string(outputPdfToText), err)
 			err := fmt.Errorf(errMsg)
-			log.Error().Err(err).Str("component", "OCR_SANDWICH").
+			logger.Error().Err(err).Str("component", "OCR_SANDWICH").
 				Msg("error exec pdftotext")
 		}
 		// pdftotext will create %filename%.txt
 		defer func() {
-			log.Info().Str("component", "OCR_SANDWICH").Str("file_name", textFile).
+			logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", textFile).
 				Msg("step 2: deleting file (pdftotext run)")
 			if err := os.Remove(textFile); err != nil {
-				log.Warn().Err(err).Str("component", "OCR_SANDWICH")
+				logger.Warn().Err(err).Str("component", "OCR_SANDWICH")
 			}
 		}()
 
@@ -430,28 +430,28 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 
 	default:
 		err := fmt.Errorf("requested format is not supported")
-		log.Error().Err(err).Str("component", "OCR_SANDWICH")
+		logger.Error().Err(err).Str("component", "OCR_SANDWICH")
 		return OcrResult{Status: "error"}, err
 	}
 
 	defer func() {
-		log.Info().Str("component", "OCR_SANDWICH").Str("file_name", ocrLayerFile).
+		logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", ocrLayerFile).
 			Msg("step 1: deleting file (pdfsandwich run)")
 		if err := os.Remove(ocrLayerFile); err != nil {
-			log.Warn().Err(err).Str("component", "OCR_SANDWICH")
+			logger.Warn().Err(err).Str("component", "OCR_SANDWICH")
 		}
-		log.Info().Str("component", "OCR_SANDWICH").Str("file_name", inputFilename).
+		logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", inputFilename).
 			Msg("step 1: deleting file (pdfsandwich run)")
 		if err := os.Remove(inputFilename); err != nil {
-			log.Warn().Err(err).Str("component", "OCR_SANDWICH")
+			logger.Warn().Err(err).Str("component", "OCR_SANDWICH")
 		}
 	}()
 
-	log.Info().Str("component", "OCR_SANDWICH").Str("file_name", fileToDeliver).
+	logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", fileToDeliver).
 		Msg("resulting file")
 	outBytes, err := ioutil.ReadFile(fileToDeliver)
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_SANDWICH").
+		logger.Error().Err(err).Str("component", "OCR_SANDWICH").
 			Msg("Error getting data from result file")
 		return OcrResult{Status: "error"}, err
 	}

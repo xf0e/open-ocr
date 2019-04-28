@@ -82,7 +82,7 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 	ocrResult := newOcrResult(requestID)
 	ocrRequest.RequestID = requestID
 	// set the context for zerolog, RequestID will be printed on each logging event
-	log := zerolog.New(os.Stdout).With().
+	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", requestID).Timestamp().Logger()
 	switch ocrRequest.InplaceDecode {
 	case true:
@@ -93,7 +93,7 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 		ocrResult, err := ocrEngine.ProcessRequest(ocrRequest)
 
 		if err != nil {
-			log.Error().Err(err).Str("component", "OCR_HTTP").Msg("Error processing ocr request")
+			logger.Error().Err(err).Str("component", "OCR_HTTP").Msg("Error processing ocr request")
 			return OcrResult{}, err
 		}
 
@@ -102,13 +102,13 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 		// add a new job to rabbitMQ and wait for worker to respond w/ result
 		ocrClient, err := NewOcrRpcClient(rabbitConfig)
 		if err != nil {
-			log.Error().Err(err).Str("component", "OCR_HTTP")
+			logger.Error().Err(err).Str("component", "OCR_HTTP")
 			return OcrResult{}, err
 		}
 
 		ocrResult, err = ocrClient.DecodeImage(ocrRequest, requestID)
 		if err != nil {
-			log.Error().Err(err).Str("component", "OCR_HTTP")
+			logger.Error().Err(err).Str("component", "OCR_HTTP")
 			return OcrResult{}, err
 		}
 

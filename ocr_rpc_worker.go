@@ -242,7 +242,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 
 func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationId string) error {
 	// RequestID is the same as correlationId
-	log := zerolog.New(os.Stdout).With().
+	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", correlationId).Timestamp().Logger()
 
 	if w.rabbitConfig.Reliable {
@@ -259,7 +259,7 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 		defer confirmDeliveryWorker(ack, nack)
 	}
 
-	log.Info().Str("component", "OCR_WORKER").
+	logger.Info().Str("component", "OCR_WORKER").
 		Str("tag", tag).
 		Str("replyTo", replyTo).Msg("sendRpcResponse to")
 	// ocr worker is publishing back the decoded text
@@ -287,7 +287,7 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 	); err != nil {
 		return err
 	}
-	log.Info().Str("component", "OCR_WORKER").
+	logger.Info().Str("component", "OCR_WORKER").
 		Str("tag", tag).
 		Str("replyTo", replyTo).
 		Msg("sendRpcResponse succeeded")
