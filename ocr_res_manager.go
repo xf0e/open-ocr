@@ -47,7 +47,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	}
 	jsonResStat, err := url2bytes(urlStat)
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("can't get RabbitMQ memory stats")
+		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").Msg("can't get RabbitMQ memory stats")
 		log.Error().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonResStat))
 		return false
@@ -55,7 +55,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 
 	err = json.Unmarshal(jsonQueueStat, queueManager)
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshaling json")
+		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshaling json")
 		log.Error().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonQueueStat))
 		return false
@@ -63,7 +63,9 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 
 	err = json.Unmarshal(jsonResStat, &resManager)
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshaling json")
+		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshaling json")
+		log.Error().Err(err).Str("component", "OCR_RESMAN").
+			Str("body", string(jsonResStat))
 		return false
 	}
 
