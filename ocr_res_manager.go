@@ -47,17 +47,17 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	}
 	jsonResStat, err := url2bytes(urlStat)
 	if err != nil {
-		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").Msg("can't get RabbitMQ memory stats")
-		log.Error().Err(err).Str("component", "OCR_RESMAN").
-			Str("body", string(jsonResStat))
+		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").
+			Str("body", string(jsonQueueStat)).
+			Msg("error unmarshaling json")
 		return false
 	}
 
 	err = json.Unmarshal(jsonQueueStat, queueManager)
 	if err != nil {
-		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshaling json")
-		log.Error().Err(err).Str("component", "OCR_RESMAN").
-			Str("body", string(jsonQueueStat))
+		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").
+			Str("body", string(jsonQueueStat)).
+			Msg("error unmarshaling json")
 		return false
 	}
 
@@ -119,8 +119,8 @@ func schedulerByWorkerNumber() bool {
 	return resFlag
 }
 
-// SetResManagerState returns the boolean of resource manager if memory of rabbitMQ and the number
-// messages is not to high which is depends on formula factor * number of connected workers
+// SetResManagerState returns boolean value of resource manager; if memory of rabbitMQ and the number
+// messages is not exceeding  the limit
 func SetResManagerState(ampqAPIConfig RabbitConfig) {
 	resManager = newOcrResManager()
 	queueManager = newOcrQueueManager()
