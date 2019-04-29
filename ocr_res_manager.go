@@ -48,6 +48,8 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	jsonResStat, err := url2bytes(urlStat)
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("can't get RabbitMQ memory stats")
+		log.Error().Err(err).Str("component", "OCR_RESMAN").
+			Str("body", string(jsonResStat))
 		return false
 	}
 
