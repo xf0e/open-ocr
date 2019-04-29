@@ -8,7 +8,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
-	"runtime/pprof"
 	"sync"
 )
 
@@ -30,7 +29,7 @@ var (
 )
 
 func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	_ = pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
+	//_ = pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
 	log.Info().Str("component", "OCR_HTTP").Msg("serveHttp called")
 	defer req.Body.Close()
 
