@@ -3,9 +3,10 @@ package ocrworker
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -19,9 +20,10 @@ func newOcrPostClient() *ocrPostClient {
 }
 
 func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint8) error {
-	log.Info().Str("component", "OCR_HTTP").Msg("post response called")
-	log.Info().Str("component", "OCR_HTTP").
-		Uint8("try", numTry).
+	logger := zerolog.New(os.Stdout).With().Str("RequestID", ocrResult.ID).Timestamp().Logger()
+	logger.Info().Str("component", "OCR_HTTP").Msg("sending ocr request back to requester")
+	logger.Info().Str("component", "OCR_HTTP").
+		Uint8("attempt", numTry).
 		Str("replyToAddress", replyToAddress).
 		Msg("sending for the ocr back to requester")
 
@@ -32,7 +34,7 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 
 	req, err := http.NewRequest("POST", replyToAddress, bytes.NewBuffer(jsonReply))
 	if err != nil {
-		log.Error().Str("component", "OCR_HTTP").Err(err).Msg("forming POST reply error")
+		logger.Error().Str("component", "OCR_HTTP").Err(err).Msg("forming POST reply error")
 	}
 	req.Close = true
 	req.Header.Set("User-Agent", "open-ocr/1.5")
@@ -42,7 +44,7 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 	client := &http.Client{Timeout: postTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Warn().Err(err).Str("component", "OCR_HTTP").
+		logger.Warn().Err(err).Str("component", "OCR_HTTP").
 			Str("replyToAddress", replyToAddress).
 			Msg("ocr was not delivered. Target did not respond")
 		return err
@@ -51,12 +53,12 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 	body, err := ioutil.ReadAll(resp.Body)
 	header := resp.StatusCode
 	if err != nil {
-		log.Warn().Err(err).Str("component", "OCR_HTTP").
+		logger.Warn().Err(err).Str("component", "OCR_HTTP").
 			Str("replyToAddress", replyToAddress).
 			Msg("ocr was probably not delivered, response body is empty")
 		return err
 	}
-	log.Info().Str("component", "OCR_HTTP").
+	logger.Info().Str("component", "OCR_HTTP").
 		Int("RESPONSE_CODE", header).
 		Str("replyToAddress", replyToAddress).
 		Str("body(trimmed to 32 bytes)", string(body[0:32])).
@@ -64,7 +66,7 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 
 	err = resp.Body.Close()
 	if err != nil {
-		log.Warn().
+		logger.Warn().
 			Str("component", "OCR_HTTP").
 			Err(err)
 	}

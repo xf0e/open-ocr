@@ -54,6 +54,8 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	err = json.Unmarshal(jsonQueueStat, queueManager)
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshaling json")
+		log.Error().Err(err).Str("component", "OCR_RESMAN").
+			Str("body", string(jsonQueueStat))
 		return false
 	}
 
