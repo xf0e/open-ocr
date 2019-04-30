@@ -40,7 +40,7 @@ func main() {
 		)
 
 	}
-	if debug {
+	if debug == true {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)

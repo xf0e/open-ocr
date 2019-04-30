@@ -50,7 +50,7 @@ func (w OcrRpcWorker) Run() error {
 		Str("component", "OCR_WORKER").
 		Str("tag", tag).
 		Str("host", w.rabbitConfig.AmqpURI).
-		Msg("dialing rabbitMq")
+		Msg("dialing rabbitMQ")
 
 	w.conn, err = amqp.Dial(w.rabbitConfig.AmqpURI)
 	if err != nil {
@@ -58,7 +58,7 @@ func (w OcrRpcWorker) Run() error {
 			Str("component", "OCR_WORKER").
 			Err(err).
 			Str("tag", tag).
-			Msg("error connecting to rabbitMq")
+			Msg("error connecting to rabbitMQ")
 		return err
 	}
 

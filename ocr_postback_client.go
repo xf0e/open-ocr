@@ -61,7 +61,7 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 	logger.Info().Str("component", "OCR_HTTP").
 		Int("RESPONSE_CODE", header).
 		Str("replyToAddress", replyToAddress).
-		Str("body(trimmed to 32 bytes)", string(body[0:32])).
+		Interface("payload(first 32 bytes)", body[0:32]).
 		Msg("target responded")
 
 	err = resp.Body.Close()

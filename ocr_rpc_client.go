@@ -19,8 +19,6 @@ var (
 	ResponseCacheTimeout uint = 240
 	// check interval for request to be ready
 	tickerWithPostActionInterval = time.Second * 2
-	//timeout for checking with checkReply(), only get from channel in seconds
-	timeoutForCheckReply uint = 2
 )
 
 type OcrRpcClient struct {
@@ -219,11 +217,11 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	if ocrRequest.Deferred {
 		logger.Info().Str("component", "OCR_CLIENT").Msg("Asynchronous request accepted")
 		timer := time.NewTimer(time.Duration(ResponseCacheTimeout) * time.Second)
-		logger.Debug().Str("component", "OCR_CLIENT").Msg("loking vrequestsAndTimersMu")
+		logger.Debug().Str("component", "OCR_CLIENT").Msg("locking vrequestsAndTimersMu")
 		requestsAndTimersMu.Lock()
 		requests[requestID] = rpcResponseChan
 		timers[requestID] = timer
-		logger.Debug().Str("component", "OCR_CLIENT").Msg("unloking vrequestsAndTimersMu")
+		logger.Debug().Str("component", "OCR_CLIENT").Msg("unlocking vrequestsAndTimersMu")
 		requestsAndTimersMu.Unlock()
 		// deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
@@ -266,6 +264,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 							if err != nil {
 								tryCounter++
 								logger.Error().Err(err)
+								time.Sleep(2 * time.Second)
 							} else {
 								break
 							}
@@ -381,10 +380,10 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 }
 
 func CheckOcrStatusByID(requestID string) (OcrResult, error) {
-	log.Debug().Str("component", "OCR_CLIENT").Msg("loking vrequestsAndTimersMu CheckOcrStatusByID")
+	log.Debug().Str("component", "OCR_CLIENT").Msg("locking vrequestsAndTimersMu CheckOcrStatusByID")
 	requestsAndTimersMu.Lock()
 	if _, ok := requests[requestID]; !ok {
-		log.Debug().Str("component", "OCR_CLIENT").Msg("unloking vrequestsAndTimersMu with id mismatch CheckOcrStatusByID")
+		log.Debug().Str("component", "OCR_CLIENT").Msg("unlocking vrequestsAndTimersMu with id mismatch CheckOcrStatusByID")
 		requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
@@ -400,7 +399,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 		delete(timers, requestID)
 	}
 	ocrResult.ID = requestID
-	log.Debug().Str("component", "OCR_CLIENT").Msg("unloking vrequestsAndTimersMu CheckOcrStatusByID")
+	log.Debug().Str("component", "OCR_CLIENT").Msg("unlocking vrequestsAndTimersMu CheckOcrStatusByID")
 	requestsAndTimersMu.Unlock()
 	return ocrResult, nil
 }
