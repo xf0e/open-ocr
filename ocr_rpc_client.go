@@ -219,11 +219,11 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	if ocrRequest.Deferred {
 		logger.Info().Str("component", "OCR_CLIENT").Msg("Asynchronous request accepted")
 		timer := time.NewTimer(time.Duration(ResponseCacheTimeout) * time.Second)
-		fmt.Println("loking vrequestsAndTimersMu")
+		logger.Debug().Str("component", "OCR_CLIENT").Msg("loking vrequestsAndTimersMu")
 		requestsAndTimersMu.Lock()
 		requests[requestID] = rpcResponseChan
 		timers[requestID] = timer
-		fmt.Println("unloking vrequestsAndTimersMu")
+		logger.Debug().Str("component", "OCR_CLIENT").Msg("unloking vrequestsAndTimersMu")
 		requestsAndTimersMu.Unlock()
 		// deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
@@ -381,10 +381,10 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 }
 
 func CheckOcrStatusByID(requestID string) (OcrResult, error) {
-	fmt.Println("loking vrequestsAndTimersMu CheckOcrStatusByID")
+	log.Debug().Str("component", "OCR_CLIENT").Msg("loking vrequestsAndTimersMu CheckOcrStatusByID")
 	requestsAndTimersMu.Lock()
 	if _, ok := requests[requestID]; !ok {
-		fmt.Println("unloking vrequestsAndTimersMu with id mismatch CheckOcrStatusByID")
+		log.Debug().Str("component", "OCR_CLIENT").Msg("unloking vrequestsAndTimersMu with id mismatch CheckOcrStatusByID")
 		requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
@@ -394,13 +394,13 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 
 	ocrResult := <-requests[requestID]
 	if ocrResult.Status != "processing" {
-		fmt.Println("deleting requests and timers")
+		log.Debug().Str("component", "OCR_CLIENT").Msg("deleting requests and timers")
 		delete(requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
 	}
 	ocrResult.ID = requestID
-	fmt.Println("unloking vrequestsAndTimersMu CheckOcrStatusByID")
+	log.Debug().Str("component", "OCR_CLIENT").Msg("unloking vrequestsAndTimersMu CheckOcrStatusByID")
 	requestsAndTimersMu.Unlock()
 	return ocrResult, nil
 }

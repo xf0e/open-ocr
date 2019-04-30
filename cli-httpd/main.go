@@ -17,11 +17,14 @@ import (
 
 func init() {
 	zerolog.TimeFieldFormat = time.StampMilli
+	// Default level is info, unless debug flag is present
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 }
 
 func main() {
 
 	var httpPort int
+	var debug bool
 	flagFunc := func() {
 		flag.IntVar(
 			&httpPort,
@@ -29,9 +32,17 @@ func main() {
 			8080,
 			"The http port to listen on, eg, 8081",
 		)
+		flag.BoolVar(
+			&debug,
+			"debug",
+			false,
+			"sets debug flag will print more messages",
+		)
 
 	}
-
+	if debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
 
 	// any requests to root, just redirect to main page
