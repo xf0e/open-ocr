@@ -8,6 +8,9 @@ import (
 	"github.com/xf0e/open-ocr"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -22,6 +25,19 @@ func init() {
 }
 
 func main() {
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
+
+	go func() {
+		select {
+		case sig := <-signals:
+			log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
+				Msg("Caught signal to terminate, trying to perform a graceful shutdown")
+			ocrworker.StopChan <- true
+			//os.Exit(0)
+		}
+	}()
 
 	var httpPort int
 	var debug bool

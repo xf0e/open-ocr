@@ -23,7 +23,8 @@ func NewOcrHttpHandler(r RabbitConfig) *OcrHTTPStatusHandler {
 }
 
 var (
-	// ServiceCanAccept is global. Used to set the flag for logging
+	// ServiceCanAccept and AppStop are global. Used to set the flag for logging and stopping the application
+	AppStop            bool
 	ServiceCanAccept   bool
 	ServiceCanAcceptMu sync.Mutex
 )
@@ -34,10 +35,18 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	defer req.Body.Close()
 
 	ServiceCanAcceptMu.Lock()
-	ServiceCanAcceptLocal := ServiceCanAccept
+	serviceCanAcceptLocal := ServiceCanAccept
+	appStopLocal := AppStop
 	ServiceCanAcceptMu.Unlock()
-	if !ServiceCanAcceptLocal {
+	if !serviceCanAcceptLocal && !appStopLocal {
 		err := "no resources available to process the request"
+		log.Error().Err(fmt.Errorf(err)).Str("component", "OCR_HTTP")
+		http.Error(w, err, 503)
+		return
+	}
+
+	if !serviceCanAcceptLocal && appStopLocal {
+		err := "service is going down"
 		log.Error().Err(fmt.Errorf(err)).Str("component", "OCR_HTTP")
 		http.Error(w, err, 503)
 		return

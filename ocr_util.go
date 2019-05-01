@@ -46,9 +46,7 @@ func url2bytes(url string) ([]byte, error) {
 		return nil, err
 	}
 
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer resp.Body.Close()
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

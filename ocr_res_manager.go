@@ -2,6 +2,7 @@ package ocrworker
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/rs/zerolog/log"
 	"time"
 )
@@ -34,6 +35,7 @@ func newOcrResManager() []ocrResManager {
 var (
 	queueManager *ocrQueueManager
 	resManager   []ocrResManager
+	StopChan     = make(chan bool, 1)
 )
 
 // checks if resources for incoming request are available
@@ -132,15 +134,28 @@ func SetResManagerState(ampqAPIConfig RabbitConfig) {
 	var boolNewValue = false
 	var boolOldValue = true
 	for {
-		// only print the RESMAN output if the state has changed
-		boolValueChanged = boolOldValue != boolNewValue
-		if boolValueChanged {
-			boolOldValue = boolNewValue
+		if AppStop == true {
+			break
+		} // break the loop if the have to stop the app
+		select {
+		case <-StopChan:
+			ServiceCanAcceptMu.Lock()
+			ServiceCanAccept = false
+			AppStop = true
+			ServiceCanAcceptMu.Unlock()
+			break
+		default:
+			// only print the RESMAN output if the state has changed
+			boolValueChanged = boolOldValue != boolNewValue
+			if boolValueChanged {
+				boolOldValue = boolNewValue
+			}
+			ServiceCanAcceptMu.Lock()
+			ServiceCanAccept = CheckForAcceptRequest(urlQueue, urlStat, boolValueChanged)
+			boolNewValue = ServiceCanAccept
+			ServiceCanAcceptMu.Unlock()
+			fmt.Println("sm")
+			time.Sleep(1 * time.Second)
 		}
-		ServiceCanAcceptMu.Lock()
-		ServiceCanAccept = CheckForAcceptRequest(urlQueue, urlStat, boolValueChanged)
-		boolNewValue = ServiceCanAccept
-		ServiceCanAcceptMu.Unlock()
-		time.Sleep(1 * time.Second)
 	}
 }
