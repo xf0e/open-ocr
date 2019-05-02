@@ -2,7 +2,6 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/rs/zerolog/log"
 	"time"
 )
@@ -126,12 +125,10 @@ func schedulerByWorkerNumber() bool {
 func SetResManagerState(ampqAPIConfig RabbitConfig) {
 	resManager = newOcrResManager()
 	queueManager = newOcrQueueManager()
-	var urlQueue, urlStat = "", ""
-	urlQueue += ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathQueue + ampqAPIConfig.APIQueueName
-	urlStat += ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathStats
+	urlQueue := ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathQueue + ampqAPIConfig.APIQueueName
+	urlStat := ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathStats
 
-	var boolValueChanged = false
-	var boolNewValue = false
+	var boolCurValue = false
 	var boolOldValue = true
 	for {
 		if AppStop == true {
@@ -146,15 +143,10 @@ func SetResManagerState(ampqAPIConfig RabbitConfig) {
 			break
 		default:
 			// only print the RESMAN output if the state has changed
-			boolValueChanged = boolOldValue != boolNewValue
-			if boolValueChanged {
-				boolOldValue = boolNewValue
-			}
 			ServiceCanAcceptMu.Lock()
-			ServiceCanAccept = CheckForAcceptRequest(urlQueue, urlStat, boolValueChanged)
-			boolNewValue = ServiceCanAccept
+			boolOldValue, boolCurValue = boolCurValue, CheckForAcceptRequest(urlQueue, urlStat, boolCurValue != boolOldValue)
+			ServiceCanAccept = boolCurValue
 			ServiceCanAcceptMu.Unlock()
-			fmt.Println("sm")
 			time.Sleep(1 * time.Second)
 		}
 	}
