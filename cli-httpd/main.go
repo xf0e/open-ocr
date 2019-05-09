@@ -33,7 +33,7 @@ func main() {
 		select {
 		case sig := <-signals:
 			log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
-				Msg("Caught signal to terminate, trying to perform a graceful shutdown")
+				Msg("Caught signal to terminate, will not serve any requests")
 			ocrworker.StopChan <- true
 			//os.Exit(0)
 		}
@@ -52,7 +52,7 @@ func main() {
 			&debug,
 			"debug",
 			false,
-			"sets debug flag will print more messages",
+			"sets debug flag, program will print more messages",
 		)
 
 	}
@@ -63,7 +63,7 @@ func main() {
 
 	// any requests to root, just redirect to main page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		text := `<h1>OpenOCR is running!<h1> Need <a href="http://www.openocr.net">docs</a>?`
+		text := `<h1>OpenOCR is running!<h1> Need <a href="https://godoc.org/github.com/xf0e/open-ocr">docs</a>?`
 		fmt.Fprintf(w, text)
 	})
 
@@ -72,11 +72,6 @@ func main() {
 	http.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
 
 	http.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
-	// add a handler to serve up an image from the filesystem.
-	// ignore this, was just something for testing ..
-	http.HandleFunc("/img", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "../refactoring.png")
-	})
 
 	listenAddr := fmt.Sprintf(":%d", httpPort)
 
