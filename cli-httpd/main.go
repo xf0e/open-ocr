@@ -33,9 +33,18 @@ func main() {
 		select {
 		case sig := <-signals:
 			log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
-				Msg("Caught signal to terminate, will not serve any requests")
+				Msg("Caught signal to terminate, will not serve any further requests. Once the ocr queue is empty," +
+					" http daemon will terminate.")
 			ocrworker.StopChan <- true
-			//os.Exit(0)
+			for {
+				if (ocrworker.OcrQueueManager{}.NumMessages == 0) {
+					log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
+						Msg("The ocr queue is now empty. open-ocr http daemon will now exit.")
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+			os.Exit(0)
 		}
 	}()
 

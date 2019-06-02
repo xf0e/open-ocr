@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type ocrQueueManager struct {
+type OcrQueueManager struct {
 	NumMessages  uint `json:"messages"`
 	NumConsumers uint `json:"consumers"`
 	MessageBytes uint `json:"message_bytes"`
@@ -22,8 +22,8 @@ const (
 	memoryThreshold        uint64 = 95
 )
 
-func newOcrQueueManager() *ocrQueueManager {
-	return &ocrQueueManager{}
+func newOcrQueueManager() *OcrQueueManager {
+	return &OcrQueueManager{}
 }
 
 func newOcrResManager() []ocrResManager {
@@ -32,7 +32,7 @@ func newOcrResManager() []ocrResManager {
 }
 
 var (
-	queueManager *ocrQueueManager
+	queueManager *OcrQueueManager
 	resManager   []ocrResManager
 	StopChan     = make(chan bool, 1)
 )
@@ -64,7 +64,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 
 	err = json.Unmarshal(jsonResStat, &resManager)
 	if err != nil {
-		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshaling json")
+		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshalling json")
 		log.Error().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonResStat))
 		return false
