@@ -21,7 +21,7 @@ import (
 func init() {
 	zerolog.TimeFieldFormat = time.StampMilli
 	// Default level is info, unless debug flag is present
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 }
 
 func main() {

@@ -18,7 +18,7 @@ type ocrResManager struct {
 }
 
 const (
-	factorForMessageAccept uint   = 2
+	factorForMessageAccept uint   = 50 // formula: NumMessages < NumConsumers * factorForMessageAccept
 	memoryThreshold        uint64 = 95
 )
 

@@ -27,6 +27,17 @@
                 <Pins />
               </value>
             </entry>
+            <entry>
+              <key>
+                <RunConfigurationRef>
+                  <option name="icon" value="com.goide.GoIcons$Helper$1@5c05fe2" />
+                  <option name="name" value="cli_httpd" />
+                </RunConfigurationRef>
+              </key>
+              <value>
+                <Pins />
+              </value>
+            </entry>
           </map>
         </option>
       </PinnedGrepConsolesState>
