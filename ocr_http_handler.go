@@ -23,7 +23,7 @@ func NewOcrHttpHandler(r RabbitConfig) *OcrHTTPStatusHandler {
 }
 
 var (
-	// ServiceCanAccept and AppStop are global. Used to set the flag for logging and stopping the application
+	// AppStop and ServiceCanAccept are global. Used to set the flag for logging and stopping the application
 	AppStop            bool
 	ServiceCanAccept   bool
 	ServiceCanAcceptMu deadlock.Mutex

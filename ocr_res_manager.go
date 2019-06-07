@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// OcrQueueManager is used as a main component of resource manager
 type OcrQueueManager struct {
 	NumMessages  uint `json:"messages"`
 	NumConsumers uint `json:"consumers"`
@@ -34,7 +35,8 @@ func newOcrResManager() []ocrResManager {
 var (
 	queueManager *OcrQueueManager
 	resManager   []ocrResManager
-	StopChan     = make(chan bool, 1)
+	// StopChan is used to gracefully stop http daemon
+	StopChan = make(chan bool, 1)
 )
 
 // checks if resources for incoming request are available

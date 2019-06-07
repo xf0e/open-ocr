@@ -379,6 +379,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 	}
 }
 
+// CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, error) {
 	log.Info().Str("component", "OCR_CLIENT").Msg("CheckOcrStatusByID called")
 	//log.Debug().Str("component", "OCR_CLIENT").Msg("locking vrequestsAndTimersMu CheckOcrStatusByID")
