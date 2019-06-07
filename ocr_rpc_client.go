@@ -229,7 +229,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			// thi go routine will cancel the request after global timeout if client stopped polling
 			go func() {
 				<-timer.C
-				CheckOcrStatusByID(requestID)
+				CheckOcrStatusByID(requestID, false)
 			}()
 			return OcrResult{
 				ID:     requestID,
@@ -249,7 +249,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						Str("time", t.String()).
 						Msg("checking for request to be done")
 
-					ocrRes, err := CheckOcrStatusByID(requestID)
+					ocrRes, err := CheckOcrStatusByID(requestID, false)
 					if err != nil {
 						logger.Error().Err(err)
 					} // only if status is done end the goroutine. otherwise continue polling
@@ -282,7 +282,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		}, nil
 	} else {
 		// in case it works, error checking is needed
-		return CheckOcrStatusByID(requestID)
+		return CheckOcrStatusByID(requestID, false)
 	}
 }
 
@@ -379,28 +379,33 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 	}
 }
 
-func CheckOcrStatusByID(requestID string) (OcrResult, error) {
-	log.Debug().Str("component", "OCR_CLIENT").Msg("locking vrequestsAndTimersMu CheckOcrStatusByID")
-	requestsAndTimersMu.Lock()
+func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, error) {
+	log.Info().Str("component", "OCR_CLIENT").Msg("CheckOcrStatusByID called")
+	//log.Debug().Str("component", "OCR_CLIENT").Msg("locking vrequestsAndTimersMu CheckOcrStatusByID")
+	//requestsAndTimersMu.Lock()
 	if _, ok := requests[requestID]; !ok {
 		log.Debug().Str("component", "OCR_CLIENT").Msg("unlocking vrequestsAndTimersMu with id mismatch CheckOcrStatusByID")
-		requestsAndTimersMu.Unlock()
+		//requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
+	} else if ok && httpStatusCheck {
+		return OcrResult{Status: "processing", ID: requestID}, nil
 	}
-	//ocrResult, err := CheckReply(requests[requestID], time.Duration(timeoutForCheckReply)*time.Second)
 
-	log.Info().Str("component", "OCR_CLIENT").Msg("checking for response ")
-
+	log.Debug().Str("component", "OCR_CLIENT").Msg("getting ocrResult := <-requests[requestID]")
 	ocrResult := <-requests[requestID]
+	log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-requests[requestID]")
+
+	log.Info().Str("component", "OCR_CLIENT").Msg(ocrResult.ID + "2222")
+
 	if ocrResult.Status != "processing" {
 		log.Debug().Str("component", "OCR_CLIENT").Msg("deleting requests and timers")
 		delete(requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
 	}
-	ocrResult.ID = requestID
-	log.Debug().Str("component", "OCR_CLIENT").Msg("unlocking vrequestsAndTimersMu CheckOcrStatusByID")
-	requestsAndTimersMu.Unlock()
+	//ocrResult.ID = requestID
+	//log.Debug().Str("component", "OCR_CLIENT").Msg("unlocking vrequestsAndTimersMu CheckOcrStatusByID")
+	//requestsAndTimersMu.Unlock()
 	return ocrResult, nil
 }
 
