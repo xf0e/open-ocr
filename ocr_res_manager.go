@@ -19,7 +19,7 @@ type ocrResManager struct {
 }
 
 const (
-	factorForMessageAccept uint   = 50 // formula: NumMessages < NumConsumers * factorForMessageAccept
+	factorForMessageAccept uint   = 5 // formula: NumMessages < NumConsumers * factorForMessageAccept
 	memoryThreshold        uint64 = 95
 )
 
@@ -45,7 +45,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	isAvailable := false
 	jsonQueueStat, err := url2bytes(urlQueue)
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("can't get Que stats")
+		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("can't get Queue stats")
 		return false
 	}
 	jsonResStat, err := url2bytes(urlStat)

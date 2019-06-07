@@ -37,10 +37,11 @@ func main() {
 					" http daemon will terminate.")
 			ocrworker.StopChan <- true
 			for {
-				if (ocrworker.OcrQueueManager{}.NumMessages == 0) {
+				// as soon number of queued requests reaches zero, http daemon will exit
+				if len(ocrworker.Requests) == 0 {
 					log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
 						Msg("The ocr queue is now empty. open-ocr http daemon will now exit. You may stop workers now")
-					time.Sleep(20 * time.Second) // delay puffer for sending all requests back
+					time.Sleep(5 * time.Second) // delay puffer for sending all requests back
 					break
 				}
 				time.Sleep(1 * time.Second)

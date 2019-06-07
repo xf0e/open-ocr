@@ -42,8 +42,9 @@ func newOcrResult(id string) OcrResult {
 
 var (
 	requestsAndTimersMu deadlock.Mutex
-	requests            = make(map[string]chan OcrResult)
-	timers              = make(map[string]*time.Timer)
+	// Requests is for holding and monitoring queued requests
+	Requests = make(map[string]chan OcrResult)
+	timers   = make(map[string]*time.Timer)
 )
 var (
 	numRetries uint8 = 3
@@ -219,7 +220,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		timer := time.NewTimer(time.Duration(ResponseCacheTimeout) * time.Second)
 		logger.Debug().Str("component", "OCR_CLIENT").Msg("locking vrequestsAndTimersMu")
 		requestsAndTimersMu.Lock()
-		requests[requestID] = rpcResponseChan
+		Requests[requestID] = rpcResponseChan
 		timers[requestID] = timer
 		logger.Debug().Str("component", "OCR_CLIENT").Msg("unlocking vrequestsAndTimersMu")
 		requestsAndTimersMu.Unlock()
@@ -384,23 +385,23 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 	log.Info().Str("component", "OCR_CLIENT").Msg("CheckOcrStatusByID called")
 	//log.Debug().Str("component", "OCR_CLIENT").Msg("locking vrequestsAndTimersMu CheckOcrStatusByID")
 	//requestsAndTimersMu.Lock()
-	if _, ok := requests[requestID]; !ok {
-		log.Debug().Str("component", "OCR_CLIENT").Msg("unlocking vrequestsAndTimersMu with id mismatch CheckOcrStatusByID")
+	if _, ok := Requests[requestID]; !ok {
 		//requestsAndTimersMu.Unlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	} else if ok && httpStatusCheck {
 		return OcrResult{Status: "processing", ID: requestID}, nil
 	}
 
-	log.Debug().Str("component", "OCR_CLIENT").Msg("getting ocrResult := <-requests[requestID]")
-	ocrResult := <-requests[requestID]
-	log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-requests[requestID]")
+	log.Debug().Str("component", "OCR_CLIENT").Msg("getting ocrResult := <-Requests[requestID]")
+	ocrResult := <-Requests[requestID]
+	log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
 
-	log.Info().Str("component", "OCR_CLIENT").Msg(ocrResult.ID + "2222")
+	log.Info().Str("component", "OCR_CLIENT").Msg("Number of messages in the queue:" +
+		fmt.Sprintf("%v", len(Requests)))
 
 	if ocrResult.Status != "processing" {
-		log.Debug().Str("component", "OCR_CLIENT").Msg("deleting requests and timers")
-		delete(requests, requestID)
+		log.Debug().Str("component", "OCR_CLIENT").Msg("deleting Requests and timers")
+		delete(Requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
 	}
