@@ -95,11 +95,12 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		logger.Info().Str("DocType", ocrRequest.DocType).
 			Msg("message type is specified, check for higher prio request")
 		// set highest priority for defined message id
-		// TODO do not hard code DocType priority
-		if ocrRequest.DocType == "egvp" {
-			messagePriority = 9
+		logger.Debug().Interface("doc_types_available", c.rabbitConfig.QueuePrio)
+		if val, ok := c.rabbitConfig.QueuePrio[ocrRequest.DocType]; ok {
+			messagePriority = val
+		} else {
+			messagePriority = c.rabbitConfig.QueuePrio["standard"]
 		}
-
 	}
 	// setting the timeout for worker if not set or to high
 	if ocrRequest.TimeOut >= uint(3600) || ocrRequest.TimeOut == 0 {

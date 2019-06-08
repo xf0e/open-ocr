@@ -1,7 +1,9 @@
 package ocrworker
 
 import (
+	"encoding/json"
 	"flag"
+	"github.com/rs/zerolog/log"
 )
 
 type RabbitConfig struct {
@@ -11,10 +13,11 @@ type RabbitConfig struct {
 	RoutingKey   string
 	Reliable     bool
 	AmqpAPIURI   string
-	APIPort      string
 	APIPathQueue string
 	APIQueueName string
 	APIPathStats string
+	QueuePrio    map[string]uint8
+	QueuePrioArg string
 }
 
 func DefaultTestConfig() RabbitConfig {
@@ -33,6 +36,7 @@ func DefaultTestConfig() RabbitConfig {
 		APIPathQueue: "/api/queues/%2f/",
 		APIQueueName: "decode-ocr",
 		APIPathStats: "/api/nodes",
+		QueuePrio:    map[string]uint8{"standard": 1},
 	}
 	return rabbitConfig
 
@@ -50,6 +54,7 @@ func DefaultConfigFlagsOverride(flagFunction FlagFunction) RabbitConfig {
 	flagFunction()
 	var AmqpAPIURI string
 	var AmqpURI string
+	var QueuePrioArg string
 	flag.StringVar(
 		&AmqpURI,
 		"amqp_uri",
@@ -62,6 +67,12 @@ func DefaultConfigFlagsOverride(flagFunction FlagFunction) RabbitConfig {
 		"",
 		"The Amqp API URI, eg: http://guest:guest@localhost:15672/",
 	)
+	flag.StringVar(
+		&QueuePrioArg,
+		"queue_prio",
+		"",
+		"JSON formated list wich doc_type and corresponding prio ",
+	)
 
 	flag.Parse()
 	if len(AmqpURI) > 0 {
@@ -69,6 +80,12 @@ func DefaultConfigFlagsOverride(flagFunction FlagFunction) RabbitConfig {
 	}
 	if len(AmqpAPIURI) > 0 {
 		rabbitConfig.AmqpAPIURI = AmqpAPIURI
+	}
+	if len(QueuePrioArg) > 0 {
+		err := json.Unmarshal([]byte(QueuePrioArg), &rabbitConfig.QueuePrio)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Message priority argument list is not in a proper JSON format eg. {\"egvp\":9}")
+		}
 	}
 
 	return rabbitConfig

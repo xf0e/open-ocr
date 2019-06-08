@@ -161,7 +161,7 @@ POST http://localhost:8080/ocr
 Content-Type: application/json
 
 {
-  "img_url":"http://localhost:9898/big.pdf",
+  "img_url":"http://localhost:7777/big.pdf",
   "engine":"sandwich",
   "engine_args":{"lang":"eng", "ocr_type":"combinedpdf","result_optimize":true},
   "deferred":true,
@@ -177,7 +177,7 @@ Content-Type: application/json
 {
   "img_url":"http://localhost:7777/Antrag.pdf",
   "engine":"sandwich",
-  "engine_args":{"lang":"eng", "ocr_type":"combinedpdf","result_optimize":true},
+  "engine_args":{"lang":"deu", "ocr_type":"combinedpdf","result_optimize":true},
   "deferred":true,
   "reply_to":"http://localhost:9999",
   "doc_type": "egvp"
@@ -209,7 +209,7 @@ Content-Type: application/json
   "engine_args":{"lang":"eng", "ocr_type":"txt","result_optimize":true},
   "deferred":true,
   "reply_to":"http://localhost:9999",
-  "doc_type": "eg",
+  "doc_type": "egvp",
   "page_number": 2,
   "time_out": 24,
   "user_agent": "0xdeadbeef"
