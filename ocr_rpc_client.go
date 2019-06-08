@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/sasha-s/go-deadlock"
+	//"github.com/sasha-s/go-deadlock"
 	"github.com/streadway/amqp"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -41,7 +42,7 @@ func newOcrResult(id string) OcrResult {
 }
 
 var (
-	requestsAndTimersMu deadlock.Mutex
+	requestsAndTimersMu sync.Mutex
 	// Requests is for holding and monitoring queued requests
 	Requests = make(map[string]chan OcrResult)
 	timers   = make(map[string]*time.Timer)

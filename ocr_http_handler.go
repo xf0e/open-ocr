@@ -6,9 +6,10 @@ import (
 	"github.com/nu7hatch/gouuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/sasha-s/go-deadlock"
+	//"github.com/sasha-s/go-deadlock"
 	"net/http"
 	"os"
+	"sync"
 )
 
 // OcrHTTPStatusHandler is for initial handling of ocr request
@@ -26,7 +27,7 @@ var (
 	// AppStop and ServiceCanAccept are global. Used to set the flag for logging and stopping the application
 	AppStop            bool
 	ServiceCanAccept   bool
-	ServiceCanAcceptMu deadlock.Mutex
+	ServiceCanAcceptMu sync.Mutex
 )
 
 func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {

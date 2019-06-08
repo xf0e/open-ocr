@@ -7,7 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
 	"net/http"
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -25,7 +25,7 @@ func init() {
 }
 
 func main() {
-
+	//defer profile.Start(profile.MemProfile).Stop()
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
 
@@ -68,7 +68,7 @@ func main() {
 
 	}
 	if debug == true {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
 
