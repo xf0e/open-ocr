@@ -310,7 +310,7 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationUUID string, rpcResponse
 		return amqp.Queue{}, err
 	}
 
-	log.Info().Str("callbackQueue", callbackQueue.Name)
+	log.Info().Str("component", "OCR_CLIENT").Str("callbackQueue", callbackQueue.Name)
 
 	deliveries, err := c.channel.Consume(
 		callbackQueue.Name, // name
@@ -334,7 +334,7 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationUUID string, rpcResponse
 func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correlationUuid string, rpcResponseChan chan OcrResult) {
 	// correlationUuid is the same as RequestID
 	logger := zerolog.New(os.Stdout).With().
-		Str("RequestID", correlationUuid).Timestamp().Logger()
+		Str("component", "OCR_CLIENT").Str("RequestID", correlationUuid).Timestamp().Logger()
 	logger.Info().Msg("looping over deliveries...:")
 	// TODO this defer is probably a memory leak
 	// defer c.connection.Close()
