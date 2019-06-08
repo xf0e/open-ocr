@@ -41,14 +41,16 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	ServiceCanAcceptMu.Unlock()
 	if !serviceCanAcceptLocal && !appStopLocal {
 		err := "no resources available to process the request"
-		log.Error().Err(fmt.Errorf(err)).Str("component", "OCR_HTTP")
+		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
+			Msg("conditions for accepting new requests are not met")
 		http.Error(w, err, 503)
 		return
 	}
 
 	if !serviceCanAcceptLocal && appStopLocal {
 		err := "service is going down"
-		log.Error().Err(fmt.Errorf(err)).Str("component", "OCR_HTTP")
+		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
+			Msg("conditions for accepting new requests are not met")
 		http.Error(w, err, 503)
 		return
 	}
@@ -57,7 +59,8 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&ocrRequest)
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_HTTP")
+		log.Warn().Str("component", "OCR_HTTP").Err(err).
+			Msg("did the client send a valid json?")
 		http.Error(w, "Unable to unmarshal json", 400)
 		return
 	}

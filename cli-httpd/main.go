@@ -21,7 +21,7 @@ import (
 func init() {
 	zerolog.TimeFieldFormat = time.StampMilli
 	// Default level is info, unless debug flag is present
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 }
 
 func main() {
@@ -67,10 +67,11 @@ func main() {
 		)
 
 	}
-	if debug == true {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	}
+
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
+	if debug == true {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 
 	// any requests to root, just redirect to main page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
