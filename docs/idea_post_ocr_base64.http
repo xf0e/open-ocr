@@ -151,7 +151,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-  "img_url": "d5e09ea-8f66-41ab-536d-ee9a623b8766"
+  "img_url": "6fbef430-6b3b-4b62-7e5e-c964dcd59cb0"
 }
 
 
@@ -175,7 +175,7 @@ POST http://localhost:8080/ocr
 Content-Type: application/json
 
 {
-  "img_url":"http://localhost:9898/small.pdf",
+  "img_url":"http://localhost:7777/Antrag.pdf",
   "engine":"sandwich",
   "engine_args":{"lang":"eng", "ocr_type":"combinedpdf","result_optimize":true},
   "deferred":true,

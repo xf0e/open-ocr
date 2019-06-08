@@ -42,7 +42,7 @@ func newOcrResult(id string) OcrResult {
 }
 
 var (
-	requestsAndTimersMu sync.Mutex
+	requestsAndTimersMu sync.RWMutex
 	// Requests is for holding and monitoring queued requests
 	Requests = make(map[string]chan OcrResult)
 	timers   = make(map[string]*time.Timer)
@@ -220,11 +220,11 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		logger.Info().Str("component", "OCR_CLIENT").Msg("Asynchronous request accepted")
 		timer := time.NewTimer(time.Duration(ResponseCacheTimeout) * time.Second)
 		logger.Debug().Str("component", "OCR_CLIENT").Msg("locking vrequestsAndTimersMu")
-		requestsAndTimersMu.Lock()
+		requestsAndTimersMu.RLock()
 		Requests[requestID] = rpcResponseChan
 		timers[requestID] = timer
 		logger.Debug().Str("component", "OCR_CLIENT").Msg("unlocking vrequestsAndTimersMu")
-		requestsAndTimersMu.Unlock()
+		requestsAndTimersMu.RUnlock()
 		// deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
 		if ocrRequest.ReplyTo == "" {
@@ -385,30 +385,34 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, error) {
 	log.Info().Str("component", "OCR_CLIENT").Msg("CheckOcrStatusByID called")
 	//log.Debug().Str("component", "OCR_CLIENT").Msg("locking vrequestsAndTimersMu CheckOcrStatusByID")
-	//requestsAndTimersMu.Lock()
+	requestsAndTimersMu.RLock()
 	if _, ok := Requests[requestID]; !ok {
-		//requestsAndTimersMu.Unlock()
+		requestsAndTimersMu.RUnlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	} else if ok && httpStatusCheck {
 		return OcrResult{Status: "processing", ID: requestID}, nil
 	}
 
 	log.Debug().Str("component", "OCR_CLIENT").Msg("getting ocrResult := <-Requests[requestID]")
-	ocrResult := <-Requests[requestID]
-	log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
+	ocrResult := OcrResult{}
+	requestsAndTimersMu.RLock()
+	select {
+	case ocrResult = <-Requests[requestID]:
+		log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
+	default:
+		log.Info().Str("component", "OCR_CLIENT").Msg("Number of messages in the queue:" +
+			fmt.Sprintf("%v", len(Requests)))
+	}
+	requestsAndTimersMu.RUnlock()
 
-	log.Info().Str("component", "OCR_CLIENT").Msg("Number of messages in the queue:" +
-		fmt.Sprintf("%v", len(Requests)))
-
-	if ocrResult.Status != "processing" {
-		log.Debug().Str("component", "OCR_CLIENT").Msg("deleting Requests and timers")
+	if ocrResult.Status != "processing" && ocrResult.ID != "" {
+		log.Debug().Str("component", "OCR_CLIENT").Msg("deleting from Requests and timers")
+		requestsAndTimersMu.RLock()
 		delete(Requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
+		requestsAndTimersMu.RUnlock()
 	}
-	//ocrResult.ID = requestID
-	//log.Debug().Str("component", "OCR_CLIENT").Msg("unlocking vrequestsAndTimersMu CheckOcrStatusByID")
-	//requestsAndTimersMu.Unlock()
 	return ocrResult, nil
 }
 
