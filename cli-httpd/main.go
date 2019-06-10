@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
@@ -79,11 +81,14 @@ func main() {
 		fmt.Fprintf(w, text)
 	})
 
-	http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
+	//http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
+	http.Handle("/ocr", prometheus.InstrumentHandler("open-ocr-httpd", ocrworker.NewOcrHttpHandler(rabbitConfig)))
 
 	http.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
 
 	http.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
+	// expose metrics for prometheus
+	http.Handle("/metrics", promhttp.Handler())
 
 	listenAddr := fmt.Sprintf(":%d", httpPort)
 
