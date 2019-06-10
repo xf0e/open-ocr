@@ -243,8 +243,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			for {
 				select {
 				case t := <-tickerWithPostAction.C:
-					logger.Info().Str("time", t.String()).Msg("checking for request to be done")
-
+					logger.Debug().Str("time", t.String()).Msg("checking for request to be done")
 					ocrRes, err := CheckOcrStatusByID(requestID, false)
 					if err != nil {
 						logger.Error().Err(err)
@@ -374,7 +373,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, error) {
-	log.Info().Str("component", "OCR_CLIENT").Msg("CheckOcrStatusByID called")
+	log.Debug().Str("component", "OCR_CLIENT").Msg("CheckOcrStatusByID called")
 	requestsAndTimersMu.RLock()
 	if _, ok := Requests[requestID]; !ok {
 		requestsAndTimersMu.RUnlock()
@@ -390,8 +389,9 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 	case ocrResult = <-Requests[requestID]:
 		log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
 	default:
-		log.Info().Str("component", "OCR_CLIENT").Msg("Number of messages in the queue:" +
-			fmt.Sprintf("%v", len(Requests)))
+		sampled := log.Sample(&zerolog.BasicSampler{N: 10})
+		sampled.Info().Str("component", "OCR_CLIENT").
+			Msg("Number of messages in the queue:" + fmt.Sprintf("%v", len(Requests)))
 	}
 	requestsAndTimersMu.RUnlock()
 
