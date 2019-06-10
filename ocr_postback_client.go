@@ -37,7 +37,7 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 		logger.Error().Str("component", "OCR_HTTP").Err(err).Msg("forming POST reply error")
 	}
 	req.Close = true
-	req.Header.Set("User-Agent", "open-ocr/1.5")
+	req.Header.Set("User-Agent", "open-ocr/1.1.8-beta")
 	req.Header.Set("X-Custom-Header", "automated reply")
 	req.Header.Set("Content-Type", "application/json")
 
