@@ -116,7 +116,7 @@ func (t SandwichEngineArgs) Export() []string {
 
 func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error) {
 
-	log := zerolog.New(os.Stdout).With().
+	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
 
 	tmpFileName, err := func() (string, error) {
@@ -131,14 +131,14 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 	}()
 
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_SANDWICH").Msg("error getting tmpFileName")
+		logger.Error().Err(err).Str("component", "OCR_SANDWICH").Msg("error getting tmpFileName")
 		return OcrResult{Text: "Internal server error", Status: "error"}, err
 	}
 
 	// detect if file type is supported
 	buffer, err := readFirstBytes(tmpFileName, 64)
 	if err != nil {
-		log.Warn().Str("component", "OCR_SANDWICH").Err(err).
+		logger.Warn().Str("component", "OCR_SANDWICH").Err(err).
 			Str("file_name", tmpFileName).
 			Msg("safety check can not be completed, processing of current file will be aborted")
 
@@ -147,16 +147,16 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 	uplFileType := detectFileType(buffer[:])
 	if uplFileType == "UNKNOWN" {
 		err := fmt.Errorf("file format not understood")
-		log.Warn().Str("component", "OCR_SANDWICH").Err(err).
+		logger.Warn().Str("component", "OCR_SANDWICH").Err(err).
 			Str("file_type", uplFileType).
 			Msg("only support TIFF and PDF input files")
 		return OcrResult{Text: "only support TIFF and PDF input files", Status: "error"}, err
 	}
-	log.Info().Str("component", "OCR_SANDWICH").Str("file_type", uplFileType)
+	logger.Info().Str("component", "OCR_SANDWICH").Str("file_type", uplFileType)
 
 	engineArgs, err := NewSandwichEngineArgs(ocrRequest)
 	if err != nil {
-		log.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("error getting engineArgs")
+		logger.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("error getting engineArgs")
 		return OcrResult{Text: "can not build arguments", Status: "error"}, err
 	}
 	// getting timeout for request
