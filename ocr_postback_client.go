@@ -25,7 +25,7 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 	logger.Info().Str("component", "OCR_HTTP").
 		Uint8("attempt", numTry).
 		Str("replyToAddress", replyToAddress).
-		Msg("sending for the ocr back to requester")
+		Msg("sending the ocr back to requester")
 
 	jsonReply, err := json.Marshal(ocrResult)
 	if err != nil {
