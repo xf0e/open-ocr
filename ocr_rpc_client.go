@@ -244,7 +244,6 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 				select {
 				case t := <-tickerWithPostAction.C:
 					logger.Debug().Str("time", t.String()).Msg("checking for request to be done")
-
 					ocrRes, err := CheckOcrStatusByID(requestID, false)
 					if err != nil {
 						logger.Error().Err(err)
