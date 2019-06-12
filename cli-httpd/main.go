@@ -78,27 +78,26 @@ func main() {
 	// any requests to root, just redirect to main page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		text := `<!DOCTYPE html><html lang="en"> <head> <meta charset="utf-8"> <title>open-ocr</title><style>pre{ font-family: Fixedsys,Courier,monospace; padding: 0px; }</style> </head> <body>` +
-			`<h1>Open-ocr  ></h1> Need <a href="https://godoc.org/github.com/xf0e/open-ocr">docs</a>? <div> <p>Nice day to put slinkies on an escalator</p>` +
-			`__   ; '.'  :` +
-			`|  +. :  ;   :   __` +
-			`.-+\   ':  ;   ,,-'  :` +
-			`'.  '.  '\ ;  :'   ,'` +
-			`,-+'+. '. \.;.:  _,' '-.` +
-			`'.__  "-.::||::.:'___-+'` +
-			`-"  '--..::::::_____.IIHb` +
-			`'-:______.:; '::,,...,;:HB\` +
-			`.+         \ ::,,...,;:HB \` +
-			`'-.______.:+ \'+.,...,;:P'  \` +
-			`.-'           \              \` +
-			`'-.______.:+   \______________\` +
-			`.-::::::::,     BBBBBBBBBBBBBBB` +
-			`::,,...,;:HB    BBBBBBBBBBBBBBB` +
-			`::,,...,;:HB    BBBBBBBBBBBBBBB` +
-			`::,,...,;:HB\   BBBBBBBBBBBBBBB` +
-			`::,,...,;:HB \  BBBBBBBBBBBBBBB` +
-			`'+.,...,;:P'  \ BBBBBBBBBBBBBBB` +
-			`               \BBBBBBBBBBBBBBB` +
-			`</div><p>proudly made with BASIC</p></body> </html>`
+			`<h1>Open-ocr  ></h1> Need <a href="https://godoc.org/github.com/xf0e/open-ocr">docs</a>?<div><p>Status: RUNNING</p><p>Nice day to put slinkies on an escalator!</p> ` +
+			`<pre>  __   ; '.'  :
+|  +. :  ;   :   __
+.-+\   ':  ;   ,,-'  :
+'.  '.  '\ ;  :'   ,'
+,-+'+. '. \.;.:  _,' '-.
+'.__  "-.::||::.:'___-+'
+-"  '--..::::::_____.IIHb
+'-:______.:; '::,,...,;:HB\
+.+         \ ::,,...,;:HB \
+'-.______.:+ \'+.,...,;:P'  \
+.-'           \              \
+'-.______.:+   \______________\
+.-::::::::,     BBBBBBBBBBBBBBB
+::,,...,;:HB    BBBBBBBBBBBBBBB
+::,,...,;:HB    BBBBBBBBBBBBBBB
+::,,...,;:HB\   BBBBBBBBBBBBBBB
+::,,...,;:HB \  BBBBBBBBBBBBBBB
+'+.,...,;:P'  \ BBBBBBBBBBBBBBB
+               \BBBBBBBBBBBBBBB</pre></div><p>proudly made with BASIC:)</p></body> </html>`
 		fmt.Fprintf(w, text)
 	})
 
