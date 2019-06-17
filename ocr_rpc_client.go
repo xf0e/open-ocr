@@ -12,15 +12,8 @@ import (
 	"time"
 )
 
-var (
-	// RPCResponseTimeout sets timeout for getting the result from channel
-	RPCResponseTimeout = time.Second * 20
-	// ResponseCacheTimeout sets global timeout in seconds for request
-	// engine will be killed after reaching the time limit, user will get timeout error
-	ResponseCacheTimeout uint = 240
-	// check interval for request to be ready
-	tickerWithPostActionInterval = time.Second * 2
-)
+// rpcResponseTimeout sets timeout for getting the result from channel
+var rpcResponseTimeout = time.Second * 20
 
 type OcrRpcClient struct {
 	rabbitConfig RabbitConfig
@@ -103,8 +96,8 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		}
 	}
 	// setting the timeout for worker if not set or to high
-	if ocrRequest.TimeOut >= uint(3600) || ocrRequest.TimeOut == 0 {
-		ocrRequest.TimeOut = ResponseCacheTimeout
+	if ocrRequest.TimeOut >= c.rabbitConfig.MaximalResponseCacheTimeout || ocrRequest.TimeOut == 0 {
+		ocrRequest.TimeOut = c.rabbitConfig.ResponseCacheTimeout
 	}
 
 	// setting rabbitMQ correlation ID. There is no reason to be different from requestID
@@ -214,7 +207,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	// TODO automaticaly delivered then atomatic deliver will POST empty request back after timeout
 	if ocrRequest.Deferred {
 		logger.Info().Msg("Asynchronous request accepted")
-		timer := time.NewTimer(time.Duration(ResponseCacheTimeout) * time.Second)
+		timer := time.NewTimer(time.Duration(c.rabbitConfig.ResponseCacheTimeout) * time.Second)
 		logger.Debug().Msg("locking vrequestsAndTimersMu")
 		requestsAndTimersMu.RLock()
 		Requests[requestID] = rpcResponseChan
@@ -236,7 +229,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		}
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
-		tickerWithPostAction := time.NewTicker(tickerWithPostActionInterval)
+		tickerWithPostAction := time.NewTicker(c.rabbitConfig.tickerWithPostActionInterval)
 
 		go func() {
 		T:
