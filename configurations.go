@@ -85,7 +85,7 @@ func DefaultConfigFlagsOverride(flagFunction FlagFunction) RabbitConfig {
 		&QueuePrioArg,
 		"queue_prio",
 		"",
-		"JSON formated list wich doc_type and corresponding prio ",
+		"JSON formated list wich doc_type and corresponding prio of maximal value of 9 e.g. -queue_prio {\"egvp\":9}",
 	)
 	flag.UintVar(
 		&ResponseCacheTimeout,
