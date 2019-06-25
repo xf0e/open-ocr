@@ -27,6 +27,7 @@ type RabbitConfig struct {
 	MaximalResponseCacheTimeout uint
 	// check interval for request to be ready
 	tickerWithPostActionInterval time.Duration
+	FactorForMessageAccept       uint
 }
 
 func DefaultTestConfig() RabbitConfig {
@@ -49,6 +50,7 @@ func DefaultTestConfig() RabbitConfig {
 		ResponseCacheTimeout:         28800,
 		MaximalResponseCacheTimeout:  28800,
 		tickerWithPostActionInterval: time.Second * 2,
+		FactorForMessageAccept:       2,
 	}
 	return rabbitConfig
 
@@ -69,6 +71,7 @@ func DefaultConfigFlagsOverride(flagFunction FlagFunction) RabbitConfig {
 	var QueuePrioArg string
 	var ResponseCacheTimeout uint
 	var MaximalResponseCacheTimeout uint
+	var FactorForMessageAccept uint
 	flag.StringVar(
 		&AmqpURI,
 		"amqp_uri",
@@ -91,14 +94,20 @@ func DefaultConfigFlagsOverride(flagFunction FlagFunction) RabbitConfig {
 		&ResponseCacheTimeout,
 		"default_timeout",
 		28800,
-		"default(!) timeout in seconds for request; ocr engine will be killed after reaching this limit"+
+		"Default(!) timeout in seconds for request; ocr engine will be killed after reaching this limit "+
 			"and generated ocr response will contain an timeout error",
 	)
 	flag.UintVar(
 		&MaximalResponseCacheTimeout,
 		"maximal_timeout",
 		28800,
-		"Clients won't be able set timeout for ocr requests higher of this value in seconds",
+		"Clients won't be able to set timeout for ocr requests higher than this value in seconds",
+	)
+	flag.UintVar(
+		&FactorForMessageAccept,
+		"worker_factor",
+		2,
+		"Limits number of accepted request by formula worker_factor * number of running workers.",
 	)
 
 	flag.Parse()

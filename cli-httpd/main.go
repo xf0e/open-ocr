@@ -52,10 +52,10 @@ func main() {
 		}
 	}()
 
-	var httpPort int
+	var httpPort uint
 	var debug bool
 	flagFunc := func() {
-		flag.IntVar(
+		flag.UintVar(
 			&httpPort,
 			"http_port",
 			8080,
@@ -67,7 +67,6 @@ func main() {
 			false,
 			"sets debug flag, program will print more messages",
 		)
-
 	}
 
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)

@@ -19,8 +19,7 @@ type ocrResManager struct {
 }
 
 const (
-	factorForMessageAccept uint   = 5 // formula: NumMessages < NumConsumers * factorForMessageAccept
-	memoryThreshold        uint64 = 95
+	memoryThreshold uint64 = 95 // if memory usage of RabbitMQ is over this value, no more requests will be added
 )
 
 func newOcrQueueManager() *OcrQueueManager {
@@ -36,7 +35,8 @@ var (
 	queueManager *OcrQueueManager
 	resManager   []ocrResManager
 	// StopChan is used to gracefully stop http daemon
-	StopChan = make(chan bool, 1)
+	StopChan               = make(chan bool, 1)
+	factorForMessageAccept uint // formula: NumMessages < NumConsumers * FactorForMessageAccept
 )
 
 // checks if resources for incoming request are available
@@ -116,7 +116,9 @@ func schedulerByMemoryLoad() bool {
 // if the number of messages in the queue too high we should not accept the new messages
 func schedulerByWorkerNumber() bool {
 	resFlag := false
-	if (queueManager.NumMessages) < (queueManager.NumConsumers * factorForMessageAccept) {
+	//TODO check for race on uint(len(Requests)
+	//if (queueManager.NumMessages) < (queueManager.NumConsumers * factorForMessageAccept) {
+	if (uint(len(Requests))) < (queueManager.NumConsumers * factorForMessageAccept) {
 		resFlag = true
 	}
 	return resFlag
@@ -129,6 +131,7 @@ func SetResManagerState(ampqAPIConfig RabbitConfig) {
 	queueManager = newOcrQueueManager()
 	urlQueue := ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathQueue + ampqAPIConfig.APIQueueName
 	urlStat := ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathStats
+	factorForMessageAccept = ampqAPIConfig.FactorForMessageAccept
 
 	var boolCurValue = false
 	var boolOldValue = true
