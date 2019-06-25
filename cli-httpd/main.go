@@ -75,7 +75,7 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
-	phm := ocrworker.InitPrometheusHttpMetric("open-ocr", prometheus.LinearBuckets(0, 5, 20))
+	//phm := ocrworker.InitPrometheusHttpMetric("open-ocr", prometheus.LinearBuckets(0, 5, 20))
 
 	// any requests to root, just redirect to main page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +106,7 @@ func main() {
 	//http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
 	http.Handle("/ocr", prometheus.InstrumentHandler("open-ocr-httpd", ocrworker.NewOcrHttpHandler(rabbitConfig)))
 
-	http.Handle("/ocr", phm.WrapHandler("open-ocr-httpd", ocrworker.NewOcrHttpHandler(rabbitConfig))
+	//http.Handle("/ocr", phm.WrapHandler("open-ocr-httpd", ocrworker.NewOcrHttpHandler(rabbitConfig))
 
 	http.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
 

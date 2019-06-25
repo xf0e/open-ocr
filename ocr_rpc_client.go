@@ -383,7 +383,7 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 		log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
 	default:
 		sampled := log.Sample(&zerolog.BasicSampler{N: 10})
-		sampled.Info().Str("component", "OCR_CLIENT").
+		sampled.Debug().Str("component", "OCR_CLIENT").
 			Msg("Number of messages in the queue:" + fmt.Sprintf("%v", len(Requests)))
 	}
 	requestsAndTimersMu.RUnlock()
