@@ -131,7 +131,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 	}()
 
 	if err != nil {
-		logger.Error().Err(err).Str("component", "OCR_SANDWICH").Msg("error getting tmpFileName")
+		logger.Error().Caller().Err(err).Str("component", "OCR_SANDWICH").Msg("error getting tmpFileName")
 		return OcrResult{Text: "Internal server error", Status: "error"}, err
 	}
 
@@ -147,7 +147,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 	uplFileType := detectFileType(buffer[:])
 	if uplFileType == "UNKNOWN" {
 		err := fmt.Errorf("file format not understood")
-		logger.Warn().Str("component", "OCR_SANDWICH").Err(err).
+		logger.Warn().Caller().Str("component", "OCR_SANDWICH").Err(err).
 			Str("file_type", uplFileType).
 			Msg("only support TIFF and PDF input files")
 		return OcrResult{Text: "only support TIFF and PDF input files", Status: "error"}, err
@@ -156,7 +156,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 
 	engineArgs, err := NewSandwichEngineArgs(ocrRequest)
 	if err != nil {
-		logger.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("error getting engineArgs")
+		logger.Error().Str("component", "OCR_SANDWICH").Err(err).Caller().Msg("error getting engineArgs")
 		return OcrResult{Text: "can not build arguments", Status: "error"}, err
 	}
 	// getting timeout for request
@@ -279,8 +279,9 @@ func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds
 
 func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
 	// inputFilename is the same as RequestID
+	requestID := inputFilename
 	logger := zerolog.New(os.Stdout).With().
-		Str("RequestID", inputFilename).Timestamp().Logger()
+		Str("RequestID", requestID).Timestamp().Logger()
 
 	fileToDeliver := "temp.file"
 	cmdArgs := []string{}
@@ -294,7 +295,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		inputFilename = convertImageToPdf(inputFilename)
 		if inputFilename == "" {
 			err := fmt.Errorf("can not convert input image to intermediate pdf")
-			logger.Error().Err(err).Msg("Error exec pdfsandwich")
+			logger.Error().Err(err).Caller().Msg("Error exec convert")
 			return OcrResult{Status: "error"}, err
 		}
 	}
@@ -310,10 +311,10 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 			if errMsg != "" {
 				errMsg = fmt.Sprintf(string(output), err)
 				err := fmt.Errorf(errMsg)
-				logger.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command")
+				logger.Error().Str("component", "OCR_SANDWICH").Err(err).Caller().Msg("Error exec external command")
 				return OcrResult{Status: "error"}, err
 			}
-			logger.Error().Str("component", "OCR_SANDWICH").Err(err).Msg("Error exec external command")
+			logger.Error().Str("component", "OCR_SANDWICH").Err(err).Caller().Msg("Error exec external command")
 			return OcrResult{Status: "error"}, err
 		}
 
@@ -335,7 +336,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 
 		outPdftk, errPdftk := exec.Command("pdftk", combinedArgs...).CombinedOutput()
 		if errPdftk != nil {
-			logger.Error().Err(errPdftk).Str("component", "OCR_SANDWICH").
+			logger.Error().Err(errPdftk).Caller().Str("component", "OCR_SANDWICH").
 				Str("file_name", string(outPdftk)).
 				Msg("Error running command")
 			return OcrResult{Status: "error"}, err
@@ -391,7 +392,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		if err != nil {
 			errMsg := fmt.Sprintf(string(output), err)
 			err := fmt.Errorf(errMsg)
-			logger.Error().Err(err).Str("component", "OCR_SANDWICH").
+			logger.Error().Caller().Err(err).Str("component", "OCR_SANDWICH").
 				Msg("error exec pdfsandwich")
 			return OcrResult{Status: "error"}, err
 		}
@@ -403,7 +404,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		if err != nil {
 			errMsg := fmt.Sprintf(string(output), err)
 			err := fmt.Errorf(errMsg)
-			logger.Error().Err(err).Str("component", "OCR_SANDWICH").
+			logger.Error().Caller().Err(err).Str("component", "OCR_SANDWICH").
 				Msg("error exec pdfsandwich")
 			return OcrResult{Status: "error"}, err
 		}
@@ -414,7 +415,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		if err != nil {
 			errMsg := fmt.Sprintf(string(outputPdfToText), err)
 			err := fmt.Errorf(errMsg)
-			logger.Error().Err(err).Str("component", "OCR_SANDWICH").
+			logger.Error().Caller().Err(err).Str("component", "OCR_SANDWICH").
 				Msg("error exec pdftotext")
 		}
 		// pdftotext will create %filename%.txt
@@ -430,7 +431,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 
 	default:
 		err := fmt.Errorf("requested format is not supported")
-		logger.Error().Err(err).Str("component", "OCR_SANDWICH")
+		logger.Error().Err(err).Caller().Str("component", "OCR_SANDWICH")
 		return OcrResult{Status: "error"}, err
 	}
 
@@ -451,7 +452,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		Msg("resulting file")
 	outBytes, err := ioutil.ReadFile(fileToDeliver)
 	if err != nil {
-		logger.Error().Err(err).Str("component", "OCR_SANDWICH").
+		logger.Error().Caller().Err(err).Str("component", "OCR_SANDWICH").
 			Msg("Error getting data from result file")
 		return OcrResult{Status: "error"}, err
 	}
