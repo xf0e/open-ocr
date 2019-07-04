@@ -13,6 +13,7 @@ import (
 
 type OcrRpcWorker struct {
 	rabbitConfig RabbitConfig
+	engineConfig EngineConfig
 	conn         *amqp.Connection
 	channel      *amqp.Channel
 	tag          string
@@ -24,9 +25,10 @@ var (
 	tag = ksuid.New().String()
 )
 
-func NewOcrRpcWorker(rc RabbitConfig) (*OcrRpcWorker, error) {
+func NewOcrRpcWorker(rc RabbitConfig, ec EngineConfig) (*OcrRpcWorker, error) {
 	ocrRpcWorker := &OcrRpcWorker{
 		rabbitConfig: rc,
+		engineConfig: ec,
 		conn:         nil,
 		channel:      nil,
 		tag:          tag,
@@ -222,7 +224,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	}
 
 	ocrEngine := NewOcrEngine(ocrRequest.EngineType)
-	ocrResult, err = ocrEngine.ProcessRequest(ocrRequest)
+	ocrResult, err = ocrEngine.ProcessRequest(ocrRequest, w.engineConfig)
 	if err != nil {
 		msg := "Error processing image url: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, ocrRequest.RequestID, err)

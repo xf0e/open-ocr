@@ -4,7 +4,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 	"time"
 )
 
@@ -13,11 +13,23 @@ import (
 
 func init() {
 	zerolog.TimeFieldFormat = time.StampMilli
+
 }
 
 func main() {
+	/*	SaveFile := false
+		flagFunc := func() {
+			flag.BoolVar(
+				&SaveFile,
+				"save_file",
+				false,
+				"The http port to listen on, eg, 8081",
+			)
+		}*/
 
 	noOpFlagFunc := ocrworker.NoOpFlagFunction()
+	noOpFlagFuncEngine := ocrworker.NoOpFlagFunctionEngine()
+	engineConfig := ocrworker.DefaultConfigFlagsEngineOverride(noOpFlagFuncEngine)
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(noOpFlagFunc)
 
 	// infinite loop, since sometimes worker <-> rabbitmq connection
@@ -27,7 +39,7 @@ func main() {
 			Str("component", "OCR_WORKER").
 			Msg("Creating new OCR Worker")
 
-		ocrWorker, err := ocrworker.NewOcrRpcWorker(rabbitConfig)
+		ocrWorker, err := ocrworker.NewOcrRpcWorker(rabbitConfig, engineConfig)
 		if err != nil {
 			log.Panic().Str("component", "OCR_WORKER").
 				Msg("Could not create rpc worker")

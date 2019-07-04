@@ -98,11 +98,11 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 		Str("RequestID", requestID).Timestamp().Logger()
 	switch ocrRequest.InplaceDecode {
 	case true:
-		// inplace decode: short circuit rabbitmq, and just call
-		// ocr engine directly
+		// inplace decode: short circuit rabbitmq, and just call ocr engine directly
 		ocrEngine := NewOcrEngine(ocrRequest.EngineType)
 
-		ocrResult, err := ocrEngine.ProcessRequest(ocrRequest)
+		engineConfig := EngineConfig{}
+		ocrResult, err := ocrEngine.ProcessRequest(ocrRequest, engineConfig)
 
 		if err != nil {
 			logger.Error().Err(err).Str("component", "OCR_HTTP").Msg("Error processing ocr request")

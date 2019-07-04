@@ -20,8 +20,8 @@ type RabbitConfig struct {
 	APIPathStats string
 	QueuePrio    map[string]uint8
 	QueuePrioArg string
-	// ResponseCacheTimeout sets default(!!!) global timeout in seconds for request
-	// engine will be killed after reaching the time limit, user will get timeout error
+	/* ResponseCacheTimeout sets default(!!!) global timeout in seconds for request
+	   engine will be killed after reaching the time limit, user will get timeout error */
 	ResponseCacheTimeout uint
 	// MaximalResponseCacheTimeout client won't be able set the ResponseCacheTimeout higher of it's value
 	MaximalResponseCacheTimeout uint
@@ -66,12 +66,14 @@ func DefaultConfigFlagsOverride(flagFunction FlagFunction) RabbitConfig {
 	rabbitConfig := DefaultTestConfig()
 
 	flagFunction()
-	var AmqpAPIURI string
-	var AmqpURI string
-	var QueuePrioArg string
-	var ResponseCacheTimeout uint
-	var MaximalResponseCacheTimeout uint
-	var FactorForMessageAccept uint
+	var (
+		AmqpAPIURI                  string
+		AmqpURI                     string
+		QueuePrioArg                string
+		ResponseCacheTimeout        uint
+		MaximalResponseCacheTimeout uint
+		FactorForMessageAccept      uint
+	)
 	flag.StringVar(
 		&AmqpURI,
 		"amqp_uri",

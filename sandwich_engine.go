@@ -26,9 +26,10 @@ type SandwichEngineArgs struct {
 	lang        string            `json:"lang"`
 	ocrType     string            `json:"ocr_type"`
 	ocrOptimize bool              `json:"result_optimize"`
+	saveFiles   bool
 }
 
-func NewSandwichEngineArgs(ocrRequest OcrRequest) (*SandwichEngineArgs, error) {
+func NewSandwichEngineArgs(ocrRequest OcrRequest, engineConfig EngineConfig) (*SandwichEngineArgs, error) {
 	log := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
 
@@ -89,6 +90,8 @@ func NewSandwichEngineArgs(ocrRequest OcrRequest) (*SandwichEngineArgs, error) {
 		}
 		engineArgs.ocrOptimize = ocrOptimizeFlag
 	}
+	// if true temp files won't be deleted
+	engineArgs.saveFiles = engineConfig.SaveFiles
 
 	return engineArgs, nil
 
@@ -114,7 +117,7 @@ func (t SandwichEngineArgs) Export() []string {
 	return result
 }
 
-func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error) {
+func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, engineConfig EngineConfig) (OcrResult, error) {
 
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
@@ -154,7 +157,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
 	}
 	logger.Info().Str("component", "OCR_SANDWICH").Str("file_type", uplFileType)
 
-	engineArgs, err := NewSandwichEngineArgs(ocrRequest)
+	engineArgs, err := NewSandwichEngineArgs(ocrRequest, engineConfig)
 	if err != nil {
 		logger.Error().Str("component", "OCR_SANDWICH").Err(err).Caller().Msg("error getting engineArgs")
 		return OcrResult{Text: "can not build arguments", Status: "error"}, err
@@ -435,18 +438,20 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		return OcrResult{Status: "error"}, err
 	}
 
-	defer func() {
-		logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", ocrLayerFile).
-			Msg("step 1: deleting file (pdfsandwich run)")
-		if err := os.Remove(ocrLayerFile); err != nil {
-			logger.Warn().Err(err).Str("component", "OCR_SANDWICH")
-		}
-		logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", inputFilename).
-			Msg("step 1: deleting file (pdfsandwich run)")
-		if err := os.Remove(inputFilename); err != nil {
-			logger.Warn().Err(err).Str("component", "OCR_SANDWICH")
-		}
-	}()
+	if engineArgs.saveFiles {
+		defer func() {
+			logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", ocrLayerFile).
+				Msg("step 1: deleting file (pdfsandwich run)")
+			if err := os.Remove(ocrLayerFile); err != nil {
+				logger.Warn().Err(err).Str("component", "OCR_SANDWICH")
+			}
+			logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", inputFilename).
+				Msg("step 1: deleting file (pdfsandwich run)")
+			if err := os.Remove(inputFilename); err != nil {
+				logger.Warn().Err(err).Str("component", "OCR_SANDWICH")
+			}
+		}()
+	}
 
 	logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", fileToDeliver).
 		Msg("resulting file")

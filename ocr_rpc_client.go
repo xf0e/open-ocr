@@ -86,7 +86,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	var messagePriority uint8 = 1
 	if ocrRequest.DocType != "" {
 		logger.Info().Str("DocType", ocrRequest.DocType).
-			Msg("message type is specified, check for higher prio request")
+			Msg("message type is specified, check for higher priority request")
 		// set highest priority for defined message id
 		logger.Debug().Interface("doc_types_available", c.rabbitConfig.QueuePrio)
 		if val, ok := c.rabbitConfig.QueuePrio[ocrRequest.DocType]; ok {
