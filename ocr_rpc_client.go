@@ -220,7 +220,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			// thi go routine will cancel the request after global timeout if client stopped polling
 			go func() {
 				<-timer.C
-				CheckOcrStatusByID(requestID, false)
+				_, _ = CheckOcrStatusByID(requestID, false)
 			}()
 			return OcrResult{
 				ID:     requestID,
@@ -328,17 +328,16 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 	logger := zerolog.New(os.Stdout).With().
 		Str("component", "OCR_CLIENT").Str("RequestID", correlationUuid).Timestamp().Logger()
 	logger.Info().Msg("looping over deliveries...:")
-	// TODO this defer is probably a memory leak
-	// defer c.connection.Close()
+
 	for d := range deliveries {
 		if d.CorrelationId == correlationUuid {
 			bodyLenToLog := len(d.Body)
-			defer c.connection.Close()
+			//defer c.connection.Close()
 			if bodyLenToLog > 32 {
 				bodyLenToLog = 32
 			}
 			logger.Info().Int("size", len(d.Body)).Uint64("DeliveryTag", d.DeliveryTag).
-				Hex("payload(32 Bytes)", d.Body[0:bodyLenToLog]).
+				Str("payload(32 Bytes)", string(d.Body[0:bodyLenToLog])).
 				Str("ReplyTo", d.ReplyTo).
 				Msg("got delivery")
 
@@ -360,8 +359,8 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 			logger.Info().Str("CorrelationId", d.CorrelationId).
 				Msg("ignoring delivery w/ correlation id")
 		}
-
 	}
+	_ = c.connection.Close()
 }
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
