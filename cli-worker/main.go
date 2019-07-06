@@ -27,10 +27,8 @@ func main() {
 			)
 		}*/
 
-	noOpFlagFunc := ocrworker.NoOpFlagFunction()
-	noOpFlagFuncEngine := ocrworker.NoOpFlagFunctionEngine()
-	engineConfig := ocrworker.DefaultConfigFlagsEngineOverride(noOpFlagFuncEngine)
-	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(noOpFlagFunc)
+	noOpFlagFuncEngine := ocrworker.NoOpFlagFunctionWorker()
+	workerConfig := ocrworker.DefaultConfigFlagsWorkerOverride(noOpFlagFuncEngine)
 
 	// infinite loop, since sometimes worker <-> rabbitmq connection
 	// gets broken.  see https://github.com/tleyden/open-ocr/issues/4
@@ -39,7 +37,7 @@ func main() {
 			Str("component", "OCR_WORKER").
 			Msg("Creating new OCR Worker")
 
-		ocrWorker, err := ocrworker.NewOcrRpcWorker(rabbitConfig, engineConfig)
+		ocrWorker, err := ocrworker.NewOcrRpcWorker(workerConfig)
 		if err != nil {
 			log.Panic().Str("component", "OCR_WORKER").
 				Msg("Could not create rpc worker")

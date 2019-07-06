@@ -12,8 +12,7 @@ import (
 )
 
 type OcrRpcWorker struct {
-	rabbitConfig RabbitConfig
-	engineConfig EngineConfig
+	workerConfig WorkerConfig
 	conn         *amqp.Connection
 	channel      *amqp.Channel
 	tag          string
@@ -25,10 +24,9 @@ var (
 	tag = ksuid.New().String()
 )
 
-func NewOcrRpcWorker(rc RabbitConfig, ec EngineConfig) (*OcrRpcWorker, error) {
+func NewOcrRpcWorker(wc WorkerConfig) (*OcrRpcWorker, error) {
 	ocrRpcWorker := &OcrRpcWorker{
-		rabbitConfig: rc,
-		engineConfig: ec,
+		workerConfig: wc,
 		conn:         nil,
 		channel:      nil,
 		tag:          tag,
@@ -51,10 +49,10 @@ func (w OcrRpcWorker) Run() error {
 	log.Info().
 		Str("component", "OCR_WORKER").
 		Str("tag", tag).
-		Str("host", w.rabbitConfig.AmqpURI).
+		Str("host", w.workerConfig.AmqpURI).
 		Msg("dialing rabbitMQ")
 
-	w.conn, err = amqp.Dial(w.rabbitConfig.AmqpURI)
+	w.conn, err = amqp.Dial(w.workerConfig.AmqpURI)
 	if err != nil {
 		log.Warn().
 			Str("component", "OCR_WORKER").
@@ -79,8 +77,8 @@ func (w OcrRpcWorker) Run() error {
 	}
 
 	if err = w.channel.ExchangeDeclare(
-		w.rabbitConfig.Exchange,     // name of the exchange
-		w.rabbitConfig.ExchangeType, // type
+		w.workerConfig.Exchange,     // name of the exchange
+		w.workerConfig.ExchangeType, // type
 		true,                        // durable
 		false,                       // delete when complete
 		false,                       // internal
@@ -92,7 +90,7 @@ func (w OcrRpcWorker) Run() error {
 
 	// just use the routing key as the queue name, since there's no reason
 	// to have a different name
-	queueName := w.rabbitConfig.RoutingKey
+	queueName := w.workerConfig.RoutingKey
 
 	queue, err := w.channel.QueueDeclare(
 		queueName, // name of the queue
@@ -106,14 +104,14 @@ func (w OcrRpcWorker) Run() error {
 		return err
 	}
 
-	log.Info().Str("component", "OCR_WORKER").Str("RoutingKey", w.rabbitConfig.RoutingKey).
+	log.Info().Str("component", "OCR_WORKER").Str("RoutingKey", w.workerConfig.RoutingKey).
 		Str("tag", tag).
 		Msg("binding to routing key")
 
 	if err = w.channel.QueueBind(
 		queue.Name,                // name of the queue
-		w.rabbitConfig.RoutingKey, // bindingKey
-		w.rabbitConfig.Exchange,   // sourceExchange
+		w.workerConfig.RoutingKey, // bindingKey
+		w.workerConfig.Exchange,   // sourceExchange
 		false,                     // noWait
 		queueArgs,                 // arguments
 	); err != nil {
@@ -224,7 +222,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	}
 
 	ocrEngine := NewOcrEngine(ocrRequest.EngineType)
-	ocrResult, err = ocrEngine.ProcessRequest(ocrRequest, w.engineConfig)
+	ocrResult, err = ocrEngine.ProcessRequest(ocrRequest, w.workerConfig)
 	if err != nil {
 		msg := "Error processing image url: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, ocrRequest.RequestID, err)
@@ -247,8 +245,8 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", correlationId).Timestamp().Logger()
 
-	if w.rabbitConfig.Reliable {
-		// Do not use w.rabbitConfig.Reliable=true due to major issues
+	if w.workerConfig.Reliable {
+		// Do not use w.workerConfig.Reliable=true due to major issues
 		// that will completely  wedge the rpc worker.  Setting the
 		// buffered channels length higher would delay the problem,
 		// but then it would still happen later.
@@ -271,7 +269,7 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationI
 	}
 
 	if err := w.channel.Publish(
-		w.rabbitConfig.Exchange, // publish to an exchange
+		w.workerConfig.Exchange, // publish to an exchange
 		replyTo,                 // routing to 0 or more queues
 		false,                   // mandatory
 		false,                   // immediate

@@ -29,7 +29,7 @@ type SandwichEngineArgs struct {
 	saveFiles   bool
 }
 
-func NewSandwichEngineArgs(ocrRequest OcrRequest, engineConfig EngineConfig) (*SandwichEngineArgs, error) {
+func NewSandwichEngineArgs(ocrRequest OcrRequest, workerConfig WorkerConfig) (*SandwichEngineArgs, error) {
 	log := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
 
@@ -91,7 +91,7 @@ func NewSandwichEngineArgs(ocrRequest OcrRequest, engineConfig EngineConfig) (*S
 		engineArgs.ocrOptimize = ocrOptimizeFlag
 	}
 	// if true temp files won't be deleted
-	engineArgs.saveFiles = engineConfig.SaveFiles
+	engineArgs.saveFiles = workerConfig.SaveFiles
 
 	return engineArgs, nil
 
@@ -117,10 +117,12 @@ func (t SandwichEngineArgs) Export() []string {
 	return result
 }
 
-func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, engineConfig EngineConfig) (OcrResult, error) {
+func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig WorkerConfig) (OcrResult, error) {
 
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
+
+	logger.Info().Interface("workerConfig", workerConfig).Msg("parameter list of workerConfig")
 
 	tmpFileName, err := func() (string, error) {
 		if ocrRequest.ImgBase64 != "" {
@@ -157,7 +159,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, engineConfig Engin
 	}
 	logger.Info().Str("component", "OCR_SANDWICH").Str("file_type", uplFileType)
 
-	engineArgs, err := NewSandwichEngineArgs(ocrRequest, engineConfig)
+	engineArgs, err := NewSandwichEngineArgs(ocrRequest, workerConfig)
 	if err != nil {
 		logger.Error().Str("component", "OCR_SANDWICH").Err(err).Caller().Msg("error getting engineArgs")
 		return OcrResult{Text: "can not build arguments", Status: "error"}, err

@@ -87,7 +87,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	}
 }
 
-func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResult, error) {
+func HandleOcrRequest(ocrRequest OcrRequest, workerConfig RabbitConfig) (OcrResult, error) {
 
 	var requestIDRaw, _ = uuid.NewV4()
 	requestID := requestIDRaw.String()
@@ -101,7 +101,7 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 		// inplace decode: short circuit rabbitmq, and just call ocr engine directly
 		ocrEngine := NewOcrEngine(ocrRequest.EngineType)
 
-		engineConfig := EngineConfig{}
+		engineConfig := WorkerConfig{}
 		ocrResult, err := ocrEngine.ProcessRequest(ocrRequest, engineConfig)
 
 		if err != nil {
@@ -112,7 +112,7 @@ func HandleOcrRequest(ocrRequest OcrRequest, rabbitConfig RabbitConfig) (OcrResu
 		return ocrResult, nil
 	default:
 		// add a new job to rabbitMQ and wait for worker to respond w/ result
-		ocrClient, err := NewOcrRpcClient(rabbitConfig)
+		ocrClient, err := NewOcrRpcClient(workerConfig)
 		if err != nil {
 			logger.Error().Err(err).Str("component", "OCR_HTTP")
 			return OcrResult{}, err
