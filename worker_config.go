@@ -46,12 +46,12 @@ func NoOpFlagFunctionWorker() FlagFunctionWorker {
 }
 
 func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) WorkerConfig {
-	rabbitConfig := DefaultWorkerConfig()
+	workerConfig := DefaultWorkerConfig()
 
 	flagFunction()
 	var (
-		AmqpURI   string
-		SaveFiles bool
+		AmqpURI string
+	//	SaveFiles bool
 	)
 	flag.StringVar(
 		&AmqpURI,
@@ -59,17 +59,17 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) WorkerCon
 		"",
 		"The Amqp URI, eg: amqp://guest:guest@localhost:5672/",
 	)
-	flag.BoolVar(
+	/*	flag.BoolVar(
 		&SaveFiles,
 		"save_files",
 		false,
 		"if set there will be no clean up of temporary files",
-	)
+	)*/
 
 	flag.Parse()
 	if len(AmqpURI) > 0 {
-		rabbitConfig.AmqpURI = AmqpURI
+		workerConfig.AmqpURI = AmqpURI
 	}
 
-	return rabbitConfig
+	return workerConfig
 }

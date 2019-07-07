@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
@@ -17,18 +18,20 @@ func init() {
 }
 
 func main() {
-	/*	SaveFile := false
-		flagFunc := func() {
-			flag.BoolVar(
-				&SaveFile,
-				"save_file",
-				false,
-				"The http port to listen on, eg, 8081",
-			)
-		}*/
+	var SaveFile = false
+	flagFunc := func() {
+		flag.BoolVar(
+			&SaveFile,
+			"save_files",
+			false,
+			"if set there will be no clean up of temporary files",
+		)
+	}
 
-	noOpFlagFuncEngine := ocrworker.NoOpFlagFunctionWorker()
-	workerConfig := ocrworker.DefaultConfigFlagsWorkerOverride(noOpFlagFuncEngine)
+	//noOpFlagFuncEngine := ocrworker.NoOpFlagFunctionWorker()
+	workerConfig := ocrworker.DefaultConfigFlagsWorkerOverride(flagFunc)
+
+	log.Info().Interface("workerConfig", workerConfig).Msg("parameter list of workerConfig")
 
 	// infinite loop, since sometimes worker <-> rabbitmq connection
 	// gets broken.  see https://github.com/tleyden/open-ocr/issues/4

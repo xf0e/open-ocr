@@ -122,7 +122,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig Worke
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
 
-	logger.Info().Interface("workerConfig", workerConfig).Msg("parameter list of workerConfig")
+	logger.Debug().Interface("workerConfig", workerConfig).Msg("parameter list of workerConfig")
 
 	tmpFileName, err := func() (string, error) {
 		if ocrRequest.ImgBase64 != "" {
@@ -251,7 +251,7 @@ func (t SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs Sandwi
 	cflags := engineArgs.Export()
 	tmpFileExtension := "_ocr.pdf"
 	ocrLayerFile := inputFilename
-	cmdArgs := []string{}
+	cmdArgs := make([]string, 0)
 
 	ocrLayerFile = fmt.Sprintf("%s%s", ocrLayerFile, tmpFileExtension)
 	cmdArgs = append(cmdArgs, cflags...)
@@ -284,12 +284,15 @@ func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds
 
 func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
 	// inputFilename is the same as RequestID
+
+	log.Info().Interface("engineArgs", engineArgs).Msg("Engine arguments")
+
 	requestID := inputFilename
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", requestID).Timestamp().Logger()
 
 	fileToDeliver := "temp.file"
-	cmdArgs := []string{}
+	cmdArgs := make([]string, 0)
 	ocrLayerFile := ""
 
 	logger.Info().Str("component", "OCR_SANDWICH").
@@ -440,7 +443,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		return OcrResult{Status: "error"}, err
 	}
 
-	if engineArgs.saveFiles {
+	if !engineArgs.saveFiles {
 		defer func() {
 			logger.Info().Str("component", "OCR_SANDWICH").Str("file_name", ocrLayerFile).
 				Msg("step 1: deleting file (pdfsandwich run)")

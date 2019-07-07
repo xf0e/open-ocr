@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"net/url"
+
 	//"github.com/sasha-s/go-deadlock"
 	"github.com/streadway/amqp"
 	"os"
@@ -102,8 +104,9 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 
 	// setting rabbitMQ correlation ID. There is no reason to be different from requestID
 	correlationUUID := requestID
+	urlToLog, _ := url.Parse(c.rabbitConfig.AmqpURI)
 	logger.Info().Str("DocType", ocrRequest.DocType).
-		Str("AmqpURI", c.rabbitConfig.AmqpURI).
+		Str("AmqpURI", urlToLog.Scheme+"://"+urlToLog.Host+urlToLog.Path).
 		Msg("dialing RabbitMQ")
 
 	c.connection, err = amqp.Dial(c.rabbitConfig.AmqpURI)
@@ -150,7 +153,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		defer confirmDelivery(ack, nack)
 	}
 
-	// TODO: we only need to download image url if there are
+	// TODO: we only need to download image urlToLog if there are
 	// any preprocessors.  if rabbitmq isn't in same data center
 	// as open-ocr, it will be expensive in terms of bandwidth
 	// to have image binary in messages
@@ -169,7 +172,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			// if we do not have base 64 or bytes download the file
 			err = ocrRequest.downloadImgUrl()
 			if err != nil {
-				logger.Warn().Err(err).Msg("Error downloading img url")
+				logger.Warn().Err(err).Msg("Error downloading img urlToLog")
 				return OcrResult{}, err
 			}
 		}

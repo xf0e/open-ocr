@@ -7,6 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/ksuid"
 	"github.com/streadway/amqp"
+	"net/url"
 	"os"
 	"time"
 )
@@ -41,15 +42,16 @@ func (w OcrRpcWorker) Run() error {
 	queueArgs := make(amqp.Table)
 	queueArgs["x-max-priority"] = uint8(9)
 
-	log.Info().
+	log.Debug().
 		Str("component", "OCR_WORKER").
 		Str("tag", tag).
 		Msg("Run() called...")
 
+	urlToLog, _ := url.Parse(w.workerConfig.AmqpURI)
 	log.Info().
 		Str("component", "OCR_WORKER").
 		Str("tag", tag).
-		Str("host", w.workerConfig.AmqpURI).
+		Str("amqp", urlToLog.Scheme+"://"+urlToLog.Host+urlToLog.Path).
 		Msg("dialing rabbitMQ")
 
 	w.conn, err = amqp.Dial(w.workerConfig.AmqpURI)
