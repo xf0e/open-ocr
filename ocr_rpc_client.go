@@ -332,7 +332,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 	for d := range deliveries {
 		if d.CorrelationId == correlationUuid {
 			bodyLenToLog := len(d.Body)
-			//defer c.connection.Close()
+			defer c.connection.Close()
 			if bodyLenToLog > 32 {
 				bodyLenToLog = 32
 			}
@@ -360,7 +360,6 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 				Msg("ignoring delivery w/ correlation id")
 		}
 	}
-	_ = c.connection.Close()
 }
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
