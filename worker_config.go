@@ -15,6 +15,7 @@ type WorkerConfig struct {
 	APIQueueName string
 	APIPathStats string
 	SaveFiles    bool
+	Debug        bool
 }
 
 func DefaultWorkerConfig() WorkerConfig {
@@ -34,6 +35,7 @@ func DefaultWorkerConfig() WorkerConfig {
 		APIQueueName: "decode-ocr",
 		APIPathStats: "/api/nodes",
 		SaveFiles:    false,
+		Debug:        false,
 	}
 	return workerConfig
 
@@ -50,26 +52,34 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) WorkerCon
 
 	flagFunction()
 	var (
-		AmqpURI string
-	//	SaveFiles bool
+		amqpURI   string
+		saveFiles bool
+		debug     bool
 	)
 	flag.StringVar(
-		&AmqpURI,
+		&amqpURI,
 		"amqp_uri",
 		"",
 		"The Amqp URI, eg: amqp://guest:guest@localhost:5672/",
 	)
-	/*	flag.BoolVar(
-		&SaveFiles,
+	flag.BoolVar(
+		&saveFiles,
 		"save_files",
 		false,
 		"if set there will be no clean up of temporary files",
-	)*/
+	)
+	flag.BoolVar(
+		&debug,
+		"debug",
+		false,
+		"sets debug flag, program will print more messages",
+	)
 
 	flag.Parse()
-	if len(AmqpURI) > 0 {
-		workerConfig.AmqpURI = AmqpURI
+	if len(amqpURI) > 0 {
+		workerConfig.AmqpURI = amqpURI
 	}
-
+	workerConfig.SaveFiles = saveFiles
+	workerConfig.Debug = debug
 	return workerConfig
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
@@ -14,24 +13,18 @@ import (
 
 func init() {
 	zerolog.TimeFieldFormat = time.StampMilli
-
+	// Default level is info, unless debug flag is present
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 }
 
 func main() {
-	var SaveFile = false
-	flagFunc := func() {
-		flag.BoolVar(
-			&SaveFile,
-			"save_files",
-			false,
-			"if set there will be no clean up of temporary files",
-		)
+	noOpFlagFuncEngine := ocrworker.NoOpFlagFunctionWorker()
+	workerConfig := ocrworker.DefaultConfigFlagsWorkerOverride(noOpFlagFuncEngine)
+	if workerConfig.Debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
-	//noOpFlagFuncEngine := ocrworker.NoOpFlagFunctionWorker()
-	workerConfig := ocrworker.DefaultConfigFlagsWorkerOverride(flagFunc)
-
-	log.Info().Interface("workerConfig", workerConfig).Msg("parameter list of workerConfig")
+	log.Debug().Interface("workerConfig", workerConfig).Msg("parameter list of workerConfig")
 
 	// infinite loop, since sometimes worker <-> rabbitmq connection
 	// gets broken.  see https://github.com/tleyden/open-ocr/issues/4
