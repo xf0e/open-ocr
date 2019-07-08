@@ -19,7 +19,11 @@ func init() {
 
 func main() {
 	noOpFlagFuncEngine := ocrworker.NoOpFlagFunctionWorker()
-	workerConfig := ocrworker.DefaultConfigFlagsWorkerOverride(noOpFlagFuncEngine)
+	workerConfig, err := ocrworker.DefaultConfigFlagsWorkerOverride(noOpFlagFuncEngine)
+	if err != nil {
+		log.Panic().Str("component", "OCR_WORKER").
+			Msgf("error getting arguments: %v ", err)
+	}
 	if workerConfig.Debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}

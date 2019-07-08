@@ -22,11 +22,12 @@ type SandwichEngine struct {
 }
 
 type SandwichEngineArgs struct {
-	configVars  map[string]string `json:"config_vars"`
-	lang        string            `json:"lang"`
-	ocrType     string            `json:"ocr_type"`
-	ocrOptimize bool              `json:"result_optimize"`
-	saveFiles   bool
+	configVars   map[string]string `json:"config_vars"`
+	lang         string            `json:"lang"`
+	ocrType      string            `json:"ocr_type"`
+	ocrOptimize  bool              `json:"result_optimize"`
+	saveFiles    bool
+	t2pConverter string
 }
 
 func NewSandwichEngineArgs(ocrRequest OcrRequest, workerConfig WorkerConfig) (*SandwichEngineArgs, error) {
@@ -92,6 +93,7 @@ func NewSandwichEngineArgs(ocrRequest OcrRequest, workerConfig WorkerConfig) (*S
 	}
 	// if true temp files won't be deleted
 	engineArgs.saveFiles = workerConfig.SaveFiles
+	engineArgs.t2pConverter = workerConfig.Tiff2pdfConverter
 
 	return engineArgs, nil
 
@@ -300,10 +302,15 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		Msg("input file name")
 
 	if uplFileType == "TIFF" {
-		inputFilename = convertImageToPdf(inputFilename)
+		switch engineArgs.t2pConverter {
+		case "convert":
+			inputFilename = convertImageToPdf(inputFilename)
+		case "tiff2pdf":
+			inputFilename = tiff2Pdf(inputFilename)
+		}
 		if inputFilename == "" {
 			err := fmt.Errorf("can not convert input image to intermediate pdf")
-			logger.Error().Err(err).Caller().Msg("Error exec convert")
+			logger.Error().Err(err).Caller().Msg("Error exec " + engineArgs.t2pConverter)
 			return OcrResult{Status: "error"}, err
 		}
 	}
