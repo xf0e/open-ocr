@@ -82,7 +82,7 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 		&tiff2pdfConverter,
 		"image_converter",
 		"convert",
-		"user convert or tiff2pdf for converting incoming tiff files, e.g. -tiff2pdfConverter {convert,tiff2pdf},"+
+		"user convert or tiff2pdf for converting incoming tiff files, e.g. -image_converter {convert,tiff2pdf},"+
 			"tools must be installed on system",
 	)
 
