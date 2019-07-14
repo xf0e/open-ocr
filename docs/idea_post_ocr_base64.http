@@ -175,12 +175,15 @@ POST http://localhost:8080/ocr
 Content-Type: application/json
 
 {
-  "img_url":"http://localhost:7777/Antrag.pdf",
+  "img_url":"http://localhost:7777/a.tif",
   "engine":"sandwich",
   "engine_args":{"lang":"deu", "ocr_type":"combinedpdf","result_optimize":true},
   "deferred":true,
   "reply_to":"http://localhost:9999",
-  "doc_type": "egvp"
+  "doc_type": "egvp",
+  "user_agent": "droidlove",
+  "page_number": 13,
+  "time_out": 2,
 }
 
 
