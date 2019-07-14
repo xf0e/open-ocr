@@ -183,7 +183,7 @@ Content-Type: application/json
   "doc_type": "egvp",
   "user_agent": "droidlove",
   "page_number": 13,
-  "time_out": 2,
+  "time_out": 3600
 }
 
 

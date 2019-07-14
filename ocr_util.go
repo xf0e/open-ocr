@@ -128,9 +128,10 @@ func tiff2Pdf(inputFilename string) string {
 	log.Info().Str("component", "OCR_IMAGECONVERT").Msg("got image file instead of pdf, trying to tiff2pdf it...")
 
 	tmpFileImgToPdf := fmt.Sprintf("%s%s", inputFilename, ".pdf")
-	cmd := exec.Command("convert", inputFilename, "-o", tmpFileImgToPdf)
+	cmd := exec.Command("tiff2pdf", inputFilename, "-o", tmpFileImgToPdf)
 	_, err := cmd.CombinedOutput()
 	if err != nil {
+		log.Debug().Str("component", "OCR_IMAGECONVERT").Interface("tiff2pdf_args", cmd.Args)
 		log.Warn().Str("component", "OCR_IMAGECONVERT").Err(err).
 			Msg("error exec tiff2pdf for transforming TIFF to PDF")
 		return ""
