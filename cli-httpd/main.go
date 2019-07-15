@@ -80,7 +80,7 @@ func main() {
 			`<style> html, body{font-family: "Fixedsys,Courier,monospace";}body {max-width: 960px; min-width: 320px;` +
 			`margin: 0 auto;}section {margin-top: 3em; margin: 3em 1.5em 0 1.5em;}section:last-of-type {margin-bottom: 3em;}` +
 			`li {margin-top: 0.8em;}.nes-container {position: relative; padding: 1.5rem 2rem; border-color: #000; border-style: solid;` +
-			`border-width: 4px;} .nes-container.with-title > .title {display: table;padding: 0 .5rem;margin: -1.8rem 0 1rem; font-size:` +
+			`border-width: 4px;} .nes-container.with-title > .title {display: table;padding: 0 .5rem;margin: -2.2rem 0 1rem; font-size:` +
 			`1rem;background-color: #fff;}` +
 			`.nes-btn {border-image-slice: 2;border-image-width: 2;border-image-outset: 2;position: relative;border-style: solid;border-width: 4px;` +
 			`text-decoration: none;background-color: #92cc41;display: inline-block;padding: 6px 8px;color: #fff;` +
