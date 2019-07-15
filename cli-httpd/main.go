@@ -74,8 +74,6 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
-	//phm := ocrworker.InitPrometheusHttpMetric("open-ocr", prometheus.LinearBuckets(0, 5, 20))
-
 	// any requests to root, just redirect to main page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		text := `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>open-ocr</title>` +
@@ -114,7 +112,54 @@ func main() {
 	})
 
 	//http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
-	http.Handle("/ocr", prometheus.InstrumentHandler("open-ocr-httpd", ocrworker.NewOcrHttpHandler(rabbitConfig)))
+
+	inFlightGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "in_flight_requests",
+		Help: "A gauge of requests currently being served by the wrapped handler.",
+	})
+
+	counter := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "api_requests_total",
+			Help: "A counter for requests to the wrapped handler.",
+		},
+		[]string{"code", "method"},
+	)
+
+	// duration is partitioned by the HTTP method and handler. It uses custom
+	// buckets based on the expected request duration.
+	duration := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "request_duration_seconds",
+			Help:    "A histogram of latencies for requests.",
+			Buckets: []float64{.25, .5, 1, 2.5, 5, 10},
+		},
+		[]string{"handler", "method"},
+	)
+
+	// responseSize has no labels, making it a zero-dimensional
+	// ObserverVec.
+	responseSize := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "response_size_bytes",
+			Help:    "A histogram of response sizes for requests.",
+			Buckets: []float64{200, 500, 900, 1500},
+		},
+		[]string{},
+	)
+
+	// Register all of the metrics in the standard registry.
+	prometheus.MustRegister(inFlightGauge, counter, duration, responseSize)
+
+	ocrChain := promhttp.InstrumentHandlerInFlight(inFlightGauge,
+		promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "ocr"}),
+			promhttp.InstrumentHandlerCounter(counter,
+				promhttp.InstrumentHandlerRequestSize(responseSize, ocrworker.NewOcrHttpHandler(rabbitConfig)),
+			),
+		),
+	)
+
+	http.Handle("/ocr", ocrChain)
 
 	http.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
 
