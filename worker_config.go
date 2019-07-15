@@ -2,7 +2,7 @@ package ocrworker
 
 import (
 	"flag"
-	"github.com/pkg/errors"
+	"fmt"
 )
 
 type WorkerConfig struct {
@@ -93,7 +93,7 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 	if len(tiff2pdfConverter) > 0 {
 		workerConfig.Tiff2pdfConverter = tiff2pdfConverter
 		if tiff2pdfConverter != "convert" && tiff2pdfConverter != "tiff2pdf" {
-			return workerConfig, errors.New("please choose convert of tiff2pdf as image converter")
+			return workerConfig, fmt.Errorf("please choose convert of tiff2pdf as image converter")
 		}
 	}
 	workerConfig.SaveFiles = saveFiles
