@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// InstrumentHttpStatusHandler wraps httpHandler to provide prometheus metrics
 func InstrumentHttpStatusHandler(ocrHttpHandler *OcrHTTPStatusHandler) http.Handler {
 	inFlightGauge := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "ocr_in_flight_requests",
