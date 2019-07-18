@@ -2,47 +2,56 @@ package ocrworker
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 )
 
-type PrometheusHttpMetric struct {
-	Prefix                string
-	NumberOcrRequests     prometheus.Gauge
-	TransactionTotal      *prometheus.CounterVec
-	ResponseTimeHistogram *prometheus.HistogramVec
-	Buckets               []float64
-}
+// InstrumentHttpStatusHandler wraps httpHandler to provide prometheus metrics
+func InstrumentHttpStatusHandler(ocrHttpHandler *OcrHTTPStatusHandler) http.Handler {
+	inFlightGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "ocr_in_flight_requests",
+		Help: "A gauge of requests currently being served by the wrapped handler.",
+	})
 
-func InitPrometheusHttpMetric(prefix string, buckets []float64) *PrometheusHttpMetric {
-	phm := PrometheusHttpMetric{
-		Prefix: prefix,
-		NumberOcrRequests: promauto.NewGauge(prometheus.GaugeOpts{
-			Name: prefix + "_number_ocr_in_flight",
-			Help: "Number of active ocr requests",
-		}),
-		TransactionTotal: promauto.NewCounterVec(prometheus.CounterOpts{
-			Name: prefix + "_requests_total",
-			Help: "total HTTP requests processed",
-		}, []string{"code", "method"},
-		),
-		ResponseTimeHistogram: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    prefix + "_response_time",
-			Help:    "Histogram of response time for handler",
-			Buckets: buckets,
-		}, []string{"handler", "method"}),
-	}
-	return &phm
-}
+	counter := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "ocr_api_requests_total",
+			Help: "A counter for requests to the wrapped handler.",
+		},
+		[]string{"code", "method"},
+	)
 
-func (phm *PrometheusHttpMetric) WrapHandler(handlerLabel string, handlerFunc http.HandlerFunc) http.Handler {
-	handle := http.HandlerFunc(handlerFunc)
-	wrappedHandler := promhttp.InstrumentHandlerInFlight(phm.NumberOcrRequests,
-		promhttp.InstrumentHandlerCounter(phm.TransactionTotal,
-			promhttp.InstrumentHandlerDuration(phm.ResponseTimeHistogram.MustCurryWith(prometheus.Labels{"handler": handlerLabel}),
-				handle),
+	// duration is partitioned by the HTTP method and handler. It uses custom
+	// buckets based on the expected request duration.
+	duration := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "ocr_request_duration_seconds",
+			Help:    "A histogram of latencies for requests.",
+			Buckets: []float64{.01, .05, .1, .25, .5, 1, 2.5, 5, 10},
+		},
+		[]string{"handler", "method"},
+	)
+
+	// requestSize has no labels, making it a zero-dimensional ObserverVec.
+	requestSize := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "ocr_request_size_bytes",
+			Help:    "A histogram of response sizes for requests.",
+			Buckets: []float64{100, 1500, 5000000, 10000000, 25000000, 50000000},
+		},
+		[]string{},
+	)
+
+	// Register all of the metrics in the standard registry.
+	prometheus.MustRegister(inFlightGauge, counter, duration, requestSize)
+
+	ocrChain := promhttp.InstrumentHandlerInFlight(inFlightGauge,
+		promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "ocr"}),
+			promhttp.InstrumentHandlerCounter(counter,
+				//promhttp.InstrumentHandlerRequestSize(requestSize, ocrworker.NewOcrHttpHandler(rabbitConfig)),
+				promhttp.InstrumentHandlerRequestSize(requestSize, ocrHttpHandler),
+			),
 		),
 	)
-	return wrappedHandler
+	return ocrChain
 }
