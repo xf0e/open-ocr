@@ -4,7 +4,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 	"time"
 )
 
@@ -13,12 +13,22 @@ import (
 
 func init() {
 	zerolog.TimeFieldFormat = time.StampMilli
+	// Default level is info, unless debug flag is present
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 }
 
 func main() {
+	noOpFlagFuncEngine := ocrworker.NoOpFlagFunctionWorker()
+	workerConfig, err := ocrworker.DefaultConfigFlagsWorkerOverride(noOpFlagFuncEngine)
+	if err != nil {
+		log.Panic().Str("component", "OCR_WORKER").
+			Msgf("error getting arguments: %v ", err)
+	}
+	if workerConfig.Debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 
-	noOpFlagFunc := ocrworker.NoOpFlagFunction()
-	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(noOpFlagFunc)
+	log.Debug().Interface("workerConfig", workerConfig).Msg("parameter list of workerConfig")
 
 	// infinite loop, since sometimes worker <-> rabbitmq connection
 	// gets broken.  see https://github.com/tleyden/open-ocr/issues/4
@@ -27,7 +37,7 @@ func main() {
 			Str("component", "OCR_WORKER").
 			Msg("Creating new OCR Worker")
 
-		ocrWorker, err := ocrworker.NewOcrRpcWorker(rabbitConfig)
+		ocrWorker, err := ocrworker.NewOcrRpcWorker(workerConfig)
 		if err != nil {
 			log.Panic().Str("component", "OCR_WORKER").
 				Msg("Could not create rpc worker")

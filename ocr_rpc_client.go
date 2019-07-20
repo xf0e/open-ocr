@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"net/url"
+
 	//"github.com/sasha-s/go-deadlock"
 	"github.com/streadway/amqp"
 	"os"
@@ -12,15 +14,8 @@ import (
 	"time"
 )
 
-var (
-	// RPCResponseTimeout sets timeout for getting the result from channel
-	RPCResponseTimeout = time.Second * 20
-	// ResponseCacheTimeout sets global timeout in seconds for request
-	// engine will be killed after reaching the time limit, user will get timeout error
-	ResponseCacheTimeout uint = 240
-	// check interval for request to be ready
-	tickerWithPostActionInterval = time.Second * 2
-)
+// rpcResponseTimeout sets timeout for getting the result from channel
+var rpcResponseTimeout = time.Second * 20
 
 type OcrRpcClient struct {
 	rabbitConfig RabbitConfig
@@ -93,7 +88,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	var messagePriority uint8 = 1
 	if ocrRequest.DocType != "" {
 		logger.Info().Str("DocType", ocrRequest.DocType).
-			Msg("message type is specified, check for higher prio request")
+			Msg("message type is specified, check for higher priority request")
 		// set highest priority for defined message id
 		logger.Debug().Interface("doc_types_available", c.rabbitConfig.QueuePrio)
 		if val, ok := c.rabbitConfig.QueuePrio[ocrRequest.DocType]; ok {
@@ -103,14 +98,15 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		}
 	}
 	// setting the timeout for worker if not set or to high
-	if ocrRequest.TimeOut >= uint(3600) || ocrRequest.TimeOut == 0 {
-		ocrRequest.TimeOut = ResponseCacheTimeout
+	if ocrRequest.TimeOut >= c.rabbitConfig.MaximalResponseCacheTimeout || ocrRequest.TimeOut == 0 {
+		ocrRequest.TimeOut = c.rabbitConfig.ResponseCacheTimeout
 	}
 
 	// setting rabbitMQ correlation ID. There is no reason to be different from requestID
 	correlationUUID := requestID
+	urlToLog, _ := url.Parse(c.rabbitConfig.AmqpURI)
 	logger.Info().Str("DocType", ocrRequest.DocType).
-		Str("AmqpURI", c.rabbitConfig.AmqpURI).
+		Str("AmqpURI", urlToLog.Scheme+"://"+urlToLog.Host+urlToLog.Path).
 		Msg("dialing RabbitMQ")
 
 	c.connection, err = amqp.Dial(c.rabbitConfig.AmqpURI)
@@ -157,7 +153,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		defer confirmDelivery(ack, nack)
 	}
 
-	// TODO: we only need to download image url if there are
+	// TODO: we only need to download image urlToLog if there are
 	// any preprocessors.  if rabbitmq isn't in same data center
 	// as open-ocr, it will be expensive in terms of bandwidth
 	// to have image binary in messages
@@ -176,7 +172,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			// if we do not have base 64 or bytes download the file
 			err = ocrRequest.downloadImgUrl()
 			if err != nil {
-				logger.Warn().Err(err).Msg("Error downloading img url")
+				logger.Warn().Err(err).Msg("Error downloading img urlToLog")
 				return OcrResult{}, err
 			}
 		}
@@ -214,7 +210,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	// TODO automaticaly delivered then atomatic deliver will POST empty request back after timeout
 	if ocrRequest.Deferred {
 		logger.Info().Msg("Asynchronous request accepted")
-		timer := time.NewTimer(time.Duration(ResponseCacheTimeout) * time.Second)
+		timer := time.NewTimer(time.Duration(c.rabbitConfig.ResponseCacheTimeout) * time.Second)
 		logger.Debug().Msg("locking vrequestsAndTimersMu")
 		requestsAndTimersMu.RLock()
 		Requests[requestID] = rpcResponseChan
@@ -227,7 +223,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			// thi go routine will cancel the request after global timeout if client stopped polling
 			go func() {
 				<-timer.C
-				CheckOcrStatusByID(requestID, false)
+				_, _ = CheckOcrStatusByID(requestID, false)
 			}()
 			return OcrResult{
 				ID:     requestID,
@@ -236,7 +232,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		}
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
-		tickerWithPostAction := time.NewTicker(tickerWithPostActionInterval)
+		tickerWithPostAction := time.NewTicker(c.rabbitConfig.tickerWithPostActionInterval)
 
 		go func() {
 		T:
@@ -335,8 +331,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 	logger := zerolog.New(os.Stdout).With().
 		Str("component", "OCR_CLIENT").Str("RequestID", correlationUuid).Timestamp().Logger()
 	logger.Info().Msg("looping over deliveries...:")
-	// TODO this defer is probably a memory leak
-	// defer c.connection.Close()
+
 	for d := range deliveries {
 		if d.CorrelationId == correlationUuid {
 			bodyLenToLog := len(d.Body)
@@ -345,7 +340,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 				bodyLenToLog = 32
 			}
 			logger.Info().Int("size", len(d.Body)).Uint64("DeliveryTag", d.DeliveryTag).
-				Hex("payload(32 Bytes)", d.Body[0:bodyLenToLog]).
+				Str("payload(32 Bytes)", string(d.Body[0:bodyLenToLog])).
 				Str("ReplyTo", d.ReplyTo).
 				Msg("got delivery")
 
@@ -367,7 +362,6 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 			logger.Info().Str("CorrelationId", d.CorrelationId).
 				Msg("ignoring delivery w/ correlation id")
 		}
-
 	}
 }
 
@@ -390,7 +384,7 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 		log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
 	default:
 		sampled := log.Sample(&zerolog.BasicSampler{N: 10})
-		sampled.Info().Str("component", "OCR_CLIENT").
+		sampled.Debug().Str("component", "OCR_CLIENT").
 			Msg("Number of messages in the queue:" + fmt.Sprintf("%v", len(Requests)))
 	}
 	requestsAndTimersMu.RUnlock()

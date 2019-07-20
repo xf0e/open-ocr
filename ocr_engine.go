@@ -16,7 +16,7 @@ const (
 )
 
 type OcrEngine interface {
-	ProcessRequest(ocrRequest OcrRequest) (OcrResult, error)
+	ProcessRequest(ocrRequest OcrRequest, workerConfig WorkerConfig) (OcrResult, error)
 }
 
 func NewOcrEngine(engineType OcrEngineType) OcrEngine {

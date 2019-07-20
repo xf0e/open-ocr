@@ -17,6 +17,7 @@ type TesseractEngineArgs struct {
 	configVars  map[string]string `json:"config_vars"`
 	pageSegMode string            `json:"psm"`
 	lang        string            `json:"lang"`
+	saveFiles   bool
 }
 
 func NewTesseractEngineArgs(ocrRequest OcrRequest) (*TesseractEngineArgs, error) {
@@ -96,7 +97,8 @@ func (t TesseractEngineArgs) Export() []string {
 	return result
 }
 
-func (t TesseractEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error) {
+// ProcessRequest will process incoming OCR request by routing it through the whole process chain
+func (t TesseractEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig WorkerConfig) (OcrResult, error) {
 
 	tmpFileName, err := func() (string, error) {
 		if ocrRequest.ImgBase64 != "" {
@@ -114,11 +116,18 @@ func (t TesseractEngine) ProcessRequest(ocrRequest OcrRequest) (OcrResult, error
 		return OcrResult{}, err
 	}
 
-	defer os.Remove(tmpFileName)
-
 	engineArgs, err := NewTesseractEngineArgs(ocrRequest)
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_TESSERACT").Msg("error getting engineArgs")
+		log.Error().Err(err).Str("component", "OCR_TESSERACT").Caller().Msg("error getting engineArgs")
+		return OcrResult{}, err
+	}
+
+	if engineArgs.saveFiles {
+		defer os.Remove(tmpFileName)
+	}
+
+	if err != nil {
+		log.Error().Err(err).Str("component", "OCR_TESSERACT").Caller().Msg("error getting engineArgs")
 		return OcrResult{}, err
 	}
 
@@ -219,8 +228,9 @@ func (t TesseractEngine) processImageFile(inputFilename string, engineArgs Tesse
 	outBytes, outFile, err := findAndReadOutfile(tmpOutFileBaseName, fileExtensions)
 
 	// delete output file when we are done
-	defer os.Remove(outFile)
-
+	if engineArgs.saveFiles {
+		defer os.Remove(outFile)
+	}
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_TESSERACT").
 			Str("file_name", tmpOutFileBaseName).Msg("Error getting data from out file")

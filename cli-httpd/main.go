@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
@@ -17,6 +18,12 @@ import (
 // This assumes that there is a worker running
 // To test it:
 // curl -X POST -H "Content-Type: application/json" -d '{"img_url":"http://localhost:8081/img","engine":0}' http://localhost:8081/ocr
+
+var (
+	sha1ver   string
+	buildTime string
+	version   string
+)
 
 func init() {
 	zerolog.TimeFieldFormat = time.StampMilli
@@ -50,10 +57,11 @@ func main() {
 		}
 	}()
 
-	var httpPort int
+	var httpPort uint
 	var debug bool
+	var flgVersion bool
 	flagFunc := func() {
-		flag.IntVar(
+		flag.UintVar(
 			&httpPort,
 			"http_port",
 			8080,
@@ -65,25 +73,39 @@ func main() {
 			false,
 			"sets debug flag, program will print more messages",
 		)
-
+		flag.BoolVar(
+			&flgVersion,
+			"version",
+			false,
+			"show version and exit",
+		)
 	}
 
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
-	if debug == true {
+	if flgVersion {
+		fmt.Printf("Version %s. Build on %s from git commit hash %s\n", version, buildTime, sha1ver)
+		os.Exit(0)
+	}
+	if debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
 	// any requests to root, just redirect to main page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		text := `<h1>OpenOCR is running!<h1> Need <a href="https://godoc.org/github.com/xf0e/open-ocr">docs</a>?`
-		fmt.Fprintf(w, text)
+		text := ocrworker.GenerateLandingPage()
+		_, _ = fmt.Fprintf(w, text)
 	})
 
-	http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
+	//http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
+	ocrChain := ocrworker.InstrumentHttpStatusHandler(ocrworker.NewOcrHttpHandler(rabbitConfig))
+
+	http.Handle("/ocr", ocrChain)
 
 	http.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
 
 	http.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
+	// expose metrics for prometheus
+	http.Handle("/metrics", promhttp.Handler())
 
 	listenAddr := fmt.Sprintf(":%d", httpPort)
 
