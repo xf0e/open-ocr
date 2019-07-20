@@ -22,6 +22,7 @@ import (
 var (
 	sha1ver   string
 	buildTime string
+	version   = "1.7"
 )
 
 func init() {
@@ -82,7 +83,7 @@ func main() {
 
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
 	if flgVersion {
-		fmt.Printf("Build on %s from sha1 %s\n", buildTime, sha1ver)
+		fmt.Printf("Version %s. Build on %s from sha1 %s\n", version, buildTime, sha1ver)
 		os.Exit(0)
 	}
 	if debug {

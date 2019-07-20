@@ -3,6 +3,13 @@ package ocrworker
 import (
 	"flag"
 	"fmt"
+	"os"
+)
+
+var (
+	sha1ver   string
+	buildTime string
+	version   = "1.7"
 )
 
 type WorkerConfig struct {
@@ -59,6 +66,7 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 		saveFiles         bool
 		debug             bool
 		tiff2pdfConverter string
+		flgVersion        bool
 	)
 	flag.StringVar(
 		&amqpURI,
@@ -85,8 +93,18 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 		"user convert or tiff2pdf for converting incoming tiff files, e.g. -image_converter {convert,tiff2pdf},"+
 			"tools must be installed on system",
 	)
+	flag.BoolVar(
+		&flgVersion,
+		"version",
+		false,
+		"show version and exit",
+	)
 
 	flag.Parse()
+	if flgVersion {
+		fmt.Printf("Version %s. Build on %s from sha1 %s\n", version, buildTime, sha1ver)
+		os.Exit(0)
+	}
 	if len(amqpURI) > 0 {
 		workerConfig.AmqpURI = amqpURI
 	}
