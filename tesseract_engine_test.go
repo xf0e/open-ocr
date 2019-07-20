@@ -28,9 +28,9 @@ func TestTesseractEngineWithRequest(t *testing.T) {
 		EngineType: EngineTesseract,
 		EngineArgs: cFlags,
 	}
-
+	workerConfig := workerConfigForTests()
 	assert.True(t, err == nil)
-	result, err := engine.ProcessRequest(ocrRequest)
+	result, err := engine.ProcessRequest(ocrRequest, workerConfig)
 	assert.True(t, err == nil)
 	log.Info().Str("component", "TEST").Interface("result", result)
 
@@ -57,8 +57,9 @@ func TestTesseractEngineWithJson(t *testing.T) {
 		bytes, err := ioutil.ReadFile("docs/testimage.png")
 		assert.True(t, err == nil)
 		ocrRequest.ImgBytes = bytes
+		workerConfig := workerConfigForTests()
 		engine := NewOcrEngine(ocrRequest.EngineType)
-		result, err := engine.ProcessRequest(ocrRequest)
+		result, err := engine.ProcessRequest(ocrRequest, workerConfig)
 		log.Error().Err(err).Str("component", "TEST")
 
 		assert.True(t, err == nil)

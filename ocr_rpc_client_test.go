@@ -10,6 +10,11 @@ import (
 func init() {
 }
 
+func workerConfigForTests() WorkerConfig {
+	workerConfig := DefaultWorkerConfig()
+	return workerConfig
+}
+
 func rabbitConfigForTests() RabbitConfig {
 	rabbitConfig := DefaultTestConfig()
 	return rabbitConfig
@@ -23,12 +28,13 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 	testImageUrl := "http://localhost:8080/img"
 
 	rabbitConfig := rabbitConfigForTests()
+	workerConfig := workerConfigForTests()
 
 	requestID := "426d0ef9-a0c9-48cb-4562-f9d6f29a6ba5"
 
 	// kick off a worker
 	// this would normally happen on a different machine ..
-	ocrWorker, err := NewOcrRpcWorker(rabbitConfig)
+	ocrWorker, err := NewOcrRpcWorker(workerConfig)
 	if err != nil {
 		log.Error().Str("component", "TEST").Err(err)
 	}

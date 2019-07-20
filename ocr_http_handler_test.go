@@ -15,8 +15,9 @@ import (
 func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 
 	rabbitConfig := rabbitConfigForTests()
+	workerConfig := workerConfigForTests()
 
-	err := spawnOcrWorker(rabbitConfig)
+	err := spawnOcrWorker(workerConfig)
 	if err != nil {
 		log.Panic().Msg("Could not spawn ocr worker")
 	}
@@ -56,11 +57,11 @@ func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 	assert.True(t, true)
 }
 
-func spawnOcrWorker(rabbitConfig RabbitConfig) error {
+func spawnOcrWorker(workerConfig WorkerConfig) error {
 
 	// kick off a worker
 	// this would normally happen on a different machine ..
-	ocrWorker, err := NewOcrRpcWorker(rabbitConfig)
+	ocrWorker, err := NewOcrRpcWorker(workerConfig)
 	if err != nil {
 		return err
 	}
