@@ -9,7 +9,7 @@ import (
 var (
 	sha1ver   string
 	buildTime string
-	version   = "1.7"
+	version   string
 )
 
 type WorkerConfig struct {
