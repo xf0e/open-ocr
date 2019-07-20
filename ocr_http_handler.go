@@ -87,6 +87,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	}
 }
 
+// HandleOcrRequest will process incoming OCR request by routing it through the whole process chain
 func HandleOcrRequest(ocrRequest OcrRequest, workerConfig RabbitConfig) (OcrResult, error) {
 
 	var requestIDRaw, _ = uuid.NewV4()

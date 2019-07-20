@@ -1,5 +1,6 @@
 package ocrworker
 
+// GenerateLandingPage will generate a simple landing page
 func GenerateLandingPage() string {
 
 	text := `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>open-ocr</title>` +

@@ -25,6 +25,7 @@ var (
 	tag = ksuid.New().String()
 )
 
+// NewOcrRpcWorker is needed to establish a connection to a message broker
 func NewOcrRpcWorker(wc WorkerConfig) (*OcrRpcWorker, error) {
 	ocrRpcWorker := &OcrRpcWorker{
 		workerConfig: wc,

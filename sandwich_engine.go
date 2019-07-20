@@ -30,6 +30,7 @@ type SandwichEngineArgs struct {
 	t2pConverter string
 }
 
+// NewSandwichEngineArgs generates arguments for SandwichEngine which will be used to start involved tools
 func NewSandwichEngineArgs(ocrRequest OcrRequest, workerConfig WorkerConfig) (*SandwichEngineArgs, error) {
 	log := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
@@ -119,6 +120,7 @@ func (t SandwichEngineArgs) Export() []string {
 	return result
 }
 
+// ProcessRequest will process incoming OCR request by routing it through the whole process chain
 func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig WorkerConfig) (OcrResult, error) {
 
 	logger := zerolog.New(os.Stdout).With().

@@ -97,6 +97,7 @@ func (t TesseractEngineArgs) Export() []string {
 	return result
 }
 
+// ProcessRequest will process incoming OCR request by routing it through the whole process chain
 func (t TesseractEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig WorkerConfig) (OcrResult, error) {
 
 	tmpFileName, err := func() (string, error) {

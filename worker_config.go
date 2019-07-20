@@ -12,6 +12,7 @@ var (
 	version   string
 )
 
+// WorkerConfig will be passed to ocr engines and is used to establish connection to a message  broker
 type WorkerConfig struct {
 	AmqpURI           string
 	Exchange          string
@@ -27,6 +28,7 @@ type WorkerConfig struct {
 	Tiff2pdfConverter string
 }
 
+// DefaultWorkerConfig will set the default set of worker parameters which are needed for testing and connecting to a broker
 func DefaultWorkerConfig() WorkerConfig {
 
 	// Reliable: false due to major issues that would completely
@@ -51,8 +53,11 @@ func DefaultWorkerConfig() WorkerConfig {
 
 }
 
+// FlagFunctionWorker will be used as argument type for DefaultConfigFlagsWorkerOverride
 type FlagFunctionWorker func()
 
+// NoOpFlagFunctionWorker will return an empty set of cli parameters.
+// In this case default parameter will be used
 func NoOpFlagFunctionWorker() FlagFunctionWorker {
 	return func() {}
 }
