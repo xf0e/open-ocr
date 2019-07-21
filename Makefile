@@ -11,7 +11,7 @@ GO_FILES := $(shell find . -name 'main.go' | grep -v /vendor/)
 
 all: run
 
-server:
+release:
 	go build -o ${OUT_WORKER} -buildmode=pie -a -tags netgo -ldflags="-s -w -X github.com/xf0e/open-ocr.buildTime=${DATE} \
 	 -X github.com/xf0e/open-ocr.sha1ver=${SHA1VER} -X github.com/xf0e/open-ocr.version=${VERSION}" cli-worker/main.go
 	go build -o ${OUT_HTTPD} -buildmode=pie -a -tags netgo -ldflags="-s -w -X main.buildTime=${DATE} \
@@ -19,7 +19,7 @@ server:
 	go build -o ${OUT_PREPROCESSOR} -buildmode=pie -a -tags netgo -ldflags="-s -w -X main.buildTime=${DATE} \
 	 -X main.sha1ver=${SHA1VER} -X main.version=${VERSION}" cli-preprocessor/main.go
 
-nostrip:
+debug:
 	go build -o ${OUT_WORKER} -buildmode=pie -a -tags netgo -ldflags="-w -X github.com/xf0e/open-ocr.buildTime=${DATE} \
 	 -X github.com/xf0e/open-ocr.sha1ver=${SHA1VER} -X github.com/xf0e/open-ocr.version=${VERSION}" cli-worker/main.go
 	go build -o ${OUT_HTTPD} -buildmode=pie -a -tags netgo -ldflags="-w -X main.buildTime=${DATE} \
@@ -27,21 +27,21 @@ nostrip:
 	go build -o ${OUT_PREPROCESSOR} -buildmode=pie -a -tags netgo -ldflags="-w -X main.buildTime=${DATE} \
 	 -X main.sha1ver=${SHA1VER} -X main.version=${VERSION}" cli-preprocessor/main.go
 
-#test:
-#	@go test -short ${PKG_LIST}
-#
-#vet:
-#	@go vet ${PKG_LIST}
-#
-#lint:
-#	@for file in ${GO_FILES} ;  do \
-#		golint $$file ; \
-#	done
-#
-#static: vet lint
-#	go build -i -v -o ${OUT}-v${VERSION} -tags netgo -ldflags="-extldflags \"-static\" -w -s -X main.version=${VERSION}" ${PKG}
+test:
+	@go test -v ${PKG}
 
-run: server
+vet:
+	@go vet ${PKG_LIST}
+
+lint:
+	@for file in ${GO_FILES} ;  do \
+		/home/grrr/go/bin/golint $$file ; \
+	done
+
+static: vet lint
+	go build -i -v -o ${OUT}-v${VERSION} -tags netgo -ldflags="-extldflags \"-static\" -w -s -X main.version=${VERSION}" ${PKG}
+
+run: release
 	./${OUT_WORKER}
 	./${OUT_HTTPD}
 	./${OUT_PREPROCESSOR}
@@ -49,4 +49,4 @@ run: server
 clean:
 	-@rm ${OUT_WORKER} ${OUT_HTTPD} ${OUT_PREPROCESSOR}
 
-.PHONY: run server static vet lint
+.PHONY: run release static vet lint
