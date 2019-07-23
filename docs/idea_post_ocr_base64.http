@@ -235,3 +235,18 @@ Content-Type: application/json
 }
 
 ###
+
+POST http://dms-t-to1.bghw.de:8080/ocr
+Content-Type: application/json
+
+{
+  "img_base64":"",
+  "engine":"sandwich",
+  "engine_args":{"lang":"eng", "ocr_type":"txt","result_optimize":true},
+  "deferred":false,
+  "reply_to":"http://localhost:9999",
+  "doc_type": "eg",
+  "time_out": 1600
+}
+
+###

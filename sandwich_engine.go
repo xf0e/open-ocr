@@ -168,6 +168,8 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig Worke
 		logger.Error().Str("component", "OCR_SANDWICH").Err(err).Caller().Msg("error getting engineArgs")
 		return OcrResult{Text: "can not build arguments", Status: "error"}, err
 	}
+
+	log.Info().Interface("engineArgs", engineArgs).Msg("Engine arguments")
 	// getting timeout for request
 	configTimeOut := ocrRequest.TimeOut
 
@@ -288,9 +290,6 @@ func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds
 
 func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
 	// inputFilename is the same as RequestID
-
-	log.Info().Interface("engineArgs", engineArgs).Msg("Engine arguments")
-
 	requestID := inputFilename
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", requestID).Timestamp().Logger()
