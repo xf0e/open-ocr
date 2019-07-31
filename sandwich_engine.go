@@ -288,10 +288,11 @@ func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds
 
 func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
 	// inputFilename is the same as RequestID
+	requestID := inputFilename
+	// timeTrack(start time.Time, operation string, message string, requestID string)
+	defer timeTrack(time.Now(), "perform_ocr", "processing time", requestID)
 
 	log.Info().Interface("engineArgs", engineArgs).Msg("Engine arguments")
-
-	requestID := inputFilename
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", requestID).Timestamp().Logger()
 

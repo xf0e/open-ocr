@@ -154,3 +154,14 @@ func checkURLForReplyTo(uri string) (string, error) {
 	}
 	return u.String(), err
 }
+
+// used to measure time of selected operations
+func timeTrack(start time.Time, operation string, message string, requestID string) {
+	elapsed := time.Since(start)
+	if requestID == "" {
+		log.Info().Str("component", "ocr_worker").Dur(operation, elapsed).
+			Timestamp().Msg(message)
+	}
+	log.Info().Str("component", "ocr_worker").Dur(operation, elapsed).
+		Str("RequestID", requestID).Timestamp().Msg(message)
+}
