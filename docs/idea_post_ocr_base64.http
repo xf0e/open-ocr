@@ -203,7 +203,7 @@ Content-Type: application/json
 
 ### malformed reques for debug purposes
 
-POST http://dms-p-to1:8080/ocr
+POST http://localhost:8080/ocr
 Content-Type: application/json
 
 {
@@ -215,7 +215,8 @@ Content-Type: application/json
   "doc_type": "egvp",
   "page_number": 2,
   "time_out": 24,
-  "user_agent": "0xdeadbeef"
+  "user_agent": "0xdeadbeef",
+  "reference_id": "0xf0ef0ef0ef0ef0ef0e"
 }
 
 ###
