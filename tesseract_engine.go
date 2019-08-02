@@ -57,7 +57,7 @@ func NewTesseractEngineArgs(ocrRequest OcrRequest) (*TesseractEngineArgs, error)
 	if pageSegMode != nil {
 		pageSegModeStr, ok := pageSegMode.(string)
 		if !ok {
-			return nil, fmt.Errorf("Could not convert psm into string: %v", pageSegMode)
+			return nil, fmt.Errorf("could not convert psm into string: %v", pageSegMode)
 		}
 		engineArgs.pageSegMode = pageSegModeStr
 	}
@@ -67,7 +67,7 @@ func NewTesseractEngineArgs(ocrRequest OcrRequest) (*TesseractEngineArgs, error)
 	if lang != nil {
 		langStr, ok := lang.(string)
 		if !ok {
-			return nil, fmt.Errorf("Could not convert lang into string: %v", lang)
+			return nil, fmt.Errorf("could not convert lang into string: %v", lang)
 		}
 		engineArgs.lang = langStr
 	}
@@ -124,11 +124,6 @@ func (t TesseractEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig Work
 
 	if engineArgs.saveFiles {
 		defer os.Remove(tmpFileName)
-	}
-
-	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_TESSERACT").Caller().Msg("error getting engineArgs")
-		return OcrResult{}, err
 	}
 
 	ocrResult, err := t.processImageFile(tmpFileName, *engineArgs)
