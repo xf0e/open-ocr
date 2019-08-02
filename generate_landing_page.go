@@ -112,7 +112,7 @@ pre {
     <li><p> <a href="https://github.com/xf0e/open-ocr">repository</a></p></li>
   </ul>
 </div>
-<p>proudly made with BASIC:)</p>
+<p>written as DDD process (russian: Davai Davai Deploy)</p>
 </section></body> </html>`
 
 	return text
