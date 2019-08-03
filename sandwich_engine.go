@@ -287,11 +287,12 @@ func runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds
 }
 
 func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
+	// if error flag is true, input files won't be deleted
 	errorFlag := false
 	// inputFilename is the same as RequestID
 	requestID := inputFilename
 	// timeTrack(start time.Time, operation string, message string, requestID string)
-	defer timeTrack(time.Now(), "perform_ocr", "processing time", requestID)
+	defer timeTrack(time.Now(), "processing_time", "processing time", requestID)
 
 	log.Info().Interface("engineArgs", engineArgs).Msg("Engine arguments")
 	logger := zerolog.New(os.Stdout).With().
