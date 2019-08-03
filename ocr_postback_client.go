@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var postTimeout = time.Duration(15 * time.Second)
+var postTimeout = 15 * time.Second
 
 type ocrPostClient struct {
 }

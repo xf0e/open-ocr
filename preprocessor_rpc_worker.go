@@ -270,7 +270,7 @@ func (w *PreprocessorRpcWorker) handleDelivery(d amqp.Delivery) error {
 			Headers:         amqp.Table{},
 			ContentType:     "text/plain",
 			ContentEncoding: "",
-			Body:            []byte(ocrRequestJson),
+			Body:            ocrRequestJson,
 			DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
 			Priority:        0,              // 0-9
 			ReplyTo:         d.ReplyTo,

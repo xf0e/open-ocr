@@ -55,7 +55,7 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 		}
 		assert.True(t, err == nil)
 		log.Info().Str("component", "TEST").Str("decodeResult", decodeResult.Text)
-		assert.Equals(t, decodeResult.Text, MOCK_ENGINE_RESPONSE)
+		assert.Equals(t, decodeResult.Text, MockEngineResponse)
 
 	}
 

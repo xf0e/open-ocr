@@ -46,7 +46,7 @@ func TestSandwichEngineWithJson(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	testJsons := []string{}
+	var testJsons []string
 	/*testJsons = append(testJsons, `{"engine":"sandwich"}`)
 	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{}}`)
 	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":null}`)

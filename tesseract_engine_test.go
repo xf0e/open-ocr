@@ -42,7 +42,7 @@ func TestTesseractEngineWithJson(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	testJsons := []string{}
+	var testJsons []string
 	testJsons = append(testJsons, `{"engine":"tesseract"}`)
 	testJsons = append(testJsons, `{"engine":"tesseract", "engine_args":{}}`)
 	testJsons = append(testJsons, `{"engine":"tesseract", "engine_args":null}`)

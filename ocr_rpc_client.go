@@ -195,7 +195,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			Headers:         amqp.Table{},
 			ContentType:     "application/json",
 			ContentEncoding: "",
-			Body:            []byte(ocrRequestJson),
+			Body:            ocrRequestJson,
 			DeliveryMode:    amqp.Transient,  // 1=non-persistent, 2=persistent
 			Priority:        messagePriority, // 0-9
 			ReplyTo:         callbackQueue.Name,

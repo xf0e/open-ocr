@@ -32,7 +32,7 @@ type SandwichEngineArgs struct {
 
 // NewSandwichEngineArgs generates arguments for SandwichEngine which will be used to start involved tools
 func NewSandwichEngineArgs(ocrRequest OcrRequest, workerConfig WorkerConfig) (*SandwichEngineArgs, error) {
-	log := zerolog.New(os.Stdout).With().
+	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
 
 	engineArgs := &SandwichEngineArgs{}
@@ -45,7 +45,7 @@ func NewSandwichEngineArgs(ocrRequest OcrRequest, workerConfig WorkerConfig) (*S
 
 	if configVarsMapInterfaceOrig != nil {
 
-		log.Info().Str("component", "OCR_SANDWICH").Interface("configVarsMap", configVarsMapInterfaceOrig).
+		logger.Info().Str("component", "OCR_SANDWICH").Interface("configVarsMap", configVarsMapInterfaceOrig).
 			Msg("got configVarsMap")
 
 		configVarsMapInterface := configVarsMapInterfaceOrig.(map[string]interface{})
@@ -493,7 +493,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		return OcrResult{Status: "error"}, err
 	}
 	return OcrResult{
-		Text:   string(base64.StdEncoding.EncodeToString(outBytes)),
+		Text:   base64.StdEncoding.EncodeToString(outBytes),
 		Status: "done",
 	}, nil
 }

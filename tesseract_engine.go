@@ -43,7 +43,7 @@ func NewTesseractEngineArgs(ocrRequest OcrRequest) (*TesseractEngineArgs, error)
 		for k, v := range configVarsMapInterface {
 			v, ok := v.(string)
 			if !ok {
-				return nil, fmt.Errorf("Could not convert configVar into string: %v", v)
+				return nil, fmt.Errorf("could not convert configVar into string: %v", v)
 			}
 			configVarsMap[k] = v
 		}
@@ -79,7 +79,7 @@ func NewTesseractEngineArgs(ocrRequest OcrRequest) (*TesseractEngineArgs, error)
 // return a slice that can be passed to tesseract binary as command line
 // args, eg, ["-c", "tessedit_char_whitelist=0123456789", "-c", "foo=bar"]
 func (t TesseractEngineArgs) Export() []string {
-	result := []string{}
+	var result []string
 	for k, v := range t.configVars {
 		result = append(result, "-c")
 		keyValArg := fmt.Sprintf("%s=%s", k, v)
