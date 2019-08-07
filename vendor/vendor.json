@@ -155,8 +155,8 @@
 		{
 			"checksumSHA1": "zsrhd6n1mArAPl9PrU7o7x/TbEw=",
 			"path": "github.com/prometheus/common/expfmt",
-			"revision": "33bc620f956eb70fbb8355e87df6a97891657ed5",
-			"revisionTime": "2019-07-22T09:16:14Z"
+			"revision": "637d7c34db122e2d1a25d061423098663758d2d3",
+			"revisionTime": "2019-07-30T17:58:46Z"
 		},
 		{
 			"checksumSHA1": "t7ixs1SH8T9eONQUtOlNd449018=",
@@ -225,10 +225,38 @@
 			"revisionTime": "2019-04-04T07:53:20Z"
 		},
 		{
+			"checksumSHA1": "hnaXJcXPG9TVBJOnf5DecBopVtA=",
+			"path": "github.com/xf0e/open-ocr",
+			"revision": "c911bf3acc1abe2b081305b954013fc5b295fec7",
+			"revisionTime": "2019-08-03T17:19:01Z"
+		},
+		{
+			"checksumSHA1": "gBP9QK3tlDnDqGdQfX1TIFD/AJw=",
+			"path": "github.com/xf0e/open-ocr/cli-httpd",
+			"revision": "c911bf3acc1abe2b081305b954013fc5b295fec7",
+			"revisionTime": "2019-08-03T17:19:01Z"
+		},
+		{
+			"checksumSHA1": "qhBPGNOdTZm2HIS/UdCeYZ8vclU=",
+			"path": "github.com/xf0e/open-ocr/cli-preprocessor",
+			"revision": "c911bf3acc1abe2b081305b954013fc5b295fec7",
+			"revisionTime": "2019-08-03T17:19:01Z"
+		},
+		{
+			"checksumSHA1": "aQe8zbVGqLREGdGjdbm+LhIdXiY=",
+			"path": "github.com/xf0e/open-ocr/cli-worker",
+			"revision": "c911bf3acc1abe2b081305b954013fc5b295fec7",
+			"revisionTime": "2019-08-03T17:19:01Z"
+		},
+		{
 			"checksumSHA1": "PHA0MIFCJZEkqs3FRXu/KgY8TIo=",
 			"path": "golang.org/x/sys/windows",
 			"revision": "fae7ac547cb717d141c433a2a173315e216b64c4",
 			"revisionTime": "2019-07-11T09:16:12Z"
+		},
+		{
+			"path": "status",
+			"revision": ""
 		}
 	],
 	"rootPath": "github.com/xf0e/open-ocr"
