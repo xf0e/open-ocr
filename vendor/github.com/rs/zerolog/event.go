@@ -105,7 +105,7 @@ func (e *Event) Msg(msg string) {
 	e.msg(msg)
 }
 
-// Send is equivalent to calling Msg("").
+// Send just like call Msg("")
 //
 // NOTICE: once this method is called, the *Event should be disposed.
 func (e *Event) Send() {
@@ -115,10 +115,10 @@ func (e *Event) Send() {
 	e.msg("")
 }
 
-// Msgf sends the event with formatted msg added as the message field if not empty.
+// Msgf sends the event with formated msg added as the message field if not empty.
 //
-// NOTICE: once this method is called, the *Event should be disposed.
-// Calling Msgf twice can have unexpected result.
+// NOTICE: once this methid is called, the *Event should be disposed.
+// Calling Msg twice can have unexpected result.
 func (e *Event) Msgf(format string, v ...interface{}) {
 	if e == nil {
 		return
@@ -127,8 +127,13 @@ func (e *Event) Msgf(format string, v ...interface{}) {
 }
 
 func (e *Event) msg(msg string) {
-	for _, hook := range e.ch {
-		hook.Run(e, e.level, msg)
+	if len(e.ch) > 0 {
+		e.ch[0].Run(e, e.level, msg)
+		if len(e.ch) > 1 {
+			for _, hook := range e.ch[1:] {
+				hook.Run(e, e.level, msg)
+			}
+		}
 	}
 	if msg != "" {
 		e.buf = enc.AppendString(enc.AppendKey(e.buf, MessageFieldName), msg)
