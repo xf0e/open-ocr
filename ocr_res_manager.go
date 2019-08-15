@@ -2,8 +2,9 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"github.com/rs/zerolog/log"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 // OcrQueueManager is used as a main component of resource manager
@@ -35,8 +36,9 @@ var (
 	queueManager *OcrQueueManager
 	resManager   []ocrResManager
 	// StopChan is used to gracefully stop http daemon
-	StopChan               = make(chan bool, 1)
-	factorForMessageAccept uint // formula: NumMessages < NumConsumers * FactorForMessageAccept
+	StopChan                 = make(chan bool, 1)
+	factorForMessageAccept   uint // formula: NumMessages < NumConsumers * FactorForMessageAccept
+	TechincalErrorResManager bool
 )
 
 // checks if resources for incoming request are available
@@ -46,6 +48,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	jsonQueueStat, err := url2bytes(urlQueue)
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("can't get Queue stats")
+		TechincalErrorResManager = true
 		return false
 	}
 	jsonResStat, err := url2bytes(urlStat)
@@ -53,6 +56,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonQueueStat)).
 			Msg("error unmarshalling json")
+		TechincalErrorResManager = true
 		return false
 	}
 
@@ -61,6 +65,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonQueueStat)).
 			Msg("error unmarshalling json")
+		TechincalErrorResManager = true
 		return false
 	}
 
@@ -69,12 +74,14 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshalling json")
 		log.Error().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonResStat))
+		TechincalErrorResManager = true
 		return false
 	}
 
 	flagForResources := schedulerByMemoryLoad()
 	flagForQueue := schedulerByWorkerNumber()
 	if flagForQueue && flagForResources {
+		TechincalErrorResManager = false
 		isAvailable = true
 	}
 
@@ -116,17 +123,18 @@ func schedulerByMemoryLoad() bool {
 // if the number of messages in the queue too high we should not accept the new messages
 func schedulerByWorkerNumber() bool {
 	resFlag := false
-	//TODO check for race on uint(len(Requests)
-	//if (queueManager.NumMessages) < (queueManager.NumConsumers * factorForMessageAccept) {
+	// TODO check for race on uint(len(Requests)
+	// if (queueManager.NumMessages) < (queueManager.NumConsumers * factorForMessageAccept) {
 	if (uint(len(Requests))) < (queueManager.NumConsumers * factorForMessageAccept) {
 		resFlag = true
 	}
 	return resFlag
 }
 
-// SetResManagerState returns boolean value of resource manager; if memory of rabbitMQ and the number
+// SetResManagerState sets boolean value of resource manager; if memory of rabbitMQ and the number
 // messages is not exceeding  the limit
 func SetResManagerState(ampqAPIConfig RabbitConfig) {
+	var sleepFor time.Duration = 5
 	resManager = newOcrResManager()
 	queueManager = newOcrQueueManager()
 	urlQueue := ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathQueue + ampqAPIConfig.APIQueueName
@@ -152,7 +160,7 @@ func SetResManagerState(ampqAPIConfig RabbitConfig) {
 			boolOldValue, boolCurValue = boolCurValue, CheckForAcceptRequest(urlQueue, urlStat, boolCurValue != boolOldValue)
 			ServiceCanAccept = boolCurValue
 			ServiceCanAcceptMu.Unlock()
-			time.Sleep(1 * time.Second)
+			time.Sleep(sleepFor * time.Second)
 		}
 	}
 }

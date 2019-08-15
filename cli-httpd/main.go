@@ -3,16 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"github.com/xf0e/open-ocr"
 	"net/http"
-	//_ "net/http/pprof"
+	// _ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/xf0e/open-ocr"
 )
 
 // This assumes that there is a worker running
@@ -32,7 +33,8 @@ func init() {
 }
 
 func main() {
-	//defer profile.Start(profile.MemProfile).Stop()
+	// defer profile.Start(profile.MemProfile).Stop()
+	appStopLocal := false
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
 
@@ -48,7 +50,7 @@ func main() {
 				if len(ocrworker.Requests) == 0 {
 					log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
 						Msg("The ocr queue is now empty. open-ocr http daemon will now exit. You may stop workers now")
-					time.Sleep(5 * time.Second) // delay puffer for sending all requests back
+					time.Sleep(20 * time.Second) // delay puffer for sending all requests back
 					break
 				}
 				time.Sleep(1 * time.Second)
@@ -92,11 +94,14 @@ func main() {
 
 	// any requests to root, just redirect to main page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		text := ocrworker.GenerateLandingPage()
+		ocrworker.ServiceCanAcceptMu.Lock()
+		appStopLocal = ocrworker.AppStop
+		ocrworker.ServiceCanAcceptMu.Unlock()
+		text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechincalErrorResManager)
 		_, _ = fmt.Fprintf(w, text)
 	})
 
-	//http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
+	// http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
 	ocrChain := ocrworker.InstrumentHttpStatusHandler(ocrworker.NewOcrHttpHandler(rabbitConfig))
 
 	http.Handle("/ocr", ocrChain)

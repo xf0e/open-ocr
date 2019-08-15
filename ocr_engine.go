@@ -2,8 +2,9 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"github.com/rs/zerolog/log"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 type OcrEngineType int

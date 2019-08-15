@@ -3,13 +3,14 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/nu7hatch/gouuid"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	//"github.com/sasha-s/go-deadlock"
+	// "github.com/sasha-s/go-deadlock"
 	"net/http"
 	"os"
 	"sync"
+
+	"github.com/nu7hatch/gouuid"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // OcrHTTPStatusHandler is for initial handling of ocr request

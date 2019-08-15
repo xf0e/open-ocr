@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 type RabbitConfig struct {

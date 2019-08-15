@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // This variant of the SandwichEngine calls pdfsandwich via exec

@@ -2,7 +2,6 @@ package ocrworker
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/nu7hatch/gouuid"
+	"github.com/rs/zerolog/log"
 )
 
 func saveUrlContentToFileName(url, tmpFileName string) error {
