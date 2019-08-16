@@ -13,7 +13,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/xf0e/open-ocr"
 )
 
 // This assumes that there is a worker running
@@ -97,7 +96,7 @@ func main() {
 		ocrworker.ServiceCanAcceptMu.Lock()
 		appStopLocal = ocrworker.AppStop
 		ocrworker.ServiceCanAcceptMu.Unlock()
-		text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechincalErrorResManager)
+		text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager)
 		_, _ = fmt.Fprintf(w, text)
 	})
 
