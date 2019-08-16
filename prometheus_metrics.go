@@ -1,9 +1,10 @@
 package ocrworker
 
 import (
+	"net/http"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"net/http"
 )
 
 // InstrumentHttpStatusHandler wraps httpHandler to provide prometheus metrics
@@ -48,7 +49,7 @@ func InstrumentHttpStatusHandler(ocrHttpHandler *OcrHTTPStatusHandler) http.Hand
 	ocrChain := promhttp.InstrumentHandlerInFlight(inFlightGauge,
 		promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "ocr"}),
 			promhttp.InstrumentHandlerCounter(counter,
-				//promhttp.InstrumentHandlerRequestSize(requestSize, ocrworker.NewOcrHttpHandler(rabbitConfig)),
+				// promhttp.InstrumentHandlerRequestSize(requestSize, ocrworker.NewOcrHttpHandler(rabbitConfig)),
 				promhttp.InstrumentHandlerRequestSize(requestSize, ocrHttpHandler),
 			),
 		),

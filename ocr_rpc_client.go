@@ -3,15 +3,16 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"net/url"
-
-	//"github.com/sasha-s/go-deadlock"
-	"github.com/streadway/amqp"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
+	// "github.com/sasha-s/go-deadlock"
+	"github.com/streadway/amqp"
 )
 
 // rpcResponseTimeout sets timeout for getting the result from channel
@@ -244,7 +245,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 					ocrRes, err := CheckOcrStatusByID(requestID, false)
 					if err != nil {
 						logger.Error().Err(err)
-					} // only if status is done end the goroutine. otherwise continue polling
+					} // only if status is done of error(~= request is ready) end the goroutine or continue polling
 					if ocrRes.Status == "done" || ocrRes.Status == "error" {
 						logger.Info().Msg("request is ready")
 

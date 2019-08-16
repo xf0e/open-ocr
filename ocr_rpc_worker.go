@@ -3,13 +3,14 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"os"
+	"time"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/ksuid"
 	"github.com/streadway/amqp"
-	"net/url"
-	"os"
-	"time"
 )
 
 type OcrRpcWorker struct {

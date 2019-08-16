@@ -3,11 +3,12 @@ package ocrworker
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/rs/zerolog"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 var postTimeout = 15 * time.Second

@@ -36,20 +36,20 @@ var (
 	queueManager *OcrQueueManager
 	resManager   []ocrResManager
 	// StopChan is used to gracefully stop http daemon
-	StopChan                                  = make(chan bool, 1)
+	StopChan                 = make(chan bool, 1)
 	factorForMessageAccept   uint // formula: NumMessages < NumConsumers * FactorForMessageAccept
-    TechnicalErrorResManager bool
+	TechnicalErrorResManager bool
 )
 
 // checks if resources for incoming request are available
 func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) bool {
 
 	isAvailable := false
-    TechnicalErrorResManager = false
+	TechnicalErrorResManager = false
 	jsonQueueStat, err := url2bytes(urlQueue)
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_RESMAN").Msg("can't get Queue stats")
-        TechnicalErrorResManager = true
+		TechnicalErrorResManager = true
 		return false
 	}
 	jsonResStat, err := url2bytes(urlStat)
@@ -57,7 +57,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonQueueStat)).
 			Msg("error unmarshalling json")
-        TechnicalErrorResManager = true
+		TechnicalErrorResManager = true
 		return false
 	}
 
@@ -66,7 +66,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonQueueStat)).
 			Msg("error unmarshalling json")
-        TechnicalErrorResManager = true
+		TechnicalErrorResManager = true
 		return false
 	}
 
@@ -75,14 +75,14 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshalling json")
 		log.Error().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonResStat))
-        TechnicalErrorResManager = true
+		TechnicalErrorResManager = true
 		return false
 	}
 
 	flagForResources := schedulerByMemoryLoad()
 	flagForQueue := schedulerByWorkerNumber()
 	if flagForQueue && flagForResources {
-        TechnicalErrorResManager = false
+		TechnicalErrorResManager = false
 		isAvailable = true
 	}
 

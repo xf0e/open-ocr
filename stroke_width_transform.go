@@ -2,10 +2,11 @@ package ocrworker
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"os"
 	"os/exec"
+
+	"github.com/rs/zerolog/log"
 )
 
 type StrokeWidthTransformer struct {

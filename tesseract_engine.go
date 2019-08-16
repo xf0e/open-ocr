@@ -3,10 +3,11 @@ package ocrworker
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"os"
 	"os/exec"
+
+	"github.com/rs/zerolog/log"
 )
 
 // This variant of the TesseractEngine calls tesseract via exec
