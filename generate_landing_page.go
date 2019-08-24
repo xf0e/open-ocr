@@ -42,7 +42,7 @@ func randomMOTD() string {
 		"Who was that guy? -Fry Your momma! Now shut up and drag me to work. -Bender",
 		"Oh no! I should do something....but i am already in my pajamas.",
 	}
-	number := rand.Int31n(int32(len(names)))
+	number := rand.Intn(len(names))
 
 	return names[number]
 }
