@@ -41,6 +41,21 @@ func randomMOTD() string {
 		"Good news! There's a report on TV with some very bad news.",
 		"Who was that guy? -Fry Your momma! Now shut up and drag me to work. -Bender",
 		"Oh no! I should do something....but i am already in my pajamas.",
+        "I'd tell you the joke about UDP, but you might not get it.",
+        `<p>Here be dragons!</p>
+		<pre>
+     ,-------,  ,  ,   ,-------,
+      )  ,' /(  |\/|   )\ ',  (
+       )'  /  \ (qp)  /  \  '(
+        ) /___ \_\/(_/ ___\ (
+         '    '-(   )-'    '
+         )w^w(
+         (W_W)
+         ((
+         ))
+         ((
+         ) 
+             </pre>`,
 	}
 	number := rand.Intn(len(names))
 
