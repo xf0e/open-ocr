@@ -3,8 +3,9 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 )
 
 type OcrHttpStatusHandler struct {
@@ -32,7 +33,7 @@ func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 		msg := "unable to perform OCR status check. %v"
 		errMsg := fmt.Sprintf(msg, err)
 		log.Error().Err(err).Str("component", "OCR_STATUS")
-		http.Error(w, errMsg, 500)
+		http.Error(w, errMsg, 404)
 		return
 	}
 
