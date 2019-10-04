@@ -31,6 +31,10 @@ func randomMOTD() string {
 		"There it is, the near-death star.",
 		"Hooray, I'm useful. I'm having a wonderful time.",
 		"Oh, Lord, I'm on the verge of a nervous melt-down.",
+		"The guy who wrote this is gone",
+		"It's running everywhere!",
+		"No comments, no documentation but 24 tickets",
+		"00 0110011 1000011 010011 01000 0110 10011 11 001010 001 0001011 110010",
 		"Robot Nite - Designated device drivers drink free",
 		"Guidance system? Online! Autopilot? Present! Dark matter indicator? Making the noise. All systems operational. Let's rock!",
 		"I choose to believe what I was programmed to believe.",
@@ -41,8 +45,8 @@ func randomMOTD() string {
 		"Good news! There's a report on TV with some very bad news.",
 		"Who was that guy? -Fry Your momma! Now shut up and drag me to work. -Bender",
 		"Oh no! I should do something....but i am already in my pajamas.",
-        "I'd tell you the joke about UDP, but you might not get it.",
-        `<p>Here be dragons!</p>
+		"I'd tell you the joke about UDP, but you might not get it.",
+		`<p>Here be dragons!</p>
 		<pre>
      ,-------,  ,  ,   ,-------,
       )  ,' /(  |\/|   )\ ',  (
