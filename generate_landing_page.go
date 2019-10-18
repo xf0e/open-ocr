@@ -40,6 +40,7 @@ func randomMOTD() string {
 		"I choose to believe what I was programmed to believe.",
 		"No fair! You changed the outcome by measuring it.",
 		"I can't keep running people over. I'm not famous enough to get away with it",
+		"Creating tomorrow's legacy today!",
 		"Help! A guinea pig tricked me!",
 		"You win again, gravity!",
 		"Good news! There's a report on TV with some very bad news.",

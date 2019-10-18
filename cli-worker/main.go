@@ -28,7 +28,7 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
-	log.Debug().Interface("workerConfig", workerConfig).Msg("parameter list of workerConfig")
+	log.Info().Interface("workerConfig", workerConfig).Msg("worker started with this parameters")
 
 	// infinite loop, since sometimes worker <-> rabbitmq connection
 	// gets broken.  see https://github.com/tleyden/open-ocr/issues/4
