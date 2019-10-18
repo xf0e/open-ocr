@@ -127,7 +127,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig Worke
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
 
-	logger.Debug().Interface("workerConfig", workerConfig).Msg("parameter list of workerConfig")
+	logger.Debug().Interface("workerConfig", workerConfig).Msg("worker configuration for this request")
 
 	tmpFileName, err := func() (string, error) {
 		if ocrRequest.ImgBase64 != "" {
@@ -181,11 +181,9 @@ func (t SandwichEngine) tmpFileFromImageBytes(imgBytes []byte, tmpFileName strin
 
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with bytes image")
 	var err error
-	if tmpFileName == "" {
-		tmpFileName, err = createTempFileName()
-		if err != nil {
-			return "", err
-		}
+	tmpFileName, err = createTempFileName(tmpFileName)
+	if err != nil {
+		return "", err
 	}
 
 	// we have to write the contents of the image url to a temp

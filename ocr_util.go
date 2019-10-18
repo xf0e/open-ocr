@@ -57,14 +57,18 @@ func url2bytes(url string) ([]byte, error) {
 
 }
 
-func createTempFileName() (string, error) {
+func createTempFileName(fileName string) (string, error) {
 	tempDir := os.TempDir()
-	uuidRaw, err := uuid.NewV4()
-	if err != nil {
-		return "", err
+
+	if fileName == "" {
+		uuidRaw, err := uuid.NewV4()
+		if err != nil {
+			return "", err
+		}
+		fileName = uuidRaw.String()
 	}
-	uuidStr := uuidRaw.String()
-	return filepath.Join(tempDir, uuidStr), nil
+
+	return filepath.Join(tempDir, fileName), nil
 }
 
 func readFirstBytes(filePath string, nBytesToRead uint) ([]byte, error) {
