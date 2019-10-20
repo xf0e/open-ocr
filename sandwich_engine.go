@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -126,8 +127,18 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig Worke
 
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
+	// copy configuration for logging purposes to prevent leaking passwords to logs
+	workerConfigToLog := workerConfig
+	urlToLog, err := url.Parse(workerConfigToLog.AmqpAPIURI)
+	if err == nil {
+		workerConfigToLog.AmqpAPIURI = StripPasswordFromUrl(urlToLog)
+	}
+	urlToLog, err = url.Parse(workerConfigToLog.AmqpURI)
+	if err == nil {
+		workerConfigToLog.AmqpURI = StripPasswordFromUrl(urlToLog)
+	}
 
-	logger.Debug().Interface("workerConfig", workerConfig).Msg("worker configuration for this request")
+	logger.Debug().Interface("workerConfig", workerConfigToLog).Msg("worker configuration for this request")
 
 	tmpFileName, err := func() (string, error) {
 		if ocrRequest.ImgBase64 != "" {
