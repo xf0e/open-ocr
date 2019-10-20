@@ -202,7 +202,7 @@ func (t SandwichEngine) tmpFileFromImageBase64(base64Image string, tmpFileName s
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with base 64")
 	var err error
 	if tmpFileName == "" {
-		tmpFileName, err = createTempFileName()
+		tmpFileName, err = createTempFileName("")
 		if err != nil {
 			return "", err
 		}
@@ -228,7 +228,7 @@ func (t SandwichEngine) tmpFileFromImageURL(imgURL string, tmpFileName string) (
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with url")
 	var err error
 	if tmpFileName == "" {
-		tmpFileName, err = createTempFileName()
+		tmpFileName, err = createTempFileName("")
 		if err != nil {
 			return "", err
 		}

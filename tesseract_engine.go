@@ -137,7 +137,7 @@ func (t TesseractEngine) tmpFileFromImageBytes(imgBytes []byte) (string, error) 
 
 	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with bytes image")
 
-	tmpFileName, err := createTempFileName()
+	tmpFileName, err := createTempFileName("")
 	if err != nil {
 		return "", err
 	}
@@ -157,7 +157,7 @@ func (t TesseractEngine) tmpFileFromImageBase64(base64Image string) (string, err
 
 	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with base 64")
 
-	tmpFileName, err := createTempFileName()
+	tmpFileName, err := createTempFileName("")
 	if err != nil {
 		return "", err
 	}
@@ -182,7 +182,7 @@ func (t TesseractEngine) tmpFileFromImageUrl(imgUrl string) (string, error) {
 
 	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with url")
 
-	tmpFileName, err := createTempFileName()
+	tmpFileName, err := createTempFileName("")
 	if err != nil {
 		return "", err
 	}

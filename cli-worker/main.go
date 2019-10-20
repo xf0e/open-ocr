@@ -4,6 +4,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
+	"net/url"
+
 	//_ "net/http/pprof"
 	"time"
 )
@@ -28,7 +30,18 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
-	log.Info().Interface("workerConfig", workerConfig).Msg("worker started with this parameters")
+	// copy configuration for logging purposes to prevent leaking passwords to logs
+	workerConfigToLog := workerConfig
+	urlToLog, err := url.Parse(workerConfigToLog.AmqpAPIURI)
+	if err == nil {
+		workerConfigToLog.AmqpAPIURI = ocrworker.StripPasswordFromUrl(urlToLog)
+	}
+	urlToLog, err = url.Parse(workerConfigToLog.AmqpURI)
+	if err == nil {
+		workerConfigToLog.AmqpURI = ocrworker.StripPasswordFromUrl(urlToLog)
+	}
+
+	log.Info().Interface("workerConfig", workerConfigToLog).Msg("worker started with this parameters")
 
 	// infinite loop, since sometimes worker <-> rabbitmq connection
 	// gets broken.  see https://github.com/tleyden/open-ocr/issues/4

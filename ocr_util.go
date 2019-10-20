@@ -57,6 +57,8 @@ func url2bytes(url string) ([]byte, error) {
 
 }
 
+// createTempFileName generating a file name within of a temp directory. If function argument ist empty string
+// file name will be generated in uuid format.
 func createTempFileName(fileName string) (string, error) {
 	tempDir := os.TempDir()
 
@@ -159,7 +161,7 @@ func checkURLForReplyTo(uri string) (string, error) {
 	return u.String(), err
 }
 
-// used to measure time of selected operations
+// timeTrack used to measure time of selected operations
 func timeTrack(start time.Time, operation string, message string, requestID string) {
 	elapsed := time.Since(start)
 	if requestID == "" {
@@ -168,4 +170,15 @@ func timeTrack(start time.Time, operation string, message string, requestID stri
 	}
 	log.Info().Str("component", "ocr_worker").Dur(operation, elapsed).
 		Str("RequestID", requestID).Timestamp().Msg(message)
+}
+
+// StripPasswordFromUrl strips passwords from URL
+func StripPasswordFromUrl(urlToLog *url.URL) string {
+
+	pass, passSet := urlToLog.User.Password()
+
+	if passSet {
+		return strings.Replace(urlToLog.String(), pass+"@", "***@", 1)
+	}
+	return urlToLog.String()
 }

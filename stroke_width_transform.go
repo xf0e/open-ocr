@@ -16,14 +16,14 @@ func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
 
 	// write bytes to a temp file
 
-	tmpFileNameInput, err := createTempFileName()
+	tmpFileNameInput, err := createTempFileName("")
 	tmpFileNameInput = fmt.Sprintf("%s.png", tmpFileNameInput)
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tmpFileNameInput)
 
-	tmpFileNameOutput, err := createTempFileName()
+	tmpFileNameOutput, err := createTempFileName("")
 	tmpFileNameOutput = fmt.Sprintf("%s.png", tmpFileNameOutput)
 	if err != nil {
 		return err

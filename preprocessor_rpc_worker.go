@@ -189,13 +189,13 @@ func (w *PreprocessorRpcWorker) strokeWidthTransform(ocrRequest *OcrRequest) err
 
 	// write bytes to a temp file
 
-	tmpFileNameInput, err := createTempFileName()
+	tmpFileNameInput, err := createTempFileName("")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tmpFileNameInput)
 
-	tmpFileNameOutput, err := createTempFileName()
+	tmpFileNameOutput, err := createTempFileName("")
 	if err != nil {
 		return err
 	}

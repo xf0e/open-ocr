@@ -22,14 +22,14 @@ type ConvertPdf struct {
 
 func (c ConvertPdf) preprocess(ocrRequest *OcrRequest) error {
 
-	tmpFileNameInput, err := createTempFileName()
+	tmpFileNameInput, err := createTempFileName("")
 	tmpFileNameInput = fmt.Sprintf("%s.pdf", tmpFileNameInput)
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tmpFileNameInput)
 
-	tmpFileNameOutput, err := createTempFileName()
+	tmpFileNameOutput, err := createTempFileName("")
 	tmpFileNameOutput = fmt.Sprintf("%s.tif", tmpFileNameOutput)
 	if err != nil {
 		return err
