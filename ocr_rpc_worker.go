@@ -173,7 +173,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 			Uint64("DeliveryTag", d.DeliveryTag).
 			Str("Exchange", d.Exchange).
 			Str("RoutingKey", d.RoutingKey).
-			Msg("got delivery")
+			Msg("worker got delivery, starting processing")
 		// reply from engine here
 		// id is not set, Text is set, Status is set
 		ocrResult, err := w.resultForDelivery(d)
