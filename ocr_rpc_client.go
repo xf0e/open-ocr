@@ -367,6 +367,8 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 	}
 }
 
+// TODO this httpStatusCheck logic is wrong and needs to be rewritten since no defered
+// TODO request can be requested back by ID
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, error) {
 	log.Debug().Str("component", "OCR_CLIENT").Msg("CheckOcrStatusByID called")

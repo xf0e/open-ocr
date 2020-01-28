@@ -58,7 +58,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-"img_url": "9sd5c-63a0-49f6-5e87-0a56d4a10519"
+"img_url": "c2501052-88cf-4c17-5f32-3676ef1f97b8a"
 }
 
 
@@ -151,7 +151,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-  "img_url": "6fbef430-6b3b-4b62-7e5e-c964dcd59cb0"
+  "img_url": "74d06b4a-d80f-4ec4-4786-ef8afc9ad4ed"
 }
 
 
