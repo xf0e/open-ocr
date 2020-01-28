@@ -376,8 +376,6 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 	if _, ok := Requests[requestID]; !ok {
 		requestsAndTimersMu.RUnlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
-	} else if ok && httpStatusCheck {
-		return OcrResult{Status: "processing", ID: requestID}, nil
 	}
 
 	log.Debug().Str("component", "OCR_CLIENT").Msg("getting ocrResult := <-Requests[requestID]")
@@ -387,6 +385,10 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 	case ocrResult = <-Requests[requestID]:
 		log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
 	default:
+		_, ok := Requests[requestID]
+		if ok && httpStatusCheck {
+			return OcrResult{Status: "processing", ID: requestID}, nil
+		}
 		sampled := log.Sample(&zerolog.BasicSampler{N: 10})
 		sampled.Debug().Str("component", "OCR_CLIENT").
 			Msg("Number of messages in the queue:" + fmt.Sprintf("%v", len(Requests)))
