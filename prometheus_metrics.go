@@ -7,14 +7,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// InstrumentHttpStatusHandler wraps httpHandler to provide prometheus metrics
-func InstrumentHttpStatusHandler(ocrHttpHandler *OcrHTTPStatusHandler) http.Handler {
-	inFlightGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+var (
+	inFlightGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "ocr_in_flight_requests",
 		Help: "A gauge of requests currently being served by the wrapped handler.",
 	})
-
-	counter := prometheus.NewCounterVec(
+	counter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "ocr_api_requests_total",
 			Help: "A counter for requests to the wrapped handler.",
@@ -24,7 +22,7 @@ func InstrumentHttpStatusHandler(ocrHttpHandler *OcrHTTPStatusHandler) http.Hand
 
 	// duration is partitioned by the HTTP method and handler. It uses custom
 	// buckets based on the expected request duration.
-	duration := prometheus.NewHistogramVec(
+	duration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "ocr_request_duration_seconds",
 			Help:    "A histogram of latencies for requests.",
@@ -34,7 +32,7 @@ func InstrumentHttpStatusHandler(ocrHttpHandler *OcrHTTPStatusHandler) http.Hand
 	)
 
 	// requestSize has no labels, making it a zero-dimensional ObserverVec.
-	requestSize := prometheus.NewHistogramVec(
+	requestSize = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "ocr_request_size_bytes",
 			Help:    "A histogram of response sizes for requests.",
@@ -42,6 +40,10 @@ func InstrumentHttpStatusHandler(ocrHttpHandler *OcrHTTPStatusHandler) http.Hand
 		},
 		[]string{},
 	)
+)
+
+// InstrumentHttpStatusHandler wraps httpHandler to provide prometheus metrics
+func InstrumentHttpStatusHandler(ocrHttpHandler *OcrHTTPStatusHandler) http.Handler {
 
 	// Register all of the metrics in the standard registry.
 	prometheus.MustRegister(inFlightGauge, counter, duration, requestSize)

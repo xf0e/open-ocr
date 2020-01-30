@@ -212,6 +212,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	// TODO automaticaly delivered then atomatic deliver will POST empty request back after timeout
 	if ocrRequest.Deferred {
 		logger.Info().Msg("Asynchronous request accepted")
+		inFlightGauge.Inc()
 		timer := time.NewTimer(time.Duration(c.rabbitConfig.ResponseCacheTimeout) * time.Second)
 		logger.Debug().Msg("locking vrequestsAndTimersMu")
 		requestsAndTimersMu.RLock()
@@ -367,8 +368,6 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 	}
 }
 
-// TODO this httpStatusCheck logic is wrong and needs to be rewritten since no defered
-// TODO request can be requested back by ID
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, error) {
 	log.Debug().Str("component", "OCR_CLIENT").Msg("CheckOcrStatusByID called")
@@ -398,6 +397,7 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 	if ocrResult.Status != "processing" && ocrResult.ID != "" {
 		log.Debug().Str("component", "OCR_CLIENT").Msg("deleting from Requests and timers")
 		requestsAndTimersMu.RLock()
+		inFlightGauge.Dec()
 		delete(Requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
