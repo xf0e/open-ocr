@@ -212,6 +212,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	// TODO automaticaly delivered then atomatic deliver will POST empty request back after timeout
 	if ocrRequest.Deferred {
 		logger.Info().Msg("Asynchronous request accepted")
+		inFlightGauge.Inc()
 		timer := time.NewTimer(time.Duration(c.rabbitConfig.ResponseCacheTimeout) * time.Second)
 		logger.Debug().Msg("locking vrequestsAndTimersMu")
 		requestsAndTimersMu.RLock()
@@ -374,8 +375,6 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 	if _, ok := Requests[requestID]; !ok {
 		requestsAndTimersMu.RUnlock()
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
-	} else if ok && httpStatusCheck {
-		return OcrResult{Status: "processing", ID: requestID}, nil
 	}
 
 	log.Debug().Str("component", "OCR_CLIENT").Msg("getting ocrResult := <-Requests[requestID]")
@@ -385,6 +384,10 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 	case ocrResult = <-Requests[requestID]:
 		log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
 	default:
+		_, ok := Requests[requestID]
+		if ok && httpStatusCheck {
+			return OcrResult{Status: "processing", ID: requestID}, nil
+		}
 		sampled := log.Sample(&zerolog.BasicSampler{N: 10})
 		sampled.Debug().Str("component", "OCR_CLIENT").
 			Msg("Number of messages in the queue:" + fmt.Sprintf("%v", len(Requests)))
@@ -394,6 +397,7 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 	if ocrResult.Status != "processing" && ocrResult.ID != "" {
 		log.Debug().Str("component", "OCR_CLIENT").Msg("deleting from Requests and timers")
 		requestsAndTimersMu.RLock()
+		inFlightGauge.Dec()
 		delete(Requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)

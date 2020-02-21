@@ -17,7 +17,7 @@ func NewOcrHttpStatusHandler() *OcrHttpStatusHandler {
 
 func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	log.Info().Str("component", "OCR_STATUS").Msg("serveHttp called")
+	log.Info().Str("component", "OCR_STATUS").Msg("OcrHttpStatusHandler called")
 
 	ocrRequest := OcrRequest{}
 	decoder := json.NewDecoder(req.Body)
@@ -41,6 +41,7 @@ func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	js, err := json.Marshal(ocrResult)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Str("component", "OCR_STATUS")
 		return
 	}
 	_, err = w.Write(js)

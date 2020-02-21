@@ -2,6 +2,7 @@ package ocrworker
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -17,21 +18,30 @@ import (
 
 func saveUrlContentToFileName(url, tmpFileName string) error {
 
-	// TODO: current impl uses more memory than it needs to
+	outFile, err := os.Create(tmpFileName)
+	if err != nil {
+		return err
+	}
 
 	resp, err := http.Get(url)
 	if err != nil {
+		outFile.Close()
 		return err
 	}
 
 	defer resp.Body.Close()
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
+	if resp.StatusCode != http.StatusOK {
+		outFile.Close()
 		return err
 	}
-	return ioutil.WriteFile(tmpFileName, bodyBytes, 0600)
 
+	_, err = io.Copy(outFile, resp.Body)
+	if err != nil {
+		outFile.Close()
+		return err
+	}
+	return outFile.Close()
 }
 
 func saveBytesToFileName(bytes []byte, tmpFileName string) error {
