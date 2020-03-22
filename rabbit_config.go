@@ -91,13 +91,13 @@ func DefaultConfigFlagsOverride(flagFunction FlagFunction) RabbitConfig {
 		&QueuePrioArg,
 		"queue_prio",
 		"",
-		"JSON formated list wich doc_type and corresponding prio of maximal value of 9 e.g. -queue_prio {\"egvp\":9}",
+		"JSON formatted list which doc_type and corresponding priority of maximal value of 9 e.g. -queue_prio {\"egvp\":9}",
 	)
 	flag.UintVar(
 		&ResponseCacheTimeout,
 		"default_timeout",
 		28800,
-		"Default(!) timeout in seconds for request; ocr engine will be killed after reaching this limit "+
+		"Default(!) timeout in seconds for request; ocr job will be killed after reaching this limit "+
 			"and generated ocr response will contain an timeout error",
 	)
 	flag.UintVar(
