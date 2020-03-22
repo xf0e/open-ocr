@@ -105,7 +105,8 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 		&numParJobs,
 		"num_parallel_jobs",
 		1,
-		"show version and exit",
+		"how many messages will be preloaded from a message broker. Can be used to saturate the load"+
+			" Set the value to 1 for round robbin distribution of messages across workers.",
 	)
 
 	flag.BoolVar(
