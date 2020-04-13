@@ -388,20 +388,20 @@ func CheckOcrStatusByID(requestID string, httpStatusCheck bool) (OcrResult, erro
 		if ok && httpStatusCheck {
 			return OcrResult{Status: "processing", ID: requestID}, nil
 		}
-		sampled := log.Sample(&zerolog.BasicSampler{N: 10})
-		sampled.Debug().Str("component", "OCR_CLIENT").
-			Msg("Number of messages in the queue:" + fmt.Sprintf("%v", len(Requests)))
 	}
 	requestsAndTimersMu.RUnlock()
 
 	if ocrResult.Status != "processing" && ocrResult.ID != "" {
-		log.Debug().Str("component", "OCR_CLIENT").Msg("deleting from Requests and timers")
 		requestsAndTimersMu.RLock()
 		inFlightGauge.Dec()
 		delete(Requests, requestID)
 		timers[requestID].Stop()
 		delete(timers, requestID)
 		requestsAndTimersMu.RUnlock()
+		log.Info().Str("component", "OCR_CLIENT").
+			Int("nOfPendingReqs", len(Requests)).
+			Int("nOfPendingTimers", len(timers)).
+			Msg("deleted request from the queue")
 	}
 	return ocrResult, nil
 }
