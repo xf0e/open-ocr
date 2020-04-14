@@ -221,9 +221,21 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		logger.Debug().Msg("unlocking vrequestsAndTimersMu")
 		requestsAndTimersMu.RUnlock()
 
+		// deferred == true but no automatic reply to the requester
+		// client should poll to get the ocr
+		if ocrRequest.ReplyTo == "" {
+			// thi go routine will cancel the request after global timeout if client stopped polling
+			go func() {
+				<-timer.C
+				_, _ = CheckOcrStatusByID(requestID)
+			}()
+			return OcrResult{
+				ID:     requestID,
+				Status: "processing",
+			}, nil
+		}
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
-
 		go func() {
 			defer deleteRequestFromQueue(requestID)
 			ocrRes := OcrResult{ID: requestID, Status: "error", Text: ""}
@@ -365,7 +377,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string) (OcrResult, error) {
-	log.Debug().Str("component", "OCR_CLIENT").Msg("CheckOcrStatusByID called")
+	log.Debug().Str("component", "OCR_CLIENT").Str("requestID", requestID).Msg("CheckOcrStatusByID called")
 	requestsAndTimersMu.RLock()
 	if _, ok := Requests[requestID]; !ok {
 		requestsAndTimersMu.RUnlock()
