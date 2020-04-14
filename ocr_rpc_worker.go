@@ -222,6 +222,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 			Str("tag", tag).
 			Msg("error unmarshalling json delivery")
 		ocrResult.Text = errMsg
+		ocrResult.Status = "error"
 		return ocrResult, err
 	}
 
@@ -237,6 +238,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 			Msg("Error processing image")
 
 		ocrResult.Text = errMsg
+		ocrResult.Status = "error"
 		return ocrResult, err
 	}
 
