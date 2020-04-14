@@ -26,6 +26,7 @@ type WorkerConfig struct {
 	SaveFiles         bool
 	Debug             bool
 	Tiff2pdfConverter string
+	NumParallelJobs   uint
 }
 
 // DefaultWorkerConfig will set the default set of worker parameters which are needed for testing and connecting to a broker
@@ -48,6 +49,7 @@ func DefaultWorkerConfig() WorkerConfig {
 		SaveFiles:         false,
 		Debug:             false,
 		Tiff2pdfConverter: "convert",
+		NumParallelJobs:   1,
 	}
 	return workerConfig
 
@@ -72,6 +74,7 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 		debug             bool
 		tiff2pdfConverter string
 		flgVersion        bool
+		numParJobs        uint
 	)
 	flag.StringVar(
 		&amqpURI,
@@ -98,6 +101,14 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 		"use convert or tiff2pdf for converting incoming tiff files, e.g. -image_converter {convert,tiff2pdf},"+
 			"tools must be installed on system",
 	)
+	flag.UintVar(
+		&numParJobs,
+		"num_parallel_jobs",
+		1,
+		"how many messages will be preloaded from a message broker. Can be used to saturate the load"+
+			" Set the value to 1 for round robbin distribution of messages across workers.",
+	)
+
 	flag.BoolVar(
 		&flgVersion,
 		"version",
@@ -121,5 +132,6 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 	}
 	workerConfig.SaveFiles = saveFiles
 	workerConfig.Debug = debug
+	workerConfig.NumParallelJobs = numParJobs
 	return workerConfig, nil
 }

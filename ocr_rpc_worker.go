@@ -75,7 +75,7 @@ func (w OcrRpcWorker) Run() error {
 		Msg("got Connection, getting channel")
 	w.channel, err = w.conn.Channel()
 	// setting the prefetchCount to 1 reduces the Memory Consumption by the worker
-	err = w.channel.Qos(1, 0, true)
+	err = w.channel.Qos(int(w.workerConfig.NumParallelJobs), 0, true)
 	if err != nil {
 		return err
 	}
@@ -222,6 +222,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 			Str("tag", tag).
 			Msg("error unmarshalling json delivery")
 		ocrResult.Text = errMsg
+		ocrResult.Status = "error"
 		return ocrResult, err
 	}
 
@@ -237,6 +238,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 			Msg("Error processing image")
 
 		ocrResult.Text = errMsg
+		ocrResult.Status = "error"
 		return ocrResult, err
 	}
 
