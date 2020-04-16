@@ -56,7 +56,7 @@ func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
 
 // DecodeImage is the main function to do a ocr on incoming request.
 // It's handling the parameter and the whole workflow
-func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (OcrResult, error) {
+func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (OcrResult, int, error) {
 	var err error
 
 	logger := zerolog.New(os.Stdout).With().
@@ -79,7 +79,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		logger.Info().Msg("Automated response requested")
 		validURL, err := checkURLForReplyTo(ocrRequest.ReplyTo)
 		if err != nil {
-			return OcrResult{ID: requestID}, err
+			return OcrResult{ID: requestID}, 400, err
 		}
 		ocrRequest.ReplyTo = validURL
 		// force set the deferred flag to drop the connection and deliver
@@ -113,7 +113,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 
 	c.connection, err = amqp.Dial(c.rabbitConfig.AmqpURI)
 	if err != nil {
-		return OcrResult{Text: "Internal Server Error: message broker is not reachable", Status: "error"}, err
+		return OcrResult{Text: "Internal Server Error: message broker is not reachable", Status: "error"}, 500, err
 	}
 	// if we close the connection here, the deferred status wont get the ocr result
 	// and will be always returning "processing"
@@ -121,7 +121,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 
 	c.channel, err = c.connection.Channel()
 	if err != nil {
-		return OcrResult{}, err
+		return OcrResult{}, 500, err
 	}
 
 	if err := c.channel.ExchangeDeclare(
@@ -133,21 +133,21 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		false,                       // noWait
 		nil,                         // arguments
 	); err != nil {
-		return OcrResult{}, err
+		return OcrResult{}, 500, err
 	}
 
 	rpcResponseChan := make(chan OcrResult)
 
 	callbackQueue, err := c.subscribeCallbackQueue(correlationUUID, rpcResponseChan)
 	if err != nil {
-		return OcrResult{}, err
+		return OcrResult{}, 500, err
 	}
 
 	// Reliable publisher confirms require confirm.select support from the
 	// connection.
 	if c.rabbitConfig.Reliable {
 		if err := c.channel.Confirm(false); err != nil {
-			return OcrResult{}, err
+			return OcrResult{}, 500, err
 		}
 
 		ack, nack := c.channel.NotifyConfirm(make(chan uint64, 1), make(chan uint64, 1))
@@ -168,14 +168,14 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			err = ocrRequest.decodeBase64()
 			if err != nil {
 				logger.Warn().Err(err).Msg("Error decoding base64")
-				return OcrResult{}, err
+				return OcrResult{}, 500, err
 			}
 		} else {
 			// if we do not have base 64 or bytes download the file
 			err = ocrRequest.downloadImgUrl()
 			if err != nil {
 				logger.Warn().Err(err).Msg("Error downloading img urlToLog")
-				return OcrResult{}, err
+				return OcrResult{}, 500, err
 			}
 		}
 	}
@@ -185,7 +185,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 
 	ocrRequestJson, err := json.Marshal(ocrRequest)
 	if err != nil {
-		return OcrResult{}, err
+		return OcrResult{}, 500, err
 	}
 	if err = c.channel.Publish(
 		c.rabbitConfig.Exchange, // publish to an exchange
@@ -204,7 +204,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			// a bunch of application/implementation-specific fields
 		},
 	); err != nil {
-		return OcrResult{ID: requestID}, nil
+		return OcrResult{ID: requestID}, 500, nil
 	}
 	// TODO rewrite postClient to not check the status, just give it an ocrRequest of file
 	// TODO rewrite it also check if there are memory leak after global timeout
@@ -232,7 +232,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			return OcrResult{
 				ID:     requestID,
 				Status: "processing",
-			}, nil
+			}, 200, nil
 		}
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
@@ -274,14 +274,14 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		return OcrResult{
 			ID:     requestID,
 			Status: "processing",
-		}, nil
+		}, 200, nil
 	} else {
 		select {
 		case ocrResult := <-rpcResponseChan:
 			// logger.Debug().Str("st", ocrResult.Status).Str("text", ocrResult.Text).Str("id", ocrResult.ID)
-			return ocrResult, nil
+			return ocrResult, 200, nil
 		case <-time.After(time.Duration(c.rabbitConfig.ResponseCacheTimeout) * time.Second):
-			return OcrResult{}, fmt.Errorf("timeout waiting for RPC response")
+			return OcrResult{}, 500, fmt.Errorf("timeout waiting for RPC response")
 		}
 	}
 }
@@ -381,6 +381,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, error) {
 	requestsAndTimersMu.RLock()
 	if _, ok := Requests[requestID]; !ok {
 		requestsAndTimersMu.RUnlock()
+		log.Info().Str("component", "OCR_CLIENT").Str("requestID", requestID).Msg("no such request found in the queue")
 		return OcrResult{}, fmt.Errorf("no such request %s", requestID)
 	}
 

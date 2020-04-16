@@ -14,6 +14,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
+
+	"github.com/google/gops/agent"
 )
 
 // This assumes that there is a worker running
@@ -37,6 +39,10 @@ func main() {
 	appStopLocal := false
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
+
+	if err := agent.Listen(agent.Options{}); err != nil {
+		log.Fatal()
+	}
 
 	go func() {
 		select {

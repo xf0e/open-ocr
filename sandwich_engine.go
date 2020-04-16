@@ -468,7 +468,7 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 		fileToDeliver = textFile
 
 	default:
-		err := fmt.Errorf("requested format is not supported")
+		err := fmt.Errorf("requested output format is not supported")
 		logger.Error().Err(err).Caller()
 		errorFlag = true
 		return OcrResult{Status: "error"}, err
