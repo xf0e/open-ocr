@@ -144,6 +144,17 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig Worke
 	}
 
 	logger.Debug().Interface("workerConfig", workerConfigToLog).Msg("worker configuration for this request")
+	logger.Info().Str("DocType", ocrRequest.DocType).
+		Str("ImgUrl", ocrRequest.ImgUrl).
+		Str("ReplyTo", ocrRequest.ReplyTo).
+		Bool("Deferred", ocrRequest.Deferred).
+		Uint16("PageNumber", ocrRequest.PageNumber).
+		Uint("TimeOut", ocrRequest.TimeOut).
+		Int("ImgBase64Size", len(ocrRequest.ImgBase64)).
+		Int("ImgBytesSize", len(ocrRequest.ImgBase64)).
+		Str("UserAgent", ocrRequest.UserAgent).
+		Str("ReferenceID", ocrRequest.ReferenceID).
+		Msg("ocr request data")
 
 	tmpFileName, err := func() (string, error) {
 		if ocrRequest.ImgBase64 != "" {
