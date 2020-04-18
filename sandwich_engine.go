@@ -151,7 +151,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig Worke
 		Uint16("PageNumber", ocrRequest.PageNumber).
 		Uint("TimeOut", ocrRequest.TimeOut).
 		Int("ImgBase64Size", len(ocrRequest.ImgBase64)).
-		Int("ImgBytesSize", len(ocrRequest.ImgBase64)).
+		Int("ImgBytesSize", len(ocrRequest.ImgBytes)).
 		Str("UserAgent", ocrRequest.UserAgent).
 		Str("ReferenceID", ocrRequest.ReferenceID).
 		Msg("ocr request data")
