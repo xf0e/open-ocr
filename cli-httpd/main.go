@@ -97,6 +97,8 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
+	log.Info().Interface("parameters", rabbitConfig).Msg("trying to start with parameters")
+
 	// any requests to root, just redirect to main page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		ocrworker.ServiceCanAcceptMu.Lock()

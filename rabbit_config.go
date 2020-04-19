@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"time"
 
 	"github.com/rs/zerolog/log"
 )
@@ -27,8 +26,8 @@ type RabbitConfig struct {
 	// MaximalResponseCacheTimeout client won't be able set the ResponseCacheTimeout higher of it's value
 	MaximalResponseCacheTimeout uint
 	// check interval for request to be ready
-	tickerWithPostActionInterval time.Duration
-	FactorForMessageAccept       uint
+	// tickerWithPostActionInterval time.Duration
+	FactorForMessageAccept uint
 }
 
 func DefaultTestConfig() RabbitConfig {
@@ -38,20 +37,20 @@ func DefaultTestConfig() RabbitConfig {
 	// higher would delay the problem, but then it would still happen later.
 
 	rabbitConfig := RabbitConfig{
-		AmqpURI:                      "amqp://guest:guest@localhost:5672/",
-		Exchange:                     "open-ocr-exchange",
-		ExchangeType:                 "direct",
-		RoutingKey:                   "decode-ocr",
-		Reliable:                     false, // setting to false because of observed issues
-		AmqpAPIURI:                   "http://guest:guest@localhost:15672",
-		APIPathQueue:                 "/api/queues/%2f/",
-		APIQueueName:                 "decode-ocr",
-		APIPathStats:                 "/api/nodes",
-		QueuePrio:                    map[string]uint8{"standard": 1},
-		ResponseCacheTimeout:         28800,
-		MaximalResponseCacheTimeout:  28800,
-		tickerWithPostActionInterval: time.Second * 2,
-		FactorForMessageAccept:       2,
+		AmqpURI:                     "amqp://guest:guest@localhost:5672/",
+		Exchange:                    "open-ocr-exchange",
+		ExchangeType:                "direct",
+		RoutingKey:                  "decode-ocr",
+		Reliable:                    false, // setting to false because of observed issues
+		AmqpAPIURI:                  "http://guest:guest@localhost:15672",
+		APIPathQueue:                "/api/queues/%2f/",
+		APIQueueName:                "decode-ocr",
+		APIPathStats:                "/api/nodes",
+		QueuePrio:                   map[string]uint8{"standard": 1},
+		ResponseCacheTimeout:        28800,
+		MaximalResponseCacheTimeout: 28800,
+		// tickerWithPostActionInterval: time.Second * 2,
+		FactorForMessageAccept: 2,
 	}
 	return rabbitConfig
 
@@ -125,10 +124,20 @@ func DefaultConfigFlagsOverride(flagFunction FlagFunction) RabbitConfig {
 		if err != nil {
 			log.Fatal().Err(err).Msg("Message priority argument list is not in a proper JSON format eg. {\"egvp\":9}")
 		}
+	} else {
+		rabbitConfig.QueuePrioArg = QueuePrioArg
 	}
+
 	if MaximalResponseCacheTimeout < ResponseCacheTimeout {
 		err := fmt.Errorf("maximal_timeout is lower than default_timeout")
 		log.Fatal().Err(err).Msg("setting maximal_timeout lower than default_timeout is not allowed, if in doubt set both to same value")
+	} else {
+		rabbitConfig.MaximalResponseCacheTimeout = MaximalResponseCacheTimeout
+		rabbitConfig.ResponseCacheTimeout = ResponseCacheTimeout
+	}
+
+	if FactorForMessageAccept > 0 {
+		rabbitConfig.FactorForMessageAccept = FactorForMessageAccept
 	}
 
 	return rabbitConfig
