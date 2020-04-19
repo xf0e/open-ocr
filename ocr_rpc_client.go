@@ -105,7 +105,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	}
 
 	// setting rabbitMQ correlation ID. There is no reason to be different from requestID
-	correlationUUID := requestID
+	correlationID := requestID
 	urlToLog, _ := url.Parse(c.rabbitConfig.AmqpURI)
 	logger.Info().Str("DocType", ocrRequest.DocType).
 		Str("AmqpURI", urlToLog.Scheme+"://"+urlToLog.Host+urlToLog.Path).
@@ -138,7 +138,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 
 	rpcResponseChan := make(chan OcrResult)
 
-	callbackQueue, err := c.subscribeCallbackQueue(correlationUUID, rpcResponseChan)
+	callbackQueue, err := c.subscribeCallbackQueue(correlationID, rpcResponseChan)
 	if err != nil {
 		return OcrResult{}, 500, err
 	}
@@ -200,7 +200,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 			DeliveryMode:    amqp.Transient,  // 1=non-persistent, 2=persistent
 			Priority:        messagePriority, // 0-9
 			ReplyTo:         callbackQueue.Name,
-			CorrelationId:   correlationUUID,
+			CorrelationId:   correlationID,
 			// a bunch of application/implementation-specific fields
 		},
 	); err != nil {
@@ -286,7 +286,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	}
 }
 
-func (c OcrRpcClient) subscribeCallbackQueue(correlationUUID string, rpcResponseChan chan OcrResult) (amqp.Queue, error) {
+func (c OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseChan chan OcrResult) (amqp.Queue, error) {
 
 	queueArgs := make(amqp.Table)
 	queueArgs["x-max-priority"] = uint8(10)
@@ -330,20 +330,20 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationUUID string, rpcResponse
 		return amqp.Queue{}, err
 	}
 
-	go c.handleRpcResponse(deliveries, correlationUUID, rpcResponseChan)
+	go c.handleRpcResponse(deliveries, correlationID, rpcResponseChan)
 
 	return callbackQueue, nil
 
 }
 
-func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correlationUuid string, rpcResponseChan chan OcrResult) {
-	// correlationUuid is the same as RequestID
+func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correlationID string, rpcResponseChan chan OcrResult) {
+	// correlationID is the same as RequestID
 	logger := zerolog.New(os.Stdout).With().
-		Str("component", "OCR_CLIENT").Str("RequestID", correlationUuid).Timestamp().Logger()
+		Str("component", "OCR_CLIENT").Str("RequestID", correlationID).Timestamp().Logger()
 	logger.Info().Msg("looping over deliveries...:")
 
 	for d := range deliveries {
-		if d.CorrelationId == correlationUuid {
+		if d.CorrelationId == correlationID {
 			bodyLenToLog := len(d.Body)
 			defer c.connection.Close()
 			if bodyLenToLog > 32 {
@@ -361,7 +361,7 @@ func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correla
 				errMsg := fmt.Sprintf(msg, string(d.Body[0:bodyLenToLog]), err)
 				logger.Error().Err(fmt.Errorf(errMsg))
 			}
-			ocrResult.ID = correlationUuid
+			ocrResult.ID = correlationID
 
 			logger.Info().Msg("send result to rpcResponseChan")
 			rpcResponseChan <- ocrResult

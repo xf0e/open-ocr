@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nu7hatch/gouuid"
 	"github.com/rs/zerolog/log"
+	"github.com/segmentio/ksuid"
 )
 
 func saveUrlContentToFileName(url, tmpFileName string) error {
@@ -68,16 +68,13 @@ func url2bytes(url string) ([]byte, error) {
 }
 
 // createTempFileName generating a file name within of a temp directory. If function argument ist empty string
-// file name will be generated in uuid format.
+// file name will be generated in ksuid format.
 func createTempFileName(fileName string) (string, error) {
 	tempDir := os.TempDir()
 
 	if fileName == "" {
-		uuidRaw, err := uuid.NewV4()
-		if err != nil {
-			return "", err
-		}
-		fileName = uuidRaw.String()
+		ksuidRaw := ksuid.New()
+		fileName = ksuidRaw.String()
 	}
 
 	return filepath.Join(tempDir, fileName), nil

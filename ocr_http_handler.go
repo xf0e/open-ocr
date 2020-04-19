@@ -8,9 +8,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/nu7hatch/gouuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/segmentio/ksuid"
 )
 
 // OcrHTTPStatusHandler is for initial handling of ocr request
@@ -95,7 +95,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 // HandleOcrRequest will process incoming OCR request by routing it through the whole process chain
 func HandleOcrRequest(ocrRequest OcrRequest, workerConfig RabbitConfig) (OcrResult, int, error) {
 	var httpStatus = 200
-	var requestIDRaw, _ = uuid.NewV4()
+	var requestIDRaw = ksuid.New()
 	requestID := requestIDRaw.String()
 	ocrResult := newOcrResult(requestID)
 	ocrRequest.RequestID = requestID
