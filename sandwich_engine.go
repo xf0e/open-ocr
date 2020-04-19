@@ -347,25 +347,29 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 
 	ocrType := strings.ToUpper(engineArgs.ocrType)
 
-	switch ocrType {
-	case "COMBINEDPDF":
-		cmdArgs, ocrLayerFile = t.buildCmdLineArgs(inputFilename, engineArgs)
-		logger.Info().Str("command", "pdfsandwich").Interface("cmdArgs", cmdArgs).
-			Msg("running external pdfsandwich command")
-		output, err := t.runExternalCmd("pdfsandwich", cmdArgs, time.Duration(configTimeOut)*time.Second)
-		if err != nil {
-			errMsg := output
-			if errMsg != "" {
-				errMsg = fmt.Sprintf(output, err)
-				err := fmt.Errorf(errMsg)
-				logger.Error().Err(err).Caller().Msg("Error exec external command")
-				errorFlag = true
-				return OcrResult{Status: "error"}, err
-			}
+	extCommandTimeout := time.Duration(configTimeOut) * time.Second
+
+	cmdArgs, ocrLayerFile = t.buildCmdLineArgs(inputFilename, engineArgs)
+	logger.Info().Str("command", "pdfsandwich").Interface("cmdArgs", cmdArgs).
+		Uint("command_timeout", configTimeOut).
+		Msg("running external pdfsandwich command")
+	output, err := t.runExternalCmd("pdfsandwich", cmdArgs, extCommandTimeout)
+	if err != nil {
+		errMsg := output
+		if errMsg != "" {
+			errMsg = fmt.Sprintf(output, err)
+			err := fmt.Errorf(errMsg)
 			logger.Error().Err(err).Caller().Msg("Error exec external command")
 			errorFlag = true
 			return OcrResult{Status: "error"}, err
 		}
+		logger.Error().Err(err).Caller().Msg("Error exec external command")
+		errorFlag = true
+		return OcrResult{Status: "error"}, err
+	}
+
+	switch ocrType {
+	case "COMBINEDPDF":
 
 		tmpOutCombinedPdf := fmt.Sprintf("%s%s", inputFilename, "_comb.pdf")
 
@@ -435,28 +439,8 @@ func (t SandwichEngine) processImageFile(inputFilename string, uplFileType strin
 			fileToDeliver = tmpOutCombinedPdf
 		}
 	case "OCRLAYERONLY":
-		cmdArgs, ocrLayerFile = t.buildCmdLineArgs(inputFilename, engineArgs)
-		cmd := exec.Command("pdfsandwich", cmdArgs...)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			errMsg := fmt.Sprintf(string(output), err)
-			err := fmt.Errorf(errMsg)
-			logger.Error().Caller().Err(err).Msg("error exec pdfsandwich")
-			errorFlag = true
-			return OcrResult{Status: "error"}, err
-		}
 		fileToDeliver = ocrLayerFile
 	case "TXT":
-		cmdArgs, ocrLayerFile = t.buildCmdLineArgs(inputFilename, engineArgs)
-		cmd := exec.Command("pdfsandwich", cmdArgs...)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			errMsg := fmt.Sprintf(string(output), err)
-			err := fmt.Errorf(errMsg)
-			logger.Error().Caller().Err(err).Msg("error exec pdfsandwich")
-			errorFlag = true
-			return OcrResult{Status: "error"}, err
-		}
 		logger.Info().Msg("extracting text from ocr")
 		textFile := fmt.Sprintf("%s%s", strings.TrimSuffix(ocrLayerFile, filepath.Ext(ocrLayerFile)), ".txt")
 		cmdArgsPdfToText := exec.Command("pdftotext", ocrLayerFile)
