@@ -207,9 +207,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		return OcrResult{ID: requestID}, 500, nil
 	}
 	// TODO rewrite postClient to not check the status, just give it an ocrRequest of file
-	// TODO rewrite it also check if there are memory leak after global timeout
-	// TODO on deffered request if you get request by polling before it was
-	// TODO automaticaly delivered then atomatic deliver will POST empty request back after timeout
+	// TODO inFlight counter should be incremented above ocrRequest.Deferred {
 	if ocrRequest.Deferred {
 		logger.Info().Msg("Asynchronous request accepted")
 		inFlightGauge.Inc()

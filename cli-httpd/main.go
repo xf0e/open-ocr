@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	// "github.com/google/gops/agent"
+	"github.com/google/gops/agent"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -39,9 +39,9 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
 
-	/*	if err := agent.Listen(agent.Options{}); err != nil {
+	if err := agent.Listen(agent.Options{}); err != nil {
 		log.Fatal()
-	}*/
+	}
 
 	go func() {
 		select {
