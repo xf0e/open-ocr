@@ -19,14 +19,6 @@ type ocrResManager struct {
 	MemUsed  uint64 `json:"mem_used"`
 }
 
-type ocrInFlight struct {
-	ocrInFlight      OcrResult
-	ocrInFlightTimer time.Duration
-	ocrInFlightID    string
-}
-
-var ocrInFlightList []ocrInFlight
-
 const (
 	memoryThreshold uint64 = 95 // if memory usage of RabbitMQ is over this value, no more requests will be added
 )

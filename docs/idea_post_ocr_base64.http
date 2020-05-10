@@ -106,7 +106,7 @@ Content-Type: application/json
     "result_optimize": true
   },
   "deferred": true,
-  "reply_to": "",
+  "reply_to": "http://localhost:9999",
   "doc_type": "egvp",
   "page_number": 2,
   "time_out": 0,
@@ -119,7 +119,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-  "img_url": "1aoezQFn8nnJKHCtsaRHjKoABhe"
+  "img_url": "1b8RMnUgyRF8ZOVIwcSW3gLvN6E"
 }
 
 ############################################
@@ -204,6 +204,16 @@ Content-Type: application/json
   "deferred": true,
   "reply_to": ""
 }
+> {%
+client.test("Request executed successfully", function() {
+  client.assert(response.status === 200, "Response status is not 200");
+});
+
+client.test("Response content-type is json", function() {
+  var type = response.contentType.mimeType;
+  client.assert(type === "application/json", "Expected 'application/json' but received '" + type + "'");
+});
+%}
 
 ### sane request, txt output
 ### download image, works on tesseract engine
@@ -219,16 +229,31 @@ Content-Type: application/json
   "deferred": false,
   "reply_to": ""
 }
+> {%
+client.test("Request executed successfully", function() {
+  client.assert(response.status === 200, "Response status is not 200");
+});
+
+client.test("Response content-type is json", function() {
+  var type = response.contentType.mimeType;
+  client.assert(type === "application/json", "Expected 'application/json' but received '" + type + "'");
+});
+%}
+
+
 
 ### check request status by ID
 POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-  "img_url": "1alxXeehg0RQPzd59y7M7JpTEER"
+  "img_url": "1azm20td0jpZ4Vk0LT6EGrjOlE8"
 }
-
-
+> {%
+client.test("Request executed successfully", function() {
+  client.assert(response.status === 404, "Response status is not 404");
+});
+%}
 
 ############################################
 ### tesseract engnie should fail ###########
