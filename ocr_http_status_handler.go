@@ -28,10 +28,10 @@ func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	ocrResult, err := CheckOcrStatusByID(ocrRequest.ImgUrl)
-	if err != nil {
-		msg := "unable to perform OCR status check. %v"
-		errMsg := fmt.Sprintf(msg, err)
+	ocrResult, ocrRequestExists := CheckOcrStatusByID(ocrRequest.ImgUrl)
+	if !ocrRequestExists {
+		msg := "no such ocr request. request time out reached?"
+		errMsg := fmt.Sprintf(msg)
 		log.Error().Err(err).Str("component", "OCR_STATUS")
 		http.Error(w, errMsg, 404)
 		return
