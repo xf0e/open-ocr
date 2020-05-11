@@ -95,9 +95,9 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 			Msg("OCR_RESMAN stats")
 
 		if isAvailable {
-			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is operational with free resources. We are ready to serve")
+			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is operational with free resources, we are ready to serve")
 		} else {
-			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is alive but won't serve any requests. Workers are busy or not connected")
+			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is alive but won't serve any requests; workers are busy or not connected")
 		}
 
 	}

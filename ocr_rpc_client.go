@@ -215,8 +215,6 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
 		go func() {
-			// defer fmt.Println("!!!!!!!!!!!!!!!!deleting")
-			defer deleteRequestFromQueue(requestID)
 			ocrRes := OcrResult{ID: requestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()
 			var tryCounter uint = 1
@@ -234,11 +232,14 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 							tryCounter++
 							logger.Error().Err(err)
 							time.Sleep(2 * time.Second)
+							timers[requestID] <- true
 						} else {
 							logger.Debug().Msg("delivery was successful")
+							timers[requestID] <- true
 							break T
 						}
 					}
+					timers[requestID] <- true
 					break T
 				case <-time.After(rpcResponseTimeout * time.Second):
 					err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
@@ -246,7 +247,9 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						tryCounter++
 						logger.Error().Err(err)
 						time.Sleep(rpcResponseTimeout * time.Second)
+						timers[requestID] <- true
 					} else {
+						timers[requestID] <- true
 						break T
 					}
 				}
