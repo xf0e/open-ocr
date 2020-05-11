@@ -79,6 +79,11 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 		return false
 	}
 
+	if queueManager.NumConsumers == 0 {
+		TechnicalErrorResManager = true
+		return false
+	}
+
 	flagForResources := schedulerByMemoryLoad()
 	flagForQueue := schedulerByWorkerNumber()
 	if flagForQueue && flagForResources {
