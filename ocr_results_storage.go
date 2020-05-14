@@ -9,8 +9,8 @@ import (
 var (
 	requestsAndTimersMu sync.RWMutex
 	// Requests is for holding and monitoring queued requests
-	Requests = make(map[string]chan OcrResult)
-	timers   = make(map[string]chan bool)
+	Requests        = make(map[string]chan OcrResult)
+	requestChannels = make(map[string]chan bool)
 )
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
@@ -42,23 +42,23 @@ func deleteRequestFromQueue(requestID string) {
 	requestsAndTimersMu.RLock()
 
 	inFlightGauge.Dec()
-	println("!!!!!!!!!!before deleting from Requests and timers")
+	println("!!!!!!!!!!before deleting from Requests and requestChannels")
 	for key, element := range Requests {
 		fmt.Println("Key:", key, "=>", "Element:", element)
 	}
 	delete(Requests, requestID)
-	delete(timers, requestID)
+	delete(requestChannels, requestID)
 
-	println("!!!!!!!!!!after deleting from Requests and timers")
+	println("!!!!!!!!!!after deleting from Requests and requestChannels")
 
-	for key, element := range timers {
+	for key, element := range requestChannels {
 		fmt.Println("Key:", key, "=>", "Element:", element)
 	}
 
 	requestsAndTimersMu.RUnlock()
 	/*log.Info().Str("component", "OCR_CLIENT").
 	  Int("nOfPendingReqs", len(Requests)).
-	  Int("nOfPendingTimers", len(timers)).
+	  Int("nOfPendingTimers", len(requestChannels)).
 	  Msg("deleted request from the queue")
 	*/
 }
@@ -69,18 +69,18 @@ func addNewOcrResultToQueue(storageTime int, requestID string, rpcResponseChan c
 	timerChan := make(chan bool, 1)
 	requestsAndTimersMu.RLock()
 	Requests[requestID] = rpcResponseChan
-	timers[requestID] = timerChan
+	requestChannels[requestID] = timerChan
 	requestsAndTimersMu.RUnlock()
 
 	// this go routine will cancel the request after global timeout or if request was sent back
 	go func() {
 		select {
-		case timeOutOccurred := <-timers[requestID]:
+		case timeOutOccurred := <-requestChannels[requestID]:
 			fmt.Println(timeOutOccurred)
 			if _, ok := Requests[requestID]; ok { // && ocrResult.Status != "processing" {
 				deleteRequestFromQueue(requestID)
 			}
-		case <-time.After(time.Second * time.Duration(storageTime)):
+		case <-time.After(time.Second * time.Duration(storageTime+200)):
 			if _, ok := Requests[requestID]; ok { // && ocrResult.Status != "processing" {
 				deleteRequestFromQueue(requestID)
 			}

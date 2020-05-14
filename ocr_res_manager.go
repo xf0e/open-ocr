@@ -56,7 +56,8 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	if err != nil {
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonQueueStat)).
-			Msg("error unmarshalling json")
+			Bytes("payload", jsonResStat).
+			Msg("error calling url2bytes for rabbitMQ stats")
 		TechnicalErrorResManager = true
 		return false
 	}
@@ -65,6 +66,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	if err != nil {
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonQueueStat)).
+			Bytes("payload", jsonQueueStat).
 			Msg("error unmarshalling json")
 		TechnicalErrorResManager = true
 		return false

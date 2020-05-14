@@ -215,6 +215,12 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
 		go func() {
+			// trigger deleting request from internal queue
+			defer func() {
+				if _, ok := requestChannels[requestID]; ok {
+					requestChannels[requestID] <- true
+				}
+			}()
 			ocrRes := OcrResult{ID: requestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()
 			var tryCounter uint = 1
@@ -232,14 +238,11 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 							tryCounter++
 							logger.Error().Err(err)
 							time.Sleep(2 * time.Second)
-							timers[requestID] <- true
 						} else {
 							logger.Debug().Msg("delivery was successful")
-							timers[requestID] <- true
 							break T
 						}
 					}
-					timers[requestID] <- true
 					break T
 				case <-time.After(rpcResponseTimeout * time.Second):
 					err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
@@ -247,11 +250,10 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						tryCounter++
 						logger.Error().Err(err)
 						time.Sleep(rpcResponseTimeout * time.Second)
-						timers[requestID] <- true
 					} else {
-						timers[requestID] <- true
 						break T
 					}
+					break T
 				}
 			}
 		}()
@@ -315,13 +317,13 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseCh
 		return amqp.Queue{}, err
 	}
 
-	go c.handleRpcResponse(deliveries, correlationID, rpcResponseChan)
+	go c.handleRPCResponse(deliveries, correlationID, rpcResponseChan)
 
 	return callbackQueue, nil
 
 }
 
-func (c OcrRpcClient) handleRpcResponse(deliveries <-chan amqp.Delivery, correlationID string, rpcResponseChan chan OcrResult) {
+func (c OcrRpcClient) handleRPCResponse(deliveries <-chan amqp.Delivery, correlationID string, rpcResponseChan chan OcrResult) {
 	// correlationID is the same as RequestID
 	logger := zerolog.New(os.Stdout).With().
 		Str("component", "OCR_CLIENT").Str("RequestID", correlationID).Timestamp().Logger()
