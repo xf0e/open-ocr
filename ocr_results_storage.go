@@ -1,7 +1,6 @@
 package ocrworker
 
 import (
-	"fmt"
 	"sync"
 	"time"
 )
@@ -40,20 +39,18 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 
 func deleteRequestFromQueue(requestID string) {
 	requestsAndTimersMu.RLock()
-
 	inFlightGauge.Dec()
-	println("!!!!!!!!!!before deleting from Requests and requestChannels")
-	for key, element := range Requests {
-		fmt.Println("Key:", key, "=>", "Element:", element)
-	}
+	/*	println("!!!!!!!!!!before deleting from Requests and requestChannels")
+		for key, element := range Requests {
+			fmt.Println("Key:", key, "=>", "Element:", element)
+		}*/
 	delete(Requests, requestID)
 	delete(requestChannels, requestID)
-
-	println("!!!!!!!!!!after deleting from Requests and requestChannels")
-
-	for key, element := range requestChannels {
-		fmt.Println("Key:", key, "=>", "Element:", element)
-	}
+	/*
+		println("!!!!!!!!!!after deleting from Requests and requestChannels")
+		for key, element := range requestChannels {
+			fmt.Println("Key:", key, "=>", "Element:", element)
+		}*/
 
 	requestsAndTimersMu.RUnlock()
 	/*log.Info().Str("component", "OCR_CLIENT").
@@ -75,8 +72,7 @@ func addNewOcrResultToQueue(storageTime int, requestID string, rpcResponseChan c
 	// this go routine will cancel the request after global timeout or if request was sent back
 	go func() {
 		select {
-		case timeOutOccurred := <-requestChannels[requestID]:
-			fmt.Println(timeOutOccurred)
+		case <-requestChannels[requestID]:
 			if _, ok := Requests[requestID]; ok { // && ocrResult.Status != "processing" {
 				deleteRequestFromQueue(requestID)
 			}
