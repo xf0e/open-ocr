@@ -3,13 +3,14 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io"
 	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 type OcrHttpMultipartHandler struct {
@@ -93,7 +94,7 @@ func (s *OcrHttpMultipartHandler) extractParts(req *http.Request) (OcrRequest, e
 func (s *OcrHttpMultipartHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	defer req.Body.Close()
-
+	var httpStatus = 200
 	ocrRequest, err := s.extractParts(req)
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_HTTP")
@@ -102,12 +103,12 @@ func (s *OcrHttpMultipartHandler) ServeHTTP(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	ocrResult, err := HandleOcrRequest(ocrRequest, s.RabbitConfig)
+	ocrResult, httpStatus, err := HandleOcrRequest(ocrRequest, s.RabbitConfig)
 
 	if err != nil {
 		msg := "Unable to perform OCR decode."
 		log.Error().Err(err).Str("component", "OCR_HTTP").Msg(msg)
-		http.Error(w, msg, 500)
+		http.Error(w, msg, httpStatus)
 		return
 	}
 

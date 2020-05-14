@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var postTimeout = 15 * time.Second
+var postTimeout = 50 * time.Second
 
 type ocrPostClient struct {
 }
@@ -20,11 +20,11 @@ func newOcrPostClient() *ocrPostClient {
 	return &ocrPostClient{}
 }
 
-func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint8) error {
+func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint) error {
 	logger := zerolog.New(os.Stdout).With().Str("RequestID", ocrResult.ID).Timestamp().Logger()
 	logger.Info().Str("component", "OCR_HTTP").Msg("sending ocr request back to requester")
 	logger.Info().Str("component", "OCR_HTTP").
-		Uint8("attempt", numTry).
+		Uint("attempt", numTry).
 		Str("replyToAddress", replyToAddress).
 		Msg("sending ocr back to requester")
 

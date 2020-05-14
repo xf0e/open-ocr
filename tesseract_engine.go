@@ -218,7 +218,7 @@ func (t TesseractEngine) processImageFile(inputFilename string, engineArgs Tesse
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_TESSERACT").Str("component", "OCR_TESSERACT").
 			Msg(string(output))
-		return OcrResult{}, err
+		return OcrResult{Status: "error"}, err
 	}
 
 	outBytes, outFile, err := findAndReadOutfile(tmpOutFileBaseName, fileExtensions)
@@ -230,11 +230,12 @@ func (t TesseractEngine) processImageFile(inputFilename string, engineArgs Tesse
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_TESSERACT").
 			Str("file_name", tmpOutFileBaseName).Msg("Error getting data from out file")
-		return OcrResult{}, err
+		return OcrResult{Status: "error"}, err
 	}
 
 	return OcrResult{
-		Text: string(outBytes),
+		Text:   string(outBytes),
+		Status: "done",
 	}, nil
 
 }

@@ -56,7 +56,8 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	if err != nil {
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonQueueStat)).
-			Msg("error unmarshalling json")
+			Bytes("payload", jsonResStat).
+			Msg("error calling url2bytes for rabbitMQ stats")
 		TechnicalErrorResManager = true
 		return false
 	}
@@ -65,6 +66,7 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 	if err != nil {
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonQueueStat)).
+			Bytes("payload", jsonQueueStat).
 			Msg("error unmarshalling json")
 		TechnicalErrorResManager = true
 		return false
@@ -75,6 +77,11 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 		log.Error().Caller().Err(err).Str("component", "OCR_RESMAN").Msg("error unmarshalling json")
 		log.Error().Err(err).Str("component", "OCR_RESMAN").
 			Str("body", string(jsonResStat))
+		TechnicalErrorResManager = true
+		return false
+	}
+
+	if queueManager.NumConsumers == 0 {
 		TechnicalErrorResManager = true
 		return false
 	}
@@ -95,9 +102,9 @@ func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) 
 			Msg("OCR_RESMAN stats")
 
 		if isAvailable {
-			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is operational with free resources. We are ready to serve")
+			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is operational with free resources, we are ready to serve")
 		} else {
-			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is alive but won't serve any requests. Workers are busy or not connected")
+			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is alive but won't serve any requests; workers are busy or not connected")
 		}
 
 	}
