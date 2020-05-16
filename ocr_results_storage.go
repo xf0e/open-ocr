@@ -38,7 +38,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 }
 
 func deleteRequestFromQueue(requestID string) {
-	requestsAndTimersMu.RLock()
+	requestsAndTimersMu.Lock()
 	inFlightGauge.Dec()
 	/*	println("!!!!!!!!!!before deleting from Requests and requestChannels")
 		for key, element := range Requests {
@@ -52,7 +52,7 @@ func deleteRequestFromQueue(requestID string) {
 			fmt.Println("Key:", key, "=>", "Element:", element)
 		}*/
 
-	requestsAndTimersMu.RUnlock()
+	requestsAndTimersMu.Unlock()
 	/*log.Info().Str("component", "OCR_CLIENT").
 	  Int("nOfPendingReqs", len(Requests)).
 	  Int("nOfPendingTimers", len(requestChannels)).
@@ -64,10 +64,10 @@ func addNewOcrResultToQueue(storageTime int, requestID string, rpcResponseChan c
 
 	inFlightGauge.Inc()
 	timerChan := make(chan bool, 1)
-	requestsAndTimersMu.RLock()
+	requestsAndTimersMu.Lock()
 	Requests[requestID] = rpcResponseChan
 	requestChannels[requestID] = timerChan
-	requestsAndTimersMu.RUnlock()
+	requestsAndTimersMu.Unlock()
 
 	// this go routine will cancel the request after global timeout or if request was sent back
 	go func() {
