@@ -91,7 +91,7 @@ func main() {
 
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
 	if flgVersion {
-		fmt.Printf("Version %s. Build on %s from git commit hash %s\n", version, buildTime, sha1ver)
+		fmt.Printf("version %s. Build on %s from git commit hash %s\n", version, buildTime, sha1ver)
 		os.Exit(0)
 	}
 	if debug {

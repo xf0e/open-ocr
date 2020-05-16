@@ -131,9 +131,7 @@ func schedulerByMemoryLoad() bool {
 // if the number of messages in the queue too high we should not accept the new messages
 func schedulerByWorkerNumber() bool {
 	resFlag := false
-	// TODO check for race on uint(len(Requests)
-	// if (queueManager.NumMessages) < (queueManager.NumConsumers * factorForMessageAccept) {
-	if (uint(len(Requests))) < (queueManager.NumConsumers * factorForMessageAccept) {
+	if getQueueLen() < (queueManager.NumConsumers * factorForMessageAccept) {
 		resFlag = true
 	}
 	return resFlag

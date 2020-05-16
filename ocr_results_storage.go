@@ -8,8 +8,8 @@ import (
 var (
 	requestsAndTimersMu sync.RWMutex
 	// Requests is for holding and monitoring queued requests
-	Requests        = make(map[string]chan OcrResult)
-	requestChannels = make(map[string]chan bool)
+	Requests           = make(map[string]chan OcrResult)
+	ocrWasSentBackChan = make(chan string)
 )
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
@@ -37,6 +37,13 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 	return ocrResult, true
 }
 
+func getQueueLen() uint {
+	requestsAndTimersMu.RLock()
+	queueLength := uint(len(Requests))
+	requestsAndTimersMu.RUnlock()
+	return queueLength
+}
+
 func deleteRequestFromQueue(requestID string) {
 	requestsAndTimersMu.Lock()
 	inFlightGauge.Dec()
@@ -44,13 +51,10 @@ func deleteRequestFromQueue(requestID string) {
 		for key, element := range Requests {
 			fmt.Println("Key:", key, "=>", "Element:", element)
 		}*/
-	delete(Requests, requestID)
-	delete(requestChannels, requestID)
-	/*
-		println("!!!!!!!!!!after deleting from Requests and requestChannels")
-		for key, element := range requestChannels {
-			fmt.Println("Key:", key, "=>", "Element:", element)
-		}*/
+	_, ok := Requests[requestID]
+	if ok {
+		delete(Requests, requestID)
+	}
 
 	requestsAndTimersMu.Unlock()
 	/*log.Info().Str("component", "OCR_CLIENT").
@@ -63,21 +67,24 @@ func deleteRequestFromQueue(requestID string) {
 func addNewOcrResultToQueue(storageTime int, requestID string, rpcResponseChan chan OcrResult) {
 
 	inFlightGauge.Inc()
-	timerChan := make(chan bool, 1)
 	requestsAndTimersMu.Lock()
 	Requests[requestID] = rpcResponseChan
-	requestChannels[requestID] = timerChan
 	requestsAndTimersMu.Unlock()
 
 	// this go routine will cancel the request after global timeout or if request was sent back
+	// if the requestID arrives on ocrWasSentBackChan - ocrResult was send back to requester an request deletion is triggered
 	go func() {
 		select {
-		case <-requestChannels[requestID]:
-			if _, ok := Requests[requestID]; ok { // && ocrResult.Status != "processing" {
+		case <-ocrWasSentBackChan:
+			requestsAndTimersMu.RLock()
+			if _, ok := Requests[requestID]; ok {
+				requestsAndTimersMu.RUnlock()
 				deleteRequestFromQueue(requestID)
 			}
-		case <-time.After(time.Second * time.Duration(storageTime+200)):
-			if _, ok := Requests[requestID]; ok { // && ocrResult.Status != "processing" {
+		case <-time.After(time.Second * time.Duration(storageTime+10)):
+			requestsAndTimersMu.RLock()
+			if _, ok := Requests[requestID]; ok {
+				requestsAndTimersMu.RUnlock()
 				deleteRequestFromQueue(requestID)
 			}
 		}
