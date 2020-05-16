@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -96,8 +97,12 @@ func main() {
 	if debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
-
-	log.Info().Interface("parameters", rabbitConfig).Msg("trying to start with parameters")
+	rabbitConfigTemp := rabbitConfig
+	urlTmp, _ := url.Parse(rabbitConfigTemp.AmqpAPIURI)
+	rabbitConfigTemp.AmqpAPIURI = ocrworker.StripPasswordFromUrl(urlTmp)
+	urlTmp, _ = url.Parse(rabbitConfigTemp.AmqpURI)
+	rabbitConfigTemp.AmqpURI = ocrworker.StripPasswordFromUrl(urlTmp)
+	log.Info().Interface("parameters", rabbitConfigTemp).Msg("trying to start with parameters")
 
 	// any requests to root, just redirect to main page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
