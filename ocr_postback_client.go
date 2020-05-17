@@ -22,7 +22,6 @@ func newOcrPostClient() *ocrPostClient {
 
 func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint) error {
 	logger := zerolog.New(os.Stdout).With().Str("RequestID", ocrResult.ID).Timestamp().Logger()
-	logger.Info().Str("component", "OCR_HTTP").Msg("sending ocr request back to requester")
 	logger.Info().Str("component", "OCR_HTTP").
 		Uint("attempt", numTry).
 		Str("replyToAddress", replyToAddress).
