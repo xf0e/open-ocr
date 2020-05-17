@@ -217,9 +217,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		go func() {
 			// trigger deleting request from internal queue
 			defer func() {
-				if _, ok := requestChannels[requestID]; ok {
-					requestChannels[requestID] <- true
-				}
+				ocrWasSentBackChan <- requestID
 			}()
 			ocrRes := OcrResult{ID: requestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()

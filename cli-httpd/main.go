@@ -4,13 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
+	// _ "net/http/pprof"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/google/gops/agent"
+	// "github.com/google/gops/agent"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -39,9 +40,9 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
 
-	if err := agent.Listen(agent.Options{}); err != nil {
+	/*	if err := agent.Listen(agent.Options{}); err != nil {
 		log.Fatal()
-	}
+	}*/
 
 	go func() {
 		select {
@@ -90,14 +91,18 @@ func main() {
 
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
 	if flgVersion {
-		fmt.Printf("Version %s. Build on %s from git commit hash %s\n", version, buildTime, sha1ver)
+		fmt.Printf("version %s. Build on %s from git commit hash %s\n", version, buildTime, sha1ver)
 		os.Exit(0)
 	}
 	if debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
-
-	log.Info().Interface("parameters", rabbitConfig).Msg("trying to start with parameters")
+	rabbitConfigTemp := rabbitConfig
+	urlTmp, _ := url.Parse(rabbitConfigTemp.AmqpAPIURI)
+	rabbitConfigTemp.AmqpAPIURI = ocrworker.StripPasswordFromUrl(urlTmp)
+	urlTmp, _ = url.Parse(rabbitConfigTemp.AmqpURI)
+	rabbitConfigTemp.AmqpURI = ocrworker.StripPasswordFromUrl(urlTmp)
+	log.Info().Interface("parameters", rabbitConfigTemp).Msg("trying to start with parameters")
 
 	// any requests to root, just redirect to main page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

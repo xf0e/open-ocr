@@ -22,7 +22,6 @@ func newOcrPostClient() *ocrPostClient {
 
 func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint) error {
 	logger := zerolog.New(os.Stdout).With().Str("RequestID", ocrResult.ID).Timestamp().Logger()
-	logger.Info().Str("component", "OCR_HTTP").Msg("sending ocr request back to requester")
 	logger.Info().Str("component", "OCR_HTTP").
 		Uint("attempt", numTry).
 		Str("replyToAddress", replyToAddress).
@@ -44,6 +43,14 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 
 	client := &http.Client{Timeout: postTimeout}
 	resp, err := client.Do(req)
+	defer func() {
+		err = resp.Body.Close()
+		if err != nil {
+			logger.Warn().
+				Str("component", "OCR_HTTP").
+				Err(err)
+		}
+	}()
 	if err != nil {
 		logger.Warn().Err(err).Str("component", "OCR_HTTP").
 			Str("replyToAddress", replyToAddress).
@@ -65,11 +72,5 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 		Interface("payload(first 32 bytes)", string(body[0:32])).
 		Msg("target responded")
 
-	err = resp.Body.Close()
-	if err != nil {
-		logger.Warn().
-			Str("component", "OCR_HTTP").
-			Err(err)
-	}
 	return err
 }
