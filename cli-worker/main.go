@@ -1,13 +1,13 @@
 package main
 
 import (
+	"net/url"
+	// _ "net/http/pprof"
+	"time"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
-	"net/url"
-
-	//_ "net/http/pprof"
-	"time"
 )
 
 // This assumes that there is a rabbit mq running

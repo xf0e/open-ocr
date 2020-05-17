@@ -12,10 +12,10 @@ GO_FILES := $(shell find . -name 'main.go' | grep -v /vendor/)
 all: run
 
 release:
-	@go build -o ${OUT_WORKER} -buildmode=pie -a -tags netgo -trimpath -ldflags="-s -w -X github.com/xf0e/open-ocr.buildTime=${DATE} \
-	 -X github.com/xf0e/open-ocr.sha1ver=${SHA1VER} -X github.com/xf0e/open-ocr.version=${VERSION}" cli-worker/main.go
+	@go build -o ${OUT_WORKER} -buildmode=pie -a -tags netgo -trimpath -ldflags="-s -w -X 'github.com/xf0e/open-ocr.buildTime=${DATE}' \
+	 -X 'github.com/xf0e/open-ocr.sha1ver=${SHA1VER}' -X 'github.com/xf0e/open-ocr.version=${VERSION}'" cli-worker/main.go
 	@go build -o ${OUT_HTTPD} -buildmode=pie -a -tags netgo -trimpath -ldflags="-s -w -X main.buildTime=${DATE} \
-	 -X main.sha1ver=${SHA1VER} -X main.version=${VERSION}" cli-httpd/main.go
+	 -X main.sha1ver=${SHA1VER} -X main.version=${VERSION} -X 'github.com/xf0e/open-ocr.version=${VERSION}'" cli-httpd/main.go
 	@go build -o ${OUT_PREPROCESSOR} -buildmode=pie -a -tags netgo -trimpath -ldflags="-s -w -X main.buildTime=${DATE} \
 	 -X main.sha1ver=${SHA1VER} -X main.version=${VERSION}" cli-preprocessor/main.go
 
