@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	// "github.com/google/gops/agent"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -32,6 +32,12 @@ func init() {
 	zerolog.TimeFieldFormat = time.StampMilli
 	// Default level is info, unless debug flag is present
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+}
+
+func makeHTTPServer() *http.Server {
+	mux := &http.ServeMux{}
+	mux.HandleFunc("/")
+
 }
 
 func main() {
@@ -68,6 +74,7 @@ func main() {
 	var httpPort uint
 	var debug bool
 	var flgVersion bool
+	var useHttps bool
 	flagFunc := func() {
 		flag.UintVar(
 			&httpPort,
@@ -87,6 +94,12 @@ func main() {
 			false,
 			"show version and exit",
 		)
+		flag.BoolVar(
+			&useHttps,
+			"userHttps",
+			false,
+			"set to use secure connection",
+		)
 	}
 
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
@@ -104,26 +117,7 @@ func main() {
 	rabbitConfigTemp.AmqpURI = ocrworker.StripPasswordFromUrl(urlTmp)
 	log.Info().Interface("parameters", rabbitConfigTemp).Msg("trying to start with parameters")
 
-	// any requests to root, just redirect to main page
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		ocrworker.ServiceCanAcceptMu.Lock()
-		appStopLocal = ocrworker.AppStop
-		ocrworker.ServiceCanAcceptMu.Unlock()
-		text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager)
-		_, _ = fmt.Fprintf(w, text)
-	})
-
-	// http.Handle("/ocr", ocrworker.NewOcrHttpHandler(rabbitConfig))
 	ocrChain := ocrworker.InstrumentHttpStatusHandler(ocrworker.NewOcrHttpHandler(rabbitConfig))
-
-	http.Handle("/ocr", ocrChain)
-
-	http.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
-
-	http.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
-	// expose metrics for prometheus
-	http.Handle("/metrics", promhttp.Handler())
-
 	listenAddr := fmt.Sprintf(":%d", httpPort)
 
 	log.Info().Str("component", "OCR_HTTP").Str("listenAddr", listenAddr).Msg("Starting listener...")
@@ -133,8 +127,45 @@ func main() {
 		ocrworker.SetResManagerState(rabbitConfig)
 	}()
 
-	if err := http.ListenAndServe(listenAddr, nil); err != nil {
-		log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_http has failed to start")
+	// crypto settings
+	cryptSettings := &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		},
 	}
 
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+		ocrworker.ServiceCanAcceptMu.Lock()
+		appStopLocal = ocrworker.AppStop
+		ocrworker.ServiceCanAcceptMu.Unlock()
+		text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager)
+		_, _ = fmt.Fprintf(writer, text)
+	})
+
+	mux.Handle("/ocr", ocrChain)
+	mux.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
+	// api end point for getting orc request status
+	mux.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
+	// expose metrics for prometheus
+	mux.Handle("/metrics", promhttp.Handler())
+
+	srv := &http.Server{
+		Addr:         listenAddr,
+		Handler:      mux,
+		TLSConfig:    cryptSettings,
+		TLSNextProto: make(map[string]func(server *http.Server, conn *tls.Conn, handler http.Handler), 0),
+		ReadTimeout:  60 * time.Second, WriteTimeout: 60 * time.Second,
+		ReadHeaderTimeout: 60 * time.Second,
+	}
+	if err := srv.ListenAndServeTLS("/home/grrr/server.crt", "/home/grrr/server.key"); err != nil {
+		log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_https has failed to start")
+	}
 }
