@@ -23,9 +23,12 @@ import (
 // curl -X POST -H "Content-Type: application/json" -d '{"img_url":"http://localhost:8081/img","engine":0}' http://localhost:8081/ocr
 
 var (
-	sha1ver   string
-	buildTime string
-	version   string
+	sha1ver      string
+	buildTime    string
+	version      string
+	appStopLocal = false
+	ocrChain     http.Handler
+	rabbitConfig ocrworker.RabbitConfig
 )
 
 func init() {
@@ -34,15 +37,40 @@ func init() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 }
 
-func makeHTTPServer() *http.Server {
+func handleIndex(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+	ocrworker.ServiceCanAcceptMu.Lock()
+	appStopLocal = ocrworker.AppStop
+	ocrworker.ServiceCanAcceptMu.Unlock()
+	text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager)
+	_, _ = fmt.Fprintf(writer, text)
+}
+
+func makeServerFromMux(mux *http.ServeMux) *http.Server {
+	return &http.Server{
+		ReadTimeout:       60 * time.Second,
+		ReadHeaderTimeout: 60 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		Handler:           mux,
+	}
+}
+
+func makeHTTPServer(rabbitConfig ocrworker.RabbitConfig, ocrChain http.Handler) *http.Server {
 	mux := &http.ServeMux{}
-	mux.HandleFunc("/")
+	mux.HandleFunc("/", handleIndex)
+	mux.Handle("/ocr", ocrChain)
+	mux.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
+	// api end point for getting orc request status
+	mux.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
+	// expose metrics for prometheus
+	mux.Handle("/metrics", promhttp.Handler())
+	return makeServerFromMux(mux)
 
 }
 
 func main() {
 	// defer profile.Start(profile.MemProfile).Stop()
-	appStopLocal := false
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
 
@@ -96,7 +124,7 @@ func main() {
 		)
 		flag.BoolVar(
 			&useHttps,
-			"userHttps",
+			"usehttps",
 			false,
 			"set to use secure connection",
 		)
@@ -120,52 +148,41 @@ func main() {
 	ocrChain := ocrworker.InstrumentHttpStatusHandler(ocrworker.NewOcrHttpHandler(rabbitConfig))
 	listenAddr := fmt.Sprintf(":%d", httpPort)
 
-	log.Info().Str("component", "OCR_HTTP").Str("listenAddr", listenAddr).Msg("Starting listener...")
-
 	// start a goroutine which will run forever and decide if we have resources for incoming requests
 	go func() {
 		ocrworker.SetResManagerState(rabbitConfig)
 	}()
+	log.Info().Str("component", "OCR_HTTP").Str("listenAddr", listenAddr).Msg("Starting listener...")
+	var httpsSrv *http.Server
+	// if useHttps flag is set then start https server
+	if useHttps {
+		httpsSrv = makeHTTPServer(rabbitConfig, ocrChain)
+		httpsSrv.Addr = listenAddr
 
-	// crypto settings
-	cryptSettings := &tls.Config{
-		MinVersion:               tls.VersionTLS12,
-		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		PreferServerCipherSuites: true,
-		CipherSuites: []uint16{
-			tls.TLS_AES_256_GCM_SHA384,
-			tls.TLS_CHACHA20_POLY1305_SHA256,
-			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-		},
-	}
+		// crypto settings
+		cryptSettings := &tls.Config{
+			MinVersion:               tls.VersionTLS12,
+			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+			PreferServerCipherSuites: true,
+			CipherSuites: []uint16{
+				tls.TLS_AES_256_GCM_SHA384,
+				tls.TLS_CHACHA20_POLY1305_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			},
+		}
+		httpsSrv.TLSConfig = cryptSettings
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
-		ocrworker.ServiceCanAcceptMu.Lock()
-		appStopLocal = ocrworker.AppStop
-		ocrworker.ServiceCanAcceptMu.Unlock()
-		text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager)
-		_, _ = fmt.Fprintf(writer, text)
-	})
-
-	mux.Handle("/ocr", ocrChain)
-	mux.Handle("/ocr-file-upload", ocrworker.NewOcrHttpMultipartHandler(rabbitConfig))
-	// api end point for getting orc request status
-	mux.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
-	// expose metrics for prometheus
-	mux.Handle("/metrics", promhttp.Handler())
-
-	srv := &http.Server{
-		Addr:         listenAddr,
-		Handler:      mux,
-		TLSConfig:    cryptSettings,
-		TLSNextProto: make(map[string]func(server *http.Server, conn *tls.Conn, handler http.Handler), 0),
-		ReadTimeout:  60 * time.Second, WriteTimeout: 60 * time.Second,
-		ReadHeaderTimeout: 60 * time.Second,
-	}
-	if err := srv.ListenAndServeTLS("/home/grrr/server.crt", "/home/grrr/server.key"); err != nil {
-		log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_https has failed to start")
+		if err := httpsSrv.ListenAndServeTLS("/home/grrr/server.crt", "/home/grrr/server.key"); err != nil {
+			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_https has failed to start")
+		} else {
+			var httpSrv *http.Server
+			httpSrv = makeHTTPServer(rabbitConfig, ocrChain)
+			httpSrv.Addr = listenAddr
+			if err := httpsSrv.ListenAndServe(); err != nil {
+				log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_http has failed to start")
+			}
+		}
 	}
 }

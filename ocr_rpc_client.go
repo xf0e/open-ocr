@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -235,7 +236,8 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
 						if err != nil {
 							logger.Info().Uint("delivery_attempt", tryCounter).Msg("delivery attempt " +
-								string(tryCounter) + "was not successful, attempt " + string(tryCounter) + "/" + string(numRetries))
+								strconv.FormatUint(uint64(tryCounter), 10) + " was not successful, attempt " + strconv.FormatUint(uint64(tryCounter), 10) +
+								"/" + strconv.FormatUint(uint64(numRetries), 10))
 							tryCounter++
 							logger.Error().Err(err)
 							time.Sleep(2 * time.Second)
