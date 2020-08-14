@@ -27,8 +27,6 @@ var (
 	buildTime    string
 	version      string
 	appStopLocal = false
-	ocrChain     http.Handler
-	rabbitConfig ocrworker.RabbitConfig
 )
 
 func init() {
@@ -37,7 +35,7 @@ func init() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 }
 
-func handleIndex(writer http.ResponseWriter, request *http.Request) {
+func handleIndex(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	ocrworker.ServiceCanAcceptMu.Lock()
 	appStopLocal = ocrworker.AppStop
