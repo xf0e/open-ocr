@@ -174,13 +174,13 @@ func main() {
 
 		if err := httpsSrv.ListenAndServeTLS("/home/grrr/server.crt", "/home/grrr/server.key"); err != nil {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_https has failed to start")
-		} else {
-			var httpSrv *http.Server
-			httpSrv = makeHTTPServer(rabbitConfig, ocrChain)
-			httpSrv.Addr = listenAddr
-			if err := httpsSrv.ListenAndServe(); err != nil {
-				log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_http has failed to start")
-			}
+		}
+	} else {
+		var httpSrv *http.Server
+		httpSrv = makeHTTPServer(rabbitConfig, ocrChain)
+		httpSrv.Addr = listenAddr
+		if err := httpSrv.ListenAndServe(); err != nil {
+			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_http has failed to start")
 		}
 	}
 }
