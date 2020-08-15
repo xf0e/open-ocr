@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
+	"net/http/pprof"
 	"net/url"
 	"os"
 	"os/signal"
@@ -63,6 +63,13 @@ func makeHTTPServer(rabbitConfig ocrworker.RabbitConfig, ocrChain http.Handler) 
 	mux.Handle("/ocr-status", ocrworker.NewOcrHttpStatusHandler())
 	// expose metrics for prometheus
 	mux.Handle("/metrics", promhttp.Handler())
+
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
 	return makeServerFromMux(mux)
 
 }
@@ -151,9 +158,10 @@ func main() {
 		ocrworker.SetResManagerState(rabbitConfig)
 	}()
 	log.Info().Str("component", "OCR_HTTP").Str("listenAddr", listenAddr).Msg("Starting listener...")
-	var httpsSrv *http.Server
-	// if useHttps flag is set then start https server
+
 	if useHttps {
+		var httpsSrv *http.Server
+		// if useHttps flag is set then start https server
 		httpsSrv = makeHTTPServer(rabbitConfig, ocrChain)
 		httpsSrv.Addr = listenAddr
 
