@@ -158,11 +158,9 @@ func checkURLForReplyTo(uri string) (string, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
 		return "", err
-	} else if u.Scheme == "" || u.Host == "" {
-		errorText := "provided(" + u.String() + ") URI must be an absolute URL"
-		err = fmt.Errorf(errorText)
-	} else if u.Scheme != "http" {
-		errorText := "provided(" + u.String() + ") URI must begin with http"
+	}
+	if u.Scheme == "" || u.Host == "" {
+		errorText := "provided " + u.String() + " URI must be an absolute URL"
 		err = fmt.Errorf(errorText)
 	}
 	return u.String(), err
