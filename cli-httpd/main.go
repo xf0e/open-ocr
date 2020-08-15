@@ -108,6 +108,8 @@ func main() {
 	var debug bool
 	var flgVersion bool
 	var useHttps bool
+	var keyFile string
+	var certFile string
 	flagFunc := func() {
 		flag.UintVar(
 			&httpPort,
@@ -132,6 +134,18 @@ func main() {
 			"usehttps",
 			false,
 			"set to use secure connection",
+		)
+		flag.StringVar(
+			&keyFile,
+			"keyfile",
+			"",
+			"path to private key",
+		)
+		flag.StringVar(
+			&certFile,
+			"certfile",
+			"",
+			"path to certificate file",
 		)
 	}
 
@@ -160,6 +174,9 @@ func main() {
 	log.Info().Str("component", "OCR_HTTP").Str("listenAddr", listenAddr).Msg("Starting listener...")
 
 	if useHttps {
+		if certFile == "" || keyFile == "" {
+			log.Fatal().Msg("usehttp flag only makes sense if both the private key and a certificate are available")
+		}
 		var httpsSrv *http.Server
 		// if useHttps flag is set then start https server
 		httpsSrv = makeHTTPServer(rabbitConfig, ocrChain)
@@ -180,7 +197,7 @@ func main() {
 		}
 		httpsSrv.TLSConfig = cryptSettings
 
-		if err := httpsSrv.ListenAndServeTLS("/home/grrr/server.crt", "/home/grrr/server.key"); err != nil {
+		if err := httpsSrv.ListenAndServeTLS(certFile, keyFile); err != nil {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_https has failed to start")
 		}
 	} else {
