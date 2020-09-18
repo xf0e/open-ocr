@@ -49,10 +49,10 @@ func TestSandwichEngineWithJson(t *testing.T) {
 
 	var testJsons []string
 	/*testJsons = append(testJsons, `{"engine":"sandwich"}`)
-	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{}}`)
-	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":null}`)
-	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_char_whitelist":"0123456789"}, "psm":"1"}}`)
-	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_create_hocr":"1", "tessedit_pageseg_mode":"1"}, "psm":"3"}}`)*/
+	  testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{}}`)
+	  testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":null}`)
+	  testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_char_whitelist":"0123456789"}, "psm":"1"}}`)
+	  testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_create_hocr":"1", "tessedit_pageseg_mode":"1"}, "psm":"3"}}`)*/
 	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"lang":"deu", "ocr_type":"ocrlayeronly","result_optimize":true}}`)
 	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"lang":"deu", "ocr_type":"combinedpdf","result_optimize":true}}`)
 	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"lang":"deu", "ocr_type":"combinedpdf","result_optimize":false}}`)
