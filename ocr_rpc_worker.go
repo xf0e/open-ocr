@@ -246,7 +246,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 
 }
 
-func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo string, correlationId string) error {
+func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo, correlationId string) error {
 	// RequestID is the same as correlationId
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", correlationId).Timestamp().Logger()

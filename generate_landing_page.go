@@ -69,7 +69,7 @@ func randomMOTD() string {
 }
 
 // GenerateLandingPage will generate a simple landing page
-func GenerateLandingPage(appStop bool, technicalError bool) string {
+func GenerateLandingPage(appStop, technicalError bool) string {
 	statusArray := [4]string{}
 
 	if technicalError {

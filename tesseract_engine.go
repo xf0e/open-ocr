@@ -102,14 +102,14 @@ func (t TesseractEngineArgs) Export() []string {
 func (t TesseractEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig WorkerConfig) (OcrResult, error) {
 
 	tmpFileName, err := func() (string, error) {
-		if ocrRequest.ImgBase64 != "" {
+		switch {
+		case ocrRequest.ImgBase64 != "":
 			return t.tmpFileFromImageBase64(ocrRequest.ImgBase64)
-		} else if ocrRequest.ImgUrl != "" {
+		case ocrRequest.ImgUrl != "":
 			return t.tmpFileFromImageUrl(ocrRequest.ImgUrl)
-		} else {
+		default:
 			return t.tmpFileFromImageBytes(ocrRequest.ImgBytes)
 		}
-
 	}()
 
 	if err != nil {
@@ -258,13 +258,13 @@ func findOutfile(outfileBaseName string, fileExtensions []string) (string, error
 
 }
 
-func findAndReadOutfile(outfileBaseName string, fileExtensions []string) ([]byte, string, error) {
+func findAndReadOutfile(outfileBaseName string, fileExtensions []string) (outBytes []byte, outfile string, err error) {
 
-	outfile, err := findOutfile(outfileBaseName, fileExtensions)
+	outfile, err = findOutfile(outfileBaseName, fileExtensions)
 	if err != nil {
 		return nil, "", err
 	}
-	outBytes, err := ioutil.ReadFile(outfile)
+	outBytes, err = ioutil.ReadFile(outfile)
 	if err != nil {
 		return nil, "", err
 	}

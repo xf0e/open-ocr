@@ -16,14 +16,14 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-func saveUrlContentToFileName(url, tmpFileName string) error {
+func saveUrlContentToFileName(uri, tmpFileName string) error {
 
 	outFile, err := os.Create(tmpFileName)
 	if err != nil {
 		return err
 	}
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(uri)
 	if err != nil {
 		outFile.Close()
 		return err
@@ -48,10 +48,10 @@ func saveBytesToFileName(bytes []byte, tmpFileName string) error {
 	return ioutil.WriteFile(tmpFileName, bytes, 0600)
 }
 
-func url2bytes(url string) ([]byte, error) {
+func url2bytes(uri string) ([]byte, error) {
 
 	var client = &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(url)
+	resp, err := client.Get(uri)
 	if err != nil {
 		return nil, err
 	}
@@ -102,15 +102,16 @@ func detectFileType(buffer []byte) string {
 		Interface("buffer", buffer).
 		Msg("check file type; see buffer")
 	fileType := ""
-	if len(buffer) > 3 &&
+	switch {
+	case len(buffer) > 3 &&
 		buffer[0] == 0x25 && buffer[1] == 0x50 &&
-		buffer[2] == 0x44 && buffer[3] == 0x46 {
+		buffer[2] == 0x44 && buffer[3] == 0x46:
 		fileType = strings.ToUpper("PDF")
-	} else if len(buffer) > 3 &&
+	case len(buffer) > 3 &&
 		((buffer[0] == 0x49 && buffer[1] == 0x49 && buffer[2] == 0x2A && buffer[3] == 0x0) ||
-			(buffer[0] == 0x4D && buffer[1] == 0x4D && buffer[2] == 0x0 && buffer[3] == 0x2A)) {
+			(buffer[0] == 0x4D && buffer[1] == 0x4D && buffer[2] == 0x0 && buffer[3] == 0x2A)):
 		fileType = strings.ToUpper("TIFF")
-	} else {
+	default:
 		fileType = strings.ToUpper("UNKNOWN")
 	}
 	return fileType
@@ -167,7 +168,7 @@ func checkURLForReplyTo(uri string) (string, error) {
 }
 
 // timeTrack used to measure time of selected operations
-func timeTrack(start time.Time, operation string, message string, requestID string) {
+func timeTrack(start time.Time, operation, message, requestID string) {
 	elapsed := time.Since(start)
 	if requestID == "" {
 		log.Info().Str("component", "ocr_worker").Dur(operation, elapsed).

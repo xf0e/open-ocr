@@ -157,14 +157,14 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig Worke
 		Msg("ocr request data")
 
 	tmpFileName, err := func() (string, error) {
-		if ocrRequest.ImgBase64 != "" {
+		switch {
+		case ocrRequest.ImgBase64 != "":
 			return t.tmpFileFromImageBase64(ocrRequest.ImgBase64, ocrRequest.RequestID)
-		} else if ocrRequest.ImgUrl != "" {
+		case ocrRequest.ImgUrl != "":
 			return t.tmpFileFromImageURL(ocrRequest.ImgUrl, ocrRequest.RequestID)
-		} else {
+		default:
 			return t.tmpFileFromImageBytes(ocrRequest.ImgBytes, ocrRequest.RequestID)
 		}
-
 	}()
 
 	if err != nil {
@@ -181,7 +181,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig Worke
 
 		return OcrResult{Text: "WARNING: provided file format is not supported", Status: "error"}, err
 	}
-	uplFileType := detectFileType(buffer[:])
+	uplFileType := detectFileType(buffer)
 	if uplFileType == "UNKNOWN" {
 		err := fmt.Errorf("file format not understood")
 		logger.Warn().Caller().Err(err).
@@ -224,7 +224,7 @@ func (t SandwichEngine) tmpFileFromImageBytes(imgBytes []byte, tmpFileName strin
 
 }
 
-func (t SandwichEngine) tmpFileFromImageBase64(base64Image string, tmpFileName string) (string, error) {
+func (t SandwichEngine) tmpFileFromImageBase64(base64Image, tmpFileName string) (string, error) {
 
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with base 64")
 	var err error
@@ -250,7 +250,7 @@ func (t SandwichEngine) tmpFileFromImageBase64(base64Image string, tmpFileName s
 
 }
 
-func (t SandwichEngine) tmpFileFromImageURL(imgURL string, tmpFileName string) (string, error) {
+func (t SandwichEngine) tmpFileFromImageURL(imgURL, tmpFileName string) (string, error) {
 
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with url")
 	var err error
@@ -271,7 +271,7 @@ func (t SandwichEngine) tmpFileFromImageURL(imgURL string, tmpFileName string) (
 
 }
 
-func (t SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs SandwichEngineArgs) ([]string, string) {
+func (t SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs SandwichEngineArgs) (cmdArgs []string, ocrLayerFile string) {
 
 	// sets output file name for pdfsandwich output file
 	// and builds the argument list for external program
@@ -312,7 +312,7 @@ func (t SandwichEngine) runExternalCmd(commandToRun string, cmdArgs []string, de
 	return string(output), err
 }
 
-func (t SandwichEngine) processImageFile(inputFilename string, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
+func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
 	// if error flag is true, input files won't be deleted
 	errorFlag := false
 

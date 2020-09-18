@@ -42,7 +42,7 @@ var (
 )
 
 // checks if resources for incoming request are available
-func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) bool {
+func CheckForAcceptRequest(urlQueue, urlStat string, statusChanged bool) bool {
 
 	isAvailable := false
 	TechnicalErrorResManager = false
