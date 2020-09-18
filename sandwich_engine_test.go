@@ -2,10 +2,10 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"github.com/rs/zerolog/log"
+	"io/ioutil"
 	"testing"
 
-	"io/ioutil"
+	"github.com/rs/zerolog/log"
 
 	"github.com/couchbaselabs/go.assert"
 )
@@ -29,6 +29,7 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 		ImgBytes:   bytes,
 		EngineType: EngineSandwichTesseract,
 		EngineArgs: cFlags,
+		TimeOut:    30,
 	}
 
 	workerConfig := workerConfigForTests()
