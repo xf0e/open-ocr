@@ -80,7 +80,7 @@ func (w *OcrRpcWorker) Run() error {
 		return err
 	}
 
-	if err = w.channel.ExchangeDeclare(
+	if err := w.channel.ExchangeDeclare(
 		w.workerConfig.Exchange,     // name of the exchange
 		w.workerConfig.ExchangeType, // type
 		true,                        // durable
@@ -112,7 +112,7 @@ func (w *OcrRpcWorker) Run() error {
 		Str("tag", tag).
 		Msg("binding to routing key")
 
-	if err = w.channel.QueueBind(
+	if err := w.channel.QueueBind(
 		queue.Name,                // name of the queue
 		w.workerConfig.RoutingKey, // bindingKey
 		w.workerConfig.Exchange,   // sourceExchange

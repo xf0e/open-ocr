@@ -295,7 +295,7 @@ func (c *OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseC
 	}
 
 	// bind the callback queue to an exchange + routing key
-	if err = c.channel.QueueBind(
+	if err := c.channel.QueueBind(
 		callbackQueue.Name,      // name of the queue
 		callbackQueue.Name,      // bindingKey
 		c.rabbitConfig.Exchange, // sourceExchange

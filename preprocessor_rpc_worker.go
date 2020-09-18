@@ -72,7 +72,7 @@ func (w *PreprocessorRpcWorker) Run() error {
 		return err
 	}
 
-	if err = w.channel.ExchangeDeclare(
+	if err := w.channel.ExchangeDeclare(
 		w.rabbitConfig.Exchange,     // name of the exchange
 		w.rabbitConfig.ExchangeType, // type
 		true,                        // durable
@@ -100,7 +100,7 @@ func (w *PreprocessorRpcWorker) Run() error {
 		return err
 	}
 
-	if err = w.channel.QueueBind(
+	if err := w.channel.QueueBind(
 		queue.Name,              // name of the queue
 		w.bindingKey,            // bindingKey
 		w.rabbitConfig.Exchange, // sourceExchange
