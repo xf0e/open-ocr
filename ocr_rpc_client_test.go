@@ -1,8 +1,9 @@
 package ocrworker
 
 import (
-	"github.com/rs/zerolog/log"
 	"testing"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/couchbaselabs/go.assert"
 )
@@ -34,13 +35,13 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 
 	// kick off a worker
 	// this would normally happen on a different machine ..
-	ocrWorker, err := NewOcrRpcWorker(workerConfig)
+	ocrWorker, err := NewOcrRpcWorker(&workerConfig)
 	if err != nil {
 		log.Error().Str("component", "TEST").Err(err)
 	}
 	ocrWorker.Run()
 
-	ocrClient, err := NewOcrRpcClient(rabbitConfig)
+	ocrClient, err := NewOcrRpcClient(&rabbitConfig)
 	if err != nil {
 		log.Error().Str("component", "TEST").Err(err)
 	}
@@ -49,7 +50,7 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 	for i := 0; i < 50; i++ {
 
 		ocrRequest := OcrRequest{ImgUrl: testImageUrl, EngineType: EngineMock}
-		decodeResult, _, err := ocrClient.DecodeImage(ocrRequest, requestID)
+		decodeResult, _, err := ocrClient.DecodeImage(&ocrRequest, requestID)
 		if err != nil {
 			log.Error().Str("component", "TEST").Err(err)
 		}

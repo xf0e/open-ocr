@@ -15,7 +15,7 @@ func TestParamExtraction(t *testing.T) {
 	assert.True(t, err == nil)
 
 	swt := StrokeWidthTransformer{}
-	param := swt.extractDarkOnLightParam(ocrRequest)
+	param := swt.extractDarkOnLightParam(&ocrRequest)
 	assert.Equals(t, param, "0")
 
 }
@@ -28,7 +28,7 @@ func TestParamExtractionNegative(t *testing.T) {
 	assert.True(t, err == nil)
 
 	swt := StrokeWidthTransformer{}
-	param := swt.extractDarkOnLightParam(ocrRequest)
+	param := swt.extractDarkOnLightParam(&ocrRequest)
 	assert.Equals(t, param, "1")
 
 }

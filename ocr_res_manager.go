@@ -42,7 +42,7 @@ var (
 )
 
 // checks if resources for incoming request are available
-func CheckForAcceptRequest(urlQueue string, urlStat string, statusChanged bool) bool {
+func CheckForAcceptRequest(urlQueue, urlStat string, statusChanged bool) bool {
 
 	isAvailable := false
 	TechnicalErrorResManager = false
@@ -139,7 +139,7 @@ func schedulerByWorkerNumber() bool {
 
 // SetResManagerState sets boolean value of resource manager; if memory of rabbitMQ and the number
 // messages is not exceeding  the limit
-func SetResManagerState(ampqAPIConfig RabbitConfig) {
+func SetResManagerState(ampqAPIConfig *RabbitConfig) {
 	var sleepFor time.Duration = 5
 	resManager = newOcrResManager()
 	queueManager = newOcrQueueManager()

@@ -36,7 +36,7 @@ func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
 	}
 
 	// run DecodeText binary on it (if not in path, print warning and do nothing)
-	darkOnLightSetting := s.extractDarkOnLightParam(*ocrRequest)
+	darkOnLightSetting := s.extractDarkOnLightParam(ocrRequest)
 	log.Info().Str("component", "PREPROCESSOR_WORKER").
 		Str("tmpFileNameInput", tmpFileNameInput).Str("tmpFileNameOutput", tmpFileNameOutput).
 		Str("darkOnLightSetting", darkOnLightSetting).Msg("DetectText")
@@ -63,7 +63,7 @@ func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
 
 }
 
-func (s StrokeWidthTransformer) extractDarkOnLightParam(ocrRequest OcrRequest) string {
+func (s StrokeWidthTransformer) extractDarkOnLightParam(ocrRequest *OcrRequest) string {
 
 	log.Info().Str("component", "PREPROCESSOR_WORKER").
 		Msg("extract dark on light param")

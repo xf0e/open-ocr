@@ -6,6 +6,6 @@ type MockEngine struct {
 }
 
 // ProcessRequest will process incoming OCR request by routing it through the whole process chain
-func (m MockEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig WorkerConfig) (OcrResult, error) {
+func (m MockEngine) ProcessRequest(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (OcrResult, error) {
 	return OcrResult{Text: MockEngineResponse}, nil
 }

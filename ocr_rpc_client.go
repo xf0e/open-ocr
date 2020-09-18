@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -39,16 +40,16 @@ var (
 	numRetries uint = 3
 )
 
-func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
+func NewOcrRpcClient(rc *RabbitConfig) (*OcrRpcClient, error) {
 	ocrRpcClient := &OcrRpcClient{
-		rabbitConfig: rc,
+		rabbitConfig: *rc,
 	}
 	return ocrRpcClient, nil
 }
 
 // DecodeImage is the main function to do a ocr on incoming request.
 // It's handling the parameter and the whole workflow
-func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (OcrResult, int, error) {
+func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (OcrResult, int, error) {
 	var err error
 
 	logger := zerolog.New(os.Stdout).With().
@@ -63,7 +64,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		Uint16("PageNumber", ocrRequest.PageNumber).
 		Str("ReplyTo", ocrRequest.ReplyTo).
 		Str("UserAgent", ocrRequest.UserAgent).
-		Str("EngineType", string(ocrRequest.EngineType)).
+		Str("EngineType", ocrRequest.EngineType.String()).
 		Str("ReferenceID", ocrRequest.ReferenceID).
 		Msg("incoming request")
 
@@ -217,7 +218,10 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 		go func() {
 			// trigger deleting request from internal queue
 			defer func() {
-				ocrWasSentBackChan <- requestID
+				select {
+				case ocrWasSentBackChan <- requestID:
+				default:
+				}
 			}()
 			ocrRes := OcrResult{ID: requestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()
@@ -232,7 +236,8 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 						err = ocrPostClient.postOcrRequest(&ocrRes, ocrRequest.ReplyTo, tryCounter)
 						if err != nil {
 							logger.Info().Uint("delivery_attempt", tryCounter).Msg("delivery attempt " +
-								string(tryCounter) + "was not successful, attempt " + string(tryCounter) + "/" + string(numRetries))
+								strconv.FormatUint(uint64(tryCounter), 10) + " was not successful, attempt " + strconv.FormatUint(uint64(tryCounter), 10) +
+								"/" + strconv.FormatUint(uint64(numRetries), 10))
 							tryCounter++
 							logger.Error().Err(err)
 							time.Sleep(2 * time.Second)
@@ -271,7 +276,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	}
 }
 
-func (c OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseChan chan OcrResult) (amqp.Queue, error) {
+func (c *OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseChan chan OcrResult) (amqp.Queue, error) {
 
 	queueArgs := make(amqp.Table)
 	queueArgs["x-max-priority"] = uint8(10)
@@ -290,7 +295,7 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseCh
 	}
 
 	// bind the callback queue to an exchange + routing key
-	if err = c.channel.QueueBind(
+	if err := c.channel.QueueBind(
 		callbackQueue.Name,      // name of the queue
 		callbackQueue.Name,      // bindingKey
 		c.rabbitConfig.Exchange, // sourceExchange
@@ -321,7 +326,7 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseCh
 
 }
 
-func (c OcrRpcClient) handleRPCResponse(deliveries <-chan amqp.Delivery, correlationID string, rpcResponseChan chan OcrResult) {
+func (c *OcrRpcClient) handleRPCResponse(deliveries <-chan amqp.Delivery, correlationID string, rpcResponseChan chan OcrResult) {
 	// correlationID is the same as RequestID
 	logger := zerolog.New(os.Stdout).With().
 		Str("component", "OCR_CLIENT").Str("RequestID", correlationID).Timestamp().Logger()

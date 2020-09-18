@@ -2,10 +2,10 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"github.com/rs/zerolog/log"
+	"io/ioutil"
 	"testing"
 
-	"io/ioutil"
+	"github.com/rs/zerolog/log"
 
 	"github.com/couchbaselabs/go.assert"
 )
@@ -18,7 +18,7 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 
 	engine := SandwichEngine{}
 	bytes, err := ioutil.ReadFile("docs/testimage.pdf")
-	//bytes, err := ioutil.ReadFile("docs/testimage.png")
+	// bytes, err := ioutil.ReadFile("docs/testimage.png")
 	assert.True(t, err == nil)
 
 	cFlags := make(map[string]interface{})
@@ -29,12 +29,13 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 		ImgBytes:   bytes,
 		EngineType: EngineSandwichTesseract,
 		EngineArgs: cFlags,
+		TimeOut:    30,
 	}
 
 	workerConfig := workerConfigForTests()
 
 	assert.True(t, err == nil)
-	result, err := engine.ProcessRequest(ocrRequest, workerConfig)
+	result, err := engine.ProcessRequest(&ocrRequest, &workerConfig)
 	assert.True(t, err == nil)
 	log.Info().Str("component", "TEST").Interface("result", result)
 
@@ -48,10 +49,10 @@ func TestSandwichEngineWithJson(t *testing.T) {
 
 	var testJsons []string
 	/*testJsons = append(testJsons, `{"engine":"sandwich"}`)
-	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{}}`)
-	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":null}`)
-	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_char_whitelist":"0123456789"}, "psm":"1"}}`)
-	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_create_hocr":"1", "tessedit_pageseg_mode":"1"}, "psm":"3"}}`)*/
+	  testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{}}`)
+	  testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":null}`)
+	  testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_char_whitelist":"0123456789"}, "psm":"1"}}`)
+	  testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_create_hocr":"1", "tessedit_pageseg_mode":"1"}, "psm":"3"}}`)*/
 	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"lang":"deu", "ocr_type":"ocrlayeronly","result_optimize":true}}`)
 	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"lang":"deu", "ocr_type":"combinedpdf","result_optimize":true}}`)
 	testJsons = append(testJsons, `{"engine":"sandwich", "engine_args":{"lang":"deu", "ocr_type":"combinedpdf","result_optimize":false}}`)
@@ -66,7 +67,7 @@ func TestSandwichEngineWithJson(t *testing.T) {
 		assert.True(t, err == nil)
 		ocrRequest.ImgBytes = bytes
 		engine := NewOcrEngine(ocrRequest.EngineType)
-		result, err := engine.ProcessRequest(ocrRequest, workerConfig)
+		result, err := engine.ProcessRequest(&ocrRequest, &workerConfig)
 		log.Error().Err(err).Str("component", "TEST")
 		assert.True(t, err == nil)
 		log.Info().Str("component", "TEST").Interface("result", result)
@@ -81,7 +82,7 @@ func TestNewsandwichEngineArgs(t *testing.T) {
 	workerConfig := workerConfigForTests()
 	err := json.Unmarshal([]byte(testJSON), &ocrRequest)
 	assert.True(t, err == nil)
-	engineArgs, err := NewSandwichEngineArgs(ocrRequest, workerConfig)
+	engineArgs, err := NewSandwichEngineArgs(&ocrRequest, &workerConfig)
 	assert.True(t, err == nil)
 	assert.Equals(t, len(engineArgs.configVars), 1)
 	assert.Equals(t, engineArgs.configVars["tessedit_char_whitelist"], "0123456789")
@@ -102,7 +103,7 @@ func TestSandwichEngineWithFile(t *testing.T) {
 	engineArgs.ocrOptimize = true
 	engineArgs.lang = "deu"
 	engineArgs.saveFiles = true
-	result, err := engine.processImageFile("docs/testimage.pdf", "PDF", engineArgs, 20)
+	result, err := engine.processImageFile("docs/testimage.pdf", "PDF", &engineArgs, 20)
 	log.Warn().Err(err).Str("component", "TEST")
 	assert.True(t, err == nil)
 

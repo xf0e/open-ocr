@@ -50,7 +50,7 @@ func main() {
 			Str("component", "OCR_WORKER").
 			Msg("Creating new OCR Worker")
 
-		ocrWorker, err := ocrworker.NewOcrRpcWorker(workerConfig)
+		ocrWorker, err := ocrworker.NewOcrRpcWorker(&workerConfig)
 		if err != nil {
 			log.Panic().Str("component", "OCR_WORKER").
 				Msg("Could not create rpc worker")

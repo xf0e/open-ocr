@@ -43,20 +43,13 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 
 	client := &http.Client{Timeout: postTimeout}
 	resp, err := client.Do(req)
-	defer func() {
-		err = resp.Body.Close()
-		if err != nil {
-			logger.Warn().
-				Str("component", "OCR_HTTP").
-				Err(err)
-		}
-	}()
 	if err != nil {
 		logger.Warn().Err(err).Str("component", "OCR_HTTP").
 			Str("replyToAddress", replyToAddress).
 			Msg("ocr was not delivered. Target did not respond")
 		return err
 	}
+	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	header := resp.StatusCode

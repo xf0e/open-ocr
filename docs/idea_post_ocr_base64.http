@@ -1,5 +1,4 @@
 ### sane request
-### You can create local variables for the pipelines within the template ...
 
 POST http://localhost:8080/ocr
 Content-Type: application/json
@@ -22,7 +21,6 @@ Content-Type: application/json
 }
 
 ### sane request combined pdf
-### You can create local variables for the pipelines within the template ...
 
 POST http://localhost:8080/ocr
 Content-Type: application/json
@@ -46,7 +44,6 @@ Content-Type: application/json
 
 
 ###  sane request, ocrlayer only  output
-### You can create local variables for the pipelines within the template ...
 
 POST http://localhost:8080/ocr
 Content-Type: application/json
@@ -69,9 +66,8 @@ Content-Type: application/json
 }
 
 ### sane request, cliert doesn't disconnect
-### You can create local variables for the pipelines within the template ...
 
-POST http://localhost:8080/ocr
+POST https://localhost:8080/ocr
 Content-Type: application/json
 
 {
@@ -91,10 +87,9 @@ Content-Type: application/json
   "reference_id": "0xf0ef0ef0ef0ef0ef0e"
 }
 
-### sane request, deffered polling. client should poll
-### You can create local variables for the pipelines within the template ...
+### sane request, automatic delivery. reply adress is set
 
-POST http://localhost:8080/ocr
+POST https://localhost:8080/ocr
 Content-Type: application/json
 
 {
