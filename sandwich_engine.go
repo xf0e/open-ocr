@@ -280,8 +280,8 @@ func (t SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs Sandwi
 	// pdfsandwich by default default expands the name of output file wich _ocr
 	cflags := engineArgs.Export()
 	tmpFileExtension := "_ocr.pdf"
-	ocrLayerFile := inputFilename
-	cmdArgs := make([]string, 0)
+	ocrLayerFile = inputFilename
+	cmdArgs = make([]string, 0)
 
 	ocrLayerFile = fmt.Sprintf("%s%s", ocrLayerFile, tmpFileExtension)
 	cmdArgs = append(cmdArgs, cflags...)
