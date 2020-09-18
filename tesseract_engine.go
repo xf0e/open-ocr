@@ -21,7 +21,7 @@ type TesseractEngineArgs struct {
 	saveFiles   bool
 }
 
-func NewTesseractEngineArgs(ocrRequest OcrRequest) (*TesseractEngineArgs, error) {
+func NewTesseractEngineArgs(ocrRequest *OcrRequest) (*TesseractEngineArgs, error) {
 
 	engineArgs := &TesseractEngineArgs{}
 
@@ -87,19 +87,17 @@ func (t TesseractEngineArgs) Export() []string {
 		result = append(result, keyValArg)
 	}
 	if t.pageSegMode != "" {
-		result = append(result, "-psm")
-		result = append(result, t.pageSegMode)
+		result = append(result, "-psm", t.pageSegMode)
 	}
 	if t.lang != "" {
-		result = append(result, "-l")
-		result = append(result, t.lang)
+		result = append(result, "-l", t.lang)
 	}
 
 	return result
 }
 
 // ProcessRequest will process incoming OCR request by routing it through the whole process chain
-func (t TesseractEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig WorkerConfig) (OcrResult, error) {
+func (t TesseractEngine) ProcessRequest(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (OcrResult, error) {
 
 	tmpFileName, err := func() (string, error) {
 		switch {

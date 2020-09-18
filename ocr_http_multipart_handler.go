@@ -17,9 +17,9 @@ type OcrHttpMultipartHandler struct {
 	RabbitConfig RabbitConfig
 }
 
-func NewOcrHttpMultipartHandler(r RabbitConfig) *OcrHttpMultipartHandler {
+func NewOcrHttpMultipartHandler(r *RabbitConfig) *OcrHttpMultipartHandler {
 	return &OcrHttpMultipartHandler{
-		RabbitConfig: r,
+		RabbitConfig: *r,
 	}
 }
 
@@ -103,7 +103,7 @@ func (s *OcrHttpMultipartHandler) ServeHTTP(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	ocrResult, httpStatus, err := HandleOcrRequest(ocrRequest, s.RabbitConfig)
+	ocrResult, httpStatus, err := HandleOcrRequest(&ocrRequest, &s.RabbitConfig)
 
 	if err != nil {
 		msg := "Unable to perform OCR decode."
@@ -112,6 +112,6 @@ func (s *OcrHttpMultipartHandler) ServeHTTP(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	fmt.Fprintf(w, ocrResult.Text)
+	_, _ = fmt.Fprintf(w, ocrResult.Text)
 
 }

@@ -27,9 +27,9 @@ var (
 )
 
 // NewOcrRpcWorker is needed to establish a connection to a message broker
-func NewOcrRpcWorker(wc WorkerConfig) (*OcrRpcWorker, error) {
+func NewOcrRpcWorker(wc *WorkerConfig) (*OcrRpcWorker, error) {
 	ocrRpcWorker := &OcrRpcWorker{
-		workerConfig: wc,
+		workerConfig: *wc,
 		conn:         nil,
 		channel:      nil,
 		tag:          tag,
@@ -38,7 +38,7 @@ func NewOcrRpcWorker(wc WorkerConfig) (*OcrRpcWorker, error) {
 	return ocrRpcWorker, nil
 }
 
-func (w OcrRpcWorker) Run() error {
+func (w *OcrRpcWorker) Run() error {
 
 	var err error
 	queueArgs := make(amqp.Table)
@@ -176,7 +176,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 			Msg("worker got delivery, starting processing")
 		// reply from engine here
 		// id is not set, Text is set, Status is set
-		ocrResult, err := w.resultForDelivery(d)
+		ocrResult, err := w.resultForDelivery(&d)
 		if err != nil {
 			log.Error().Err(err).Str("component", "OCR_WORKER").
 				Str("RequestID", ocrResult.ID).
@@ -209,7 +209,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 	done <- fmt.Errorf("handle: deliveries channel closed")
 }
 
-func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
+func (w *OcrRpcWorker) resultForDelivery(d *amqp.Delivery) (OcrResult, error) {
 
 	ocrRequest := OcrRequest{}
 	ocrResult := OcrResult{}
@@ -227,7 +227,7 @@ func (w *OcrRpcWorker) resultForDelivery(d amqp.Delivery) (OcrResult, error) {
 	}
 
 	ocrEngine := NewOcrEngine(ocrRequest.EngineType)
-	ocrResult, err = ocrEngine.ProcessRequest(ocrRequest, w.workerConfig)
+	ocrResult, err = ocrEngine.ProcessRequest(&ocrRequest, &w.workerConfig)
 	if err != nil {
 		msg := "Error processing image url: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, ocrRequest.RequestID, err)

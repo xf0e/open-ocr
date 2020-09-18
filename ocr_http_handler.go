@@ -18,9 +18,9 @@ type OcrHTTPStatusHandler struct {
 	RabbitConfig RabbitConfig
 }
 
-func NewOcrHttpHandler(r RabbitConfig) *OcrHTTPStatusHandler {
+func NewOcrHttpHandler(r *RabbitConfig) *OcrHTTPStatusHandler {
 	return &OcrHTTPStatusHandler{
-		RabbitConfig: r,
+		RabbitConfig: *r,
 	}
 }
 
@@ -70,7 +70,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	ocrResult, httpStatus, err := HandleOcrRequest(ocrRequest, s.RabbitConfig)
+	ocrResult, httpStatus, err := HandleOcrRequest(&ocrRequest, &s.RabbitConfig)
 
 	if err != nil {
 		msg := "Unable to perform OCR decode. Error: %v"
@@ -93,7 +93,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 }
 
 // HandleOcrRequest will process incoming OCR request by routing it through the whole process chain
-func HandleOcrRequest(ocrRequest OcrRequest, workerConfig RabbitConfig) (OcrResult, int, error) {
+func HandleOcrRequest(ocrRequest *OcrRequest, workerConfig *RabbitConfig) (OcrResult, int, error) {
 	var httpStatus = 200
 	var requestIDRaw = ksuid.New()
 	requestID := requestIDRaw.String()
@@ -107,8 +107,8 @@ func HandleOcrRequest(ocrRequest OcrRequest, workerConfig RabbitConfig) (OcrResu
 		// inplace decode: short circuit rabbitmq, and just call ocr engine directly
 		ocrEngine := NewOcrEngine(ocrRequest.EngineType)
 
-		engineConfig := WorkerConfig{}
-		ocrResult, err := ocrEngine.ProcessRequest(ocrRequest, engineConfig)
+		workingConfig := WorkerConfig{}
+		ocrResult, err := ocrEngine.ProcessRequest(ocrRequest, &workingConfig)
 
 		if err != nil {
 			logger.Error().Err(err).Str("component", "OCR_HTTP").Msg("Error processing ocr request")

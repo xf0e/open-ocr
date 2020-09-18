@@ -54,7 +54,7 @@ func makeServerFromMux(mux *http.ServeMux) *http.Server {
 	}
 }
 
-func makeHTTPServer(rabbitConfig ocrworker.RabbitConfig, ocrChain http.Handler) *http.Server {
+func makeHTTPServer(rabbitConfig *ocrworker.RabbitConfig, ocrChain http.Handler) *http.Server {
 	mux := &http.ServeMux{}
 	mux.HandleFunc("/", handleIndex)
 	mux.Handle("/ocr", ocrChain)
@@ -164,12 +164,12 @@ func main() {
 	rabbitConfigTemp.AmqpURI = ocrworker.StripPasswordFromUrl(urlTmp)
 	log.Info().Interface("parameters", rabbitConfigTemp).Msg("trying to start with parameters")
 
-	ocrChain := ocrworker.InstrumentHttpStatusHandler(ocrworker.NewOcrHttpHandler(rabbitConfig))
+	ocrChain := ocrworker.InstrumentHttpStatusHandler(ocrworker.NewOcrHttpHandler(&rabbitConfig))
 	listenAddr := fmt.Sprintf(":%d", httpPort)
 
 	// start a goroutine which will run forever and decide if we have resources for incoming requests
 	go func() {
-		ocrworker.SetResManagerState(rabbitConfig)
+		ocrworker.SetResManagerState(&rabbitConfig)
 	}()
 	log.Info().Str("component", "OCR_HTTP").Str("listenAddr", listenAddr).Msg("Starting listener...")
 
@@ -179,7 +179,7 @@ func main() {
 		}
 		var httpsSrv *http.Server
 		// if useHttps flag is set then start https server
-		httpsSrv = makeHTTPServer(rabbitConfig, ocrChain)
+		httpsSrv = makeHTTPServer(&rabbitConfig, ocrChain)
 		httpsSrv.Addr = listenAddr
 
 		// crypto settings
@@ -202,7 +202,7 @@ func main() {
 		}
 	} else {
 		var httpSrv *http.Server
-		httpSrv = makeHTTPServer(rabbitConfig, ocrChain)
+		httpSrv = makeHTTPServer(&rabbitConfig, ocrChain)
 		httpSrv.Addr = listenAddr
 		if err := httpSrv.ListenAndServe(); err != nil {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_http has failed to start")

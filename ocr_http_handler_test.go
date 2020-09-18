@@ -3,10 +3,11 @@ package ocrworker
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/couchbaselabs/go.assert"
 )
@@ -17,7 +18,7 @@ func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 	rabbitConfig := rabbitConfigForTests()
 	workerConfig := workerConfigForTests()
 
-	err := spawnOcrWorker(workerConfig)
+	err := spawnOcrWorker(&workerConfig)
 	if err != nil {
 		log.Panic().Msg("Could not spawn ocr worker")
 	}
@@ -27,7 +28,7 @@ func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 		http.ServeFile(w, r, "refactoring.png")
 	})
 
-	http.Handle("/ocr", NewOcrHttpHandler(rabbitConfig))
+	http.Handle("/ocr", NewOcrHttpHandler(&rabbitConfig))
 
 	go http.ListenAndServe(":8081", nil)
 
@@ -57,7 +58,7 @@ func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 	assert.True(t, true)
 }
 
-func spawnOcrWorker(workerConfig WorkerConfig) error {
+func spawnOcrWorker(workerConfig *WorkerConfig) error {
 
 	// kick off a worker
 	// this would normally happen on a different machine ..

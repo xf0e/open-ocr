@@ -40,16 +40,16 @@ var (
 	numRetries uint = 3
 )
 
-func NewOcrRpcClient(rc RabbitConfig) (*OcrRpcClient, error) {
+func NewOcrRpcClient(rc *RabbitConfig) (*OcrRpcClient, error) {
 	ocrRpcClient := &OcrRpcClient{
-		rabbitConfig: rc,
+		rabbitConfig: *rc,
 	}
 	return ocrRpcClient, nil
 }
 
 // DecodeImage is the main function to do a ocr on incoming request.
 // It's handling the parameter and the whole workflow
-func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (OcrResult, int, error) {
+func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (OcrResult, int, error) {
 	var err error
 
 	logger := zerolog.New(os.Stdout).With().
@@ -276,7 +276,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest OcrRequest, requestID string) (Ocr
 	}
 }
 
-func (c OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseChan chan OcrResult) (amqp.Queue, error) {
+func (c *OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseChan chan OcrResult) (amqp.Queue, error) {
 
 	queueArgs := make(amqp.Table)
 	queueArgs["x-max-priority"] = uint8(10)
@@ -326,7 +326,7 @@ func (c OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseCh
 
 }
 
-func (c OcrRpcClient) handleRPCResponse(deliveries <-chan amqp.Delivery, correlationID string, rpcResponseChan chan OcrResult) {
+func (c *OcrRpcClient) handleRPCResponse(deliveries <-chan amqp.Delivery, correlationID string, rpcResponseChan chan OcrResult) {
 	// correlationID is the same as RequestID
 	logger := zerolog.New(os.Stdout).With().
 		Str("component", "OCR_CLIENT").Str("RequestID", correlationID).Timestamp().Logger()

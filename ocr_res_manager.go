@@ -139,7 +139,7 @@ func schedulerByWorkerNumber() bool {
 
 // SetResManagerState sets boolean value of resource manager; if memory of rabbitMQ and the number
 // messages is not exceeding  the limit
-func SetResManagerState(ampqAPIConfig RabbitConfig) {
+func SetResManagerState(ampqAPIConfig *RabbitConfig) {
 	var sleepFor time.Duration = 5
 	resManager = newOcrResManager()
 	queueManager = newOcrQueueManager()

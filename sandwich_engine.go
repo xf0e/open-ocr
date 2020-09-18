@@ -35,7 +35,7 @@ type SandwichEngineArgs struct {
 }
 
 // NewSandwichEngineArgs generates arguments for SandwichEngine which will be used to start involved tools
-func NewSandwichEngineArgs(ocrRequest OcrRequest, workerConfig WorkerConfig) (*SandwichEngineArgs, error) {
+func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (*SandwichEngineArgs, error) {
 	engineArgs := &SandwichEngineArgs{}
 	engineArgs.component = "OCR_WORKER"
 	engineArgs.requestID = ocrRequest.RequestID
@@ -108,11 +108,10 @@ func NewSandwichEngineArgs(ocrRequest OcrRequest, workerConfig WorkerConfig) (*S
 
 // return a slice that can be passed to tesseract binary as command line
 // args, eg, ["-c", "tessedit_char_whitelist=0123456789", "-c", "foo=bar"]
-func (t SandwichEngineArgs) Export() []string {
+func (t *SandwichEngineArgs) Export() []string {
 	var result []string
 	if t.lang != "" {
-		result = append(result, "-lang")
-		result = append(result, t.lang)
+		result = append(result, "-lang", t.lang)
 	}
 	// pdfsandwich wants the quotes before -c an after the last key e.g. -tesso '"-c arg1=key1"'
 	result = append(result, "-tesso", "-c textonly_pdf=1")
@@ -127,7 +126,7 @@ func (t SandwichEngineArgs) Export() []string {
 }
 
 // ProcessRequest will process incoming OCR request by routing it through the whole process chain
-func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig WorkerConfig) (OcrResult, error) {
+func (t SandwichEngine) ProcessRequest(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (OcrResult, error) {
 
 	logger := zerolog.New(os.Stdout).With().
 		Str("component", "OCR_SANDWICH").
@@ -199,7 +198,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest OcrRequest, workerConfig Worke
 	// getting timeout for request
 	configTimeOut := ocrRequest.TimeOut
 
-	ocrResult, err := t.processImageFile(tmpFileName, uplFileType, *engineArgs, configTimeOut)
+	ocrResult, err := t.processImageFile(tmpFileName, uplFileType, engineArgs, configTimeOut)
 
 	return ocrResult, err
 }
@@ -271,7 +270,7 @@ func (t SandwichEngine) tmpFileFromImageURL(imgURL, tmpFileName string) (string,
 
 }
 
-func (t SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs SandwichEngineArgs) (cmdArgs []string, ocrLayerFile string) {
+func (t SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs *SandwichEngineArgs) (cmdArgs []string, ocrLayerFile string) {
 
 	// sets output file name for pdfsandwich output file
 	// and builds the argument list for external program
@@ -312,7 +311,7 @@ func (t SandwichEngine) runExternalCmd(commandToRun string, cmdArgs []string, de
 	return string(output), err
 }
 
-func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engineArgs SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
+func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engineArgs *SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
 	// if error flag is true, input files won't be deleted
 	errorFlag := false
 

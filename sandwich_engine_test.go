@@ -35,7 +35,7 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 	workerConfig := workerConfigForTests()
 
 	assert.True(t, err == nil)
-	result, err := engine.ProcessRequest(ocrRequest, workerConfig)
+	result, err := engine.ProcessRequest(&ocrRequest, &workerConfig)
 	assert.True(t, err == nil)
 	log.Info().Str("component", "TEST").Interface("result", result)
 
@@ -67,7 +67,7 @@ func TestSandwichEngineWithJson(t *testing.T) {
 		assert.True(t, err == nil)
 		ocrRequest.ImgBytes = bytes
 		engine := NewOcrEngine(ocrRequest.EngineType)
-		result, err := engine.ProcessRequest(ocrRequest, workerConfig)
+		result, err := engine.ProcessRequest(&ocrRequest, &workerConfig)
 		log.Error().Err(err).Str("component", "TEST")
 		assert.True(t, err == nil)
 		log.Info().Str("component", "TEST").Interface("result", result)
@@ -82,7 +82,7 @@ func TestNewsandwichEngineArgs(t *testing.T) {
 	workerConfig := workerConfigForTests()
 	err := json.Unmarshal([]byte(testJSON), &ocrRequest)
 	assert.True(t, err == nil)
-	engineArgs, err := NewSandwichEngineArgs(ocrRequest, workerConfig)
+	engineArgs, err := NewSandwichEngineArgs(&ocrRequest, &workerConfig)
 	assert.True(t, err == nil)
 	assert.Equals(t, len(engineArgs.configVars), 1)
 	assert.Equals(t, engineArgs.configVars["tessedit_char_whitelist"], "0123456789")
@@ -103,7 +103,7 @@ func TestSandwichEngineWithFile(t *testing.T) {
 	engineArgs.ocrOptimize = true
 	engineArgs.lang = "deu"
 	engineArgs.saveFiles = true
-	result, err := engine.processImageFile("docs/testimage.pdf", "PDF", engineArgs, 20)
+	result, err := engine.processImageFile("docs/testimage.pdf", "PDF", &engineArgs, 20)
 	log.Warn().Err(err).Str("component", "TEST")
 	assert.True(t, err == nil)
 

@@ -25,7 +25,7 @@ type PreprocessorRpcWorker struct {
 
 var preprocessorTag = ksuid.New().String()
 
-func NewPreprocessorRpcWorker(rc RabbitConfig, preprocessor string) (*PreprocessorRpcWorker, error) {
+func NewPreprocessorRpcWorker(rc *RabbitConfig, preprocessor string) (*PreprocessorRpcWorker, error) {
 
 	preprocessorMap := make(map[string]Preprocessor)
 	preprocessorMap[PreprocessorStrokeWidthTransform] = StrokeWidthTransformer{}
@@ -38,7 +38,7 @@ func NewPreprocessorRpcWorker(rc RabbitConfig, preprocessor string) (*Preprocess
 	}
 
 	preprocessorRpcWorker := &PreprocessorRpcWorker{
-		rabbitConfig:    rc,
+		rabbitConfig:    *rc,
 		conn:            nil,
 		channel:         nil,
 		tag:             preprocessorTag,
@@ -49,7 +49,7 @@ func NewPreprocessorRpcWorker(rc RabbitConfig, preprocessor string) (*Preprocess
 	return preprocessorRpcWorker, nil
 }
 
-func (w PreprocessorRpcWorker) Run() error {
+func (w *PreprocessorRpcWorker) Run() error {
 
 	var err error
 	log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("Run() called...")
@@ -156,7 +156,7 @@ func (w *PreprocessorRpcWorker) handle(deliveries <-chan amqp.Delivery, done cha
 			Str("ReplyTo", d.ReplyTo).
 			Msg("got delivery")
 
-		err := w.handleDelivery(d)
+		err := w.handleDelivery(&d)
 		if err != nil {
 			log.Error().Err(err).Str("component", "PREPROCESSOR_WORKER").Msg("Error handling delivery in preprocessor.")
 		}
@@ -231,7 +231,7 @@ func (w *PreprocessorRpcWorker) strokeWidthTransform(ocrRequest *OcrRequest) err
 
 }
 
-func (w *PreprocessorRpcWorker) handleDelivery(d amqp.Delivery) error {
+func (w *PreprocessorRpcWorker) handleDelivery(d *amqp.Delivery) error {
 
 	ocrRequest := OcrRequest{}
 	err := json.Unmarshal(d.Body, &ocrRequest)
