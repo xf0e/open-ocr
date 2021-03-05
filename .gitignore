@@ -11,6 +11,7 @@
 /.idea/modules.xml
 /.idea/open-ocr.iml
 /.idea/vcs.xml
+/.idea/*
 /pkg/mod/cache/download/github.com/alecthomas/template/@v/list
 /pkg/mod/cache/download/github.com/alecthomas/template/@v/list.lock
 /pkg/mod/cache/download/github.com/alecthomas/template/@v/v0.0.0-20160405071501-a0175ee3bccc.info
