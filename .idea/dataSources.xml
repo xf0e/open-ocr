@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+    <data-source source="LOCAL" name="DOKDEOWN01@dok-e-store1.bghw.de" uuid="82143fb9-caf5-4cb2-b414-fb7738fb8951">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://dok-e-store1.bghw.de:5432/dokumentensteuerung</jdbc-url>
+    </data-source>
+    <data-source source="LOCAL" name="dokdeusrw1@dok-e-store1.bghw.de [2]" uuid="eb54721d-91b1-42f6-8ff5-accfcd4d6da0">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://dok-e-store1.bghw.de:5432/dokumentensteuerung</jdbc-url>
+    </data-source>
+  </component>
+</project>
