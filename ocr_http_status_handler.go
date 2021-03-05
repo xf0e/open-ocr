@@ -31,7 +31,7 @@ func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	ocrResult, ocrRequestExists := CheckOcrStatusByID(ocrRequest.ImgUrl)
 	if !ocrRequestExists {
 		msg := "no such ocr request. request time out reached?"
-		errMsg := fmt.Sprintf(msg)
+		errMsg := fmt.Sprint(msg)
 		log.Error().Err(err).Str("component", "OCR_STATUS")
 		http.Error(w, errMsg, 404)
 		return

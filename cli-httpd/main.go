@@ -41,7 +41,7 @@ func handleIndex(writer http.ResponseWriter, _ *http.Request) {
 	appStopLocal = ocrworker.AppStop
 	ocrworker.ServiceCanAcceptMu.Unlock()
 	text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager)
-	_, _ = fmt.Fprintf(writer, text)
+	_, _ = fmt.Fprint(writer, text)
 }
 
 func makeServerFromMux(mux *http.ServeMux) *http.Server {
