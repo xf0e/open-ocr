@@ -36,7 +36,7 @@ func main() {
 	for {
 		log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("creating new preprocessor worker")
 		preprocessorWorker, err := ocrworker.NewPreprocessorRpcWorker(
-			rabbitConfig,
+			&rabbitConfig,
 			preprocessor,
 		)
 		if err != nil {
