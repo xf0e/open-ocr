@@ -149,6 +149,7 @@ func SetResManagerState(ampqAPIConfig *RabbitConfig) {
 
 	var boolCurValue = false
 	var boolOldValue = true
+Loop:
 	for {
 		if AppStop == true {
 			break
@@ -159,6 +160,7 @@ func SetResManagerState(ampqAPIConfig *RabbitConfig) {
 			ServiceCanAccept = false
 			AppStop = true
 			ServiceCanAcceptMu.Unlock()
+			break Loop
 		default:
 			// only print the RESMAN output if the state has changed
 			ServiceCanAcceptMu.Lock()
@@ -167,6 +169,5 @@ func SetResManagerState(ampqAPIConfig *RabbitConfig) {
 			ServiceCanAcceptMu.Unlock()
 			time.Sleep(sleepFor * time.Second)
 		}
-		break
 	}
 }
