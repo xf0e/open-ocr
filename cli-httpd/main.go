@@ -77,15 +77,14 @@ func makeHTTPServer(rabbitConfig *ocrworker.RabbitConfig, ocrChain http.Handler)
 func main() {
 	// defer profile.Start(profile.MemProfile).Stop()
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT, syscall.SIGINT, syscall.SIGQUIT)
 
 	/*	if err := agent.Listen(agent.Options{}); err != nil {
 		log.Fatal()
 	}*/
 
 	go func() {
-		select {
-		case sig := <-signals:
+		for sig := range signals {
 			log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
 				Msg("Caught signal to terminate, will not serve any further requests. Once the ocr queue is empty," +
 					" http daemon will terminate.")
