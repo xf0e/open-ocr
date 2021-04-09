@@ -15,7 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/xf0e/open-ocr"
+	ocrworker "github.com/xf0e/open-ocr"
 )
 
 // This assumes that there is a worker running
@@ -41,7 +41,7 @@ func handleIndex(writer http.ResponseWriter, _ *http.Request) {
 	appStopLocal = ocrworker.AppStop
 	ocrworker.ServiceCanAcceptMu.Unlock()
 	text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager)
-	_, _ = fmt.Fprintf(writer, text)
+	_, _ = fmt.Fprint(writer, text)
 }
 
 func makeServerFromMux(mux *http.ServeMux) *http.Server {
@@ -176,9 +176,7 @@ func main() {
 		if certFile == "" || keyFile == "" {
 			log.Fatal().Msg("usehttp flag only makes sense if both the private key and a certificate are available")
 		}
-		var httpsSrv *http.Server
-		// if useHttps flag is set then start https server
-		httpsSrv = makeHTTPServer(&rabbitConfig, ocrChain)
+		var httpsSrv *http.Server = makeHTTPServer(&rabbitConfig, ocrChain)
 		httpsSrv.Addr = listenAddr
 
 		// crypto settings
@@ -200,8 +198,7 @@ func main() {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_https has failed to start")
 		}
 	} else {
-		var httpSrv *http.Server
-		httpSrv = makeHTTPServer(&rabbitConfig, ocrChain)
+		var httpSrv *http.Server = makeHTTPServer(&rabbitConfig, ocrChain)
 		httpSrv.Addr = listenAddr
 		if err := httpSrv.ListenAndServe(); err != nil {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_http has failed to start")
