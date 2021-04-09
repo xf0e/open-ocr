@@ -45,7 +45,7 @@ Content-Type: application/json
 
 ###  sane request, ocrlayer only  output
 
-POST http://localhost:8080/ocr
+POST http://dms-t-to1.bghw.de:8080/ocr
 Content-Type: application/json
 
 {
@@ -65,7 +65,7 @@ Content-Type: application/json
   "reference_id": "0xf0ef0ef0ef0ef0ef0e"
 }
 
-### sane request, cliert doesn't disconnect
+### sane request, client doesn't disconnect
 
 POST https://localhost:8080/ocr
 Content-Type: application/json
@@ -238,7 +238,7 @@ client.test("Response content-type is json", function() {
 
 
 ### check request status by ID
-POST http://localhost:8080/ocr-status
+POST http://dms-t-to1.bghw.de:8080/ocr-status
 Content-Type: application/json
 
 {
