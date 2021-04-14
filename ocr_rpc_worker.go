@@ -179,7 +179,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 		ocrResult, err := w.resultForDelivery(&d)
 		if err != nil {
 			log.Error().Err(err).Str("component", "OCR_WORKER").
-				Str("RequestID", ocrResult.ID).
+				Str("RequestID", d.CorrelationId).
 				Str("tag", tag).
 				Msg("Error generating ocr result")
 		}
@@ -189,7 +189,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 			log.Error().Err(err).Str("component", "OCR_WORKER").
 				Str("RequestID", ocrResult.ID).
 				Str("tag", tag).
-				Msg("Error generating ocr result")
+				Msg("Error generating ocr result, sendRpcResponse failed")
 
 			// if we can't send our response, let's just abort
 			done <- err
@@ -212,13 +212,13 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 func (w *OcrRpcWorker) resultForDelivery(d *amqp.Delivery) (OcrResult, error) {
 
 	ocrRequest := OcrRequest{}
-	ocrResult := OcrResult{}
+	ocrResult := OcrResult{ID: d.CorrelationId}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {
 		msg := "Error unmarshalling json: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, d.CorrelationId, err)
 		log.Error().Err(err).Caller().
-			Str("RequestID", d.CorrelationId).
+			Str("RequestID", ocrResult.ID).
 			Str("tag", tag).
 			Msg("error unmarshalling json delivery")
 		ocrResult.Text = errMsg
@@ -232,7 +232,7 @@ func (w *OcrRpcWorker) resultForDelivery(d *amqp.Delivery) (OcrResult, error) {
 		msg := "Error processing image url: %v.  Error: %v"
 		errMsg := fmt.Sprintf(msg, ocrRequest.RequestID, err)
 		log.Error().Err(err).
-			Str("RequestID", ocrResult.ID).
+			Str("RequestID", ocrRequest.RequestID).
 			Str("tag", tag).
 			Str("ImgUrl", ocrRequest.ImgUrl).
 			Msg("Error processing image")
