@@ -88,8 +88,13 @@ func main() {
 			log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
 				Msg("Caught signal to terminate, will not serve any further requests. Once the ocr queue is empty," +
 					" http daemon will terminate.")
+
 			ocrworker.StopChan <- true
 			for {
+				log.Info().Str("component", "OCR_HTTP").Int("Lenght of Requests", len(ocrworker.Requests))
+				for k := range ocrworker.Requests {
+					log.Info().Str("component", "OCR_HTTP").Msg("Inflight request " + k)
+				}
 				// as soon number of queued requests reaches zero, http daemon will exit
 				if len(ocrworker.Requests) == 0 {
 					log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).

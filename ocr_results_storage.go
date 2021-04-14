@@ -1,12 +1,15 @@
 package ocrworker
 
 import (
-	"sync"
+	"github.com/sasha-s/go-deadlock"
+
+	// "sync"
 	"time"
 )
 
 var (
-	requestsAndTimersMu sync.RWMutex
+	//requestsAndTimersMu sync.RWMutex
+	requestsAndTimersMu deadlock.RWMutex
 	// Requests is for holding and monitoring queued requests
 	Requests           = make(map[string]chan OcrResult)
 	ocrWasSentBackChan = make(chan string)
