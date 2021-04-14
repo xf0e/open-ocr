@@ -41,7 +41,7 @@ var (
 	TechnicalErrorResManager bool
 )
 
-// checks if resources for incoming request are available
+// CheckForAcceptRequest will check by reading the RabbitMQ API if resources for incoming request are available
 func CheckForAcceptRequest(urlQueue, urlStat string, statusChanged bool) bool {
 
 	isAvailable := false
