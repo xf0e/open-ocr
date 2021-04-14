@@ -33,7 +33,10 @@ var (
 
 func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// _ = pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
-	log.Info().Str("component", "OCR_HTTP").Msg("serveHttp called")
+	var requestIDRaw = ksuid.New()
+	requestID := requestIDRaw.String()
+	log.Info().Str("component", "OCR_HTTP").Str("requestID", requestID).
+		Msg("serveHttp called")
 	defer req.Body.Close()
 	var httpStatus = 200
 
@@ -41,9 +44,12 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	serviceCanAcceptLocal := ServiceCanAccept
 	appStopLocal := AppStop
 	ServiceCanAcceptMu.Unlock()
-	if !serviceCanAcceptLocal && !appStopLocal {
-		err := "no resources available to process the request"
+	// check if the API should accept new requests. The part after || is needed because the first part can be slow
+	// TODO: elaborate if the slow part makes sense at all
+	if (!serviceCanAcceptLocal && !appStopLocal) || !schedulerByWorkerNumber() {
+		err := "no resources available to process the request. RequestID " + requestID
 		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
+			Str("traceId", requestID).
 			Msg("conditions for accepting new requests are not met")
 		httpStatus = 503
 		http.Error(w, err, httpStatus)
@@ -51,22 +57,23 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	}
 
 	if !serviceCanAcceptLocal && appStopLocal {
-		err := "service is going down"
+		err := "service is going down. RequestID " + requestID
 		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
+			Str("requestID", requestID).
 			Msg("conditions for accepting new requests are not met")
 		httpStatus = 503
 		http.Error(w, err, httpStatus)
 		return
 	}
 
-	ocrRequest := OcrRequest{}
+	ocrRequest := OcrRequest{RequestID: requestID}
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&ocrRequest)
 	if err != nil {
 		log.Warn().Str("component", "OCR_HTTP").Err(err).
-			Msg("did the client send a valid json?")
+			Msg("did the client send a valid json? RequestID " + requestID)
 		httpStatus = 400
-		http.Error(w, "Unable to unmarshal json, malformed request", httpStatus)
+		http.Error(w, "Unable to unmarshal json, malformed request. RequestID "+requestID, httpStatus)
 		return
 	}
 
@@ -75,7 +82,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	if err != nil {
 		msg := "Unable to perform OCR decode. Error: %v"
 		errMsg := fmt.Sprintf(msg, err)
-		log.Error().Err(err).Str("component", "OCR_HTTP").Msg("Unable to perform OCR decode")
+		log.Error().Err(err).Str("component", "OCR_HTTP").Msg("Unable to perform OCR decode. RequestID" + requestID)
 		http.Error(w, errMsg, httpStatus)
 		return
 	}
@@ -88,20 +95,18 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	}
 	_, err = w.Write(js)
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_HTTP").Msg("http write() failed")
+		log.Error().Err(err).Str("component", "OCR_HTTP").Str("requestID", requestID).
+			Msg("http write() failed")
 	}
 }
 
 // HandleOcrRequest will process incoming OCR request by routing it through the whole process chain
 func HandleOcrRequest(ocrRequest *OcrRequest, workerConfig *RabbitConfig) (OcrResult, int, error) {
 	var httpStatus = 200
-	var requestIDRaw = ksuid.New()
-	requestID := requestIDRaw.String()
-	ocrResult := newOcrResult(requestID)
-	ocrRequest.RequestID = requestID
+	ocrResult := newOcrResult(ocrRequest.RequestID)
 	// set the context for zerolog, RequestID will be printed on each logging event
 	logger := zerolog.New(os.Stdout).With().
-		Str("RequestID", requestID).Timestamp().Logger()
+		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
 	switch ocrRequest.InplaceDecode {
 	case true:
 		// inplace decode: short circuit rabbitmq, and just call ocr engine directly
@@ -126,7 +131,7 @@ func HandleOcrRequest(ocrRequest *OcrRequest, workerConfig *RabbitConfig) (OcrRe
 			return OcrResult{}, httpStatus, err
 		}
 
-		ocrResult, httpStatus, err = ocrClient.DecodeImage(ocrRequest, requestID)
+		ocrResult, httpStatus, err = ocrClient.DecodeImage(ocrRequest)
 		if err != nil {
 			logger.Error().Err(err).Str("component", "OCR_HTTP")
 			return OcrResult{}, httpStatus, err

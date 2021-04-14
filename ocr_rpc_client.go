@@ -49,13 +49,13 @@ func NewOcrRpcClient(rc *RabbitConfig) (*OcrRpcClient, error) {
 
 // DecodeImage is the main function to do a ocr on incoming request.
 // It's handling the parameter and the whole workflow
-func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (OcrResult, int, error) {
+func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, error) {
 	var err error
 
 	logger := zerolog.New(os.Stdout).With().
 		Str("component", "OCR_CLIENT").
 		Uint("Timeout", ocrRequest.TimeOut).
-		Str("RequestID", requestID).Timestamp().Logger()
+		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
 
 	logger.Info().Bool("Deferred", ocrRequest.Deferred).
 		Str("DocType", ocrRequest.DocType).
@@ -72,7 +72,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (Oc
 		logger.Info().Msg("Automated response requested")
 		validURL, err := checkURLForReplyTo(ocrRequest.ReplyTo)
 		if err != nil {
-			return OcrResult{ID: requestID}, 400, err
+			return OcrResult{}, 400, err
 		}
 		ocrRequest.ReplyTo = validURL
 		// force set the deferred flag to drop the connection and deliver
@@ -98,7 +98,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (Oc
 	}
 
 	// setting rabbitMQ correlation ID. There is no reason to be different from requestID
-	correlationID := requestID
+	correlationID := ocrRequest.RequestID
 	urlToLog, _ := url.Parse(c.rabbitConfig.AmqpURI)
 	logger.Info().Str("DocType", ocrRequest.DocType).
 		Str("AmqpURI", urlToLog.Scheme+"://"+urlToLog.Host+urlToLog.Path).
@@ -197,19 +197,18 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (Oc
 			// a bunch of application/implementation-specific fields
 		},
 	); err != nil {
-		return OcrResult{ID: requestID}, 500, nil
+		return OcrResult{}, 500, nil
 	}
 
 	if ocrRequest.Deferred {
 		logger.Info().Msg("Asynchronous request accepted")
 
-		addNewOcrResultToQueue(int(c.rabbitConfig.ResponseCacheTimeout), requestID, rpcResponseChan)
+		addNewOcrResultToQueue(int(c.rabbitConfig.ResponseCacheTimeout), ocrRequest.RequestID, rpcResponseChan)
 
 		// deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
 		if ocrRequest.ReplyTo == "" {
 			return OcrResult{
-				ID:     requestID,
 				Status: "processing",
 			}, 200, nil
 		}
@@ -219,11 +218,11 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (Oc
 			// trigger deleting request from internal queue
 			defer func() {
 				select {
-				case ocrWasSentBackChan <- requestID:
+				case ocrWasSentBackChan <- ocrRequest.RequestID:
 				default:
 				}
 			}()
-			ocrRes := OcrResult{ID: requestID, Status: "error", Text: ""}
+			ocrRes := OcrResult{ID: ocrRequest.RequestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()
 			var tryCounter uint = 1
 		T:
@@ -262,7 +261,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (Oc
 		}()
 		// initial response to the caller to inform it with request id
 		return OcrResult{
-			ID:     requestID,
+			ID:     ocrRequest.RequestID,
 			Status: "processing",
 		}, 200, nil
 	} else {
