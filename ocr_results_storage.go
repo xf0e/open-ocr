@@ -1,15 +1,14 @@
 package ocrworker
 
 import (
-	"github.com/sasha-s/go-deadlock"
-
-	// "sync"
+	//"github.com/sasha-s/go-deadlock"
+	"sync"
 	"time"
 )
 
 var (
 	//requestsAndTimersMu sync.RWMutex
-	requestsAndTimersMu deadlock.RWMutex
+	requestsAndTimersMu sync.RWMutex
 	// Requests is for holding and monitoring queued requests
 	Requests           = make(map[string]chan OcrResult)
 	ocrWasSentBackChan = make(chan string)
@@ -50,21 +49,16 @@ func getQueueLen() uint {
 func deleteRequestFromQueue(requestID string) {
 	requestsAndTimersMu.Lock()
 	inFlightGauge.Dec()
-	/*	println("!!!!!!!!!!before deleting from Requests and requestChannels")
-		for key, element := range Requests {
-			fmt.Println("Key:", key, "=>", "Element:", element)
-		}*/
+	/*		println("!!!!!!!!!!before deleting from Requests and requestChannels" + requestID)
+			for key, element := range Requests {
+				fmt.Println("Key:", key, "=>", "Element:", element)
+			}*/
 	_, ok := Requests[requestID]
 	if ok {
 		delete(Requests, requestID)
 	}
 
 	requestsAndTimersMu.Unlock()
-	/*log.Info().Str("component", "OCR_CLIENT").
-	  Int("nOfPendingReqs", len(Requests)).
-	  Int("nOfPendingTimers", len(requestChannels)).
-	  Msg("deleted request from the queue")
-	*/
 }
 
 func addNewOcrResultToQueue(storageTime int, requestID string, rpcResponseChan chan OcrResult) {

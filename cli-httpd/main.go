@@ -91,7 +91,7 @@ func main() {
 
 			ocrworker.StopChan <- true
 			for {
-				log.Info().Str("component", "OCR_HTTP").Int("Lenght of Requests", len(ocrworker.Requests))
+				log.Info().Str("component", "OCR_HTTP").Int("Length of Requests", len(ocrworker.Requests))
 				for k := range ocrworker.Requests {
 					log.Info().Str("component", "OCR_HTTP").Msg("Inflight request " + k)
 				}

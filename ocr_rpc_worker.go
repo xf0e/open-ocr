@@ -168,7 +168,7 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 			Uint8("DeliveryMode", d.DeliveryMode).
 			Uint8("Priority", d.Priority).
 			Str("RequestID", d.CorrelationId).
-			Str("ReplyTo", d.ReplyTo).
+			Str("ReplyToQueue", d.ReplyTo).
 			Str("ConsumerTag", d.ConsumerTag).
 			Uint64("DeliveryTag", d.DeliveryTag).
 			Str("Exchange", d.Exchange).

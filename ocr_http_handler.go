@@ -3,10 +3,10 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sasha-s/go-deadlock"
+	//"github.com/sasha-s/go-deadlock"
 	"net/http"
 	"os"
-	// "sync"
+	"sync"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -28,7 +28,7 @@ var (
 	// AppStop and ServiceCanAccept are global. Used to set the flag for logging and stopping the application
 	AppStop            bool
 	ServiceCanAccept   bool
-	ServiceCanAcceptMu deadlock.Mutex
+	ServiceCanAcceptMu sync.Mutex
 )
 
 func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -49,7 +49,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	if (!serviceCanAcceptLocal && !appStopLocal) || !schedulerByWorkerNumber() {
 		err := "no resources available to process the request. RequestID " + requestID
 		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
-			Str("traceId", requestID).
+			Str("requestID", requestID).
 			Msg("conditions for accepting new requests are not met")
 		httpStatus = 503
 		http.Error(w, err, httpStatus)
