@@ -82,7 +82,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	if err != nil {
 		msg := "Unable to perform OCR decode. Error: %v"
 		errMsg := fmt.Sprintf(msg, err)
-		log.Error().Err(err).Str("component", "OCR_HTTP").Msg("Unable to perform OCR decode. RequestID" + requestID)
+		log.Error().Err(err).Str("component", "OCR_HTTP").Msg("Unable to perform OCR decode. RequestID " + requestID)
 		http.Error(w, errMsg, httpStatus)
 		return
 	}
