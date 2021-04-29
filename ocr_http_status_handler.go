@@ -2,7 +2,7 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/rs/zerolog/log"
@@ -30,11 +30,11 @@ func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 
 	ocrResult, ocrRequestExists := CheckOcrStatusByID(ocrRequest.ImgUrl)
 	if !ocrRequestExists {
-		msg := "no such ocr request. request time out reached?"
-		errMsg := fmt.Sprint(msg)
-		log.Error().Err(err).Str("component", "OCR_STATUS")
-		http.Error(w, errMsg, 404)
-		return
+		ocrResult.Text = ""
+		ocrResult.ID = ocrRequest.ImgUrl
+		ocrResult.Status = "not found"
+		msg := errors.New("no such ocr request. probably the timeout was reached for this request ID")
+		log.Error().Err(msg).Str("component", "OCR_STATUS")
 	}
 
 	w.Header().Set("Content-Type", "application/json")
