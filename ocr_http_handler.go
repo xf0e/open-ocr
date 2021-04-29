@@ -35,7 +35,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	// _ = pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
 	var requestIDRaw = ksuid.New()
 	requestID := requestIDRaw.String()
-	log.Info().Str("component", "OCR_HTTP").Str("requestID", requestID).
+	log.Info().Str("component", "OCR_HTTP").Str("RequestID", requestID).
 		Msg("serveHttp called")
 	defer req.Body.Close()
 	var httpStatus = 200
@@ -49,7 +49,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	if (!serviceCanAcceptLocal && !appStopLocal) || !schedulerByWorkerNumber() {
 		err := "no resources available to process the request. RequestID " + requestID
 		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
-			Str("requestID", requestID).
+			Str("RequestID", requestID).
 			Msg("conditions for accepting new requests are not met")
 		httpStatus = 503
 		http.Error(w, err, httpStatus)
@@ -59,7 +59,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	if !serviceCanAcceptLocal && appStopLocal {
 		err := "service is going down. RequestID " + requestID
 		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
-			Str("requestID", requestID).
+			Str("RequestID", requestID).
 			Msg("conditions for accepting new requests are not met")
 		httpStatus = 503
 		http.Error(w, err, httpStatus)
@@ -95,7 +95,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	}
 	_, err = w.Write(js)
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_HTTP").Str("requestID", requestID).
+		log.Error().Err(err).Str("component", "OCR_HTTP").Str("RequestID", requestID).
 			Msg("http write() failed")
 	}
 }

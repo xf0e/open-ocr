@@ -19,7 +19,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 	requestsAndTimersMu.RLock()
 	if _, ok := Requests[requestID]; !ok {
 		requestsAndTimersMu.RUnlock()
-		// log.Info().Str("component", "OCR_CLIENT").Str("requestID", requestID).Msg("no such request found in the queue")
+		// log.Info().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
 		return OcrResult{}, false // fmt.Errorf("no such request %s", requestID)
 	}
 
