@@ -12,19 +12,19 @@ GO_FILES := $(shell find . -name 'main.go' | grep -v /vendor/)
 all: run
 
 release:
-	@go build -o ${OUT_WORKER} -buildmode=pie -a -trimpath -ldflags="-s -w -X 'github.com/xf0e/open-ocr.buildTime=${DATE}' \
+	go build -o ${OUT_WORKER} -buildmode=pie -a -tags 'netgo,static_build' -trimpath -ldflags="-linkmode external -s -w -extldflags '--static-pie' -X 'github.com/xf0e/open-ocr.buildTime=${DATE}' \
 	 -X 'github.com/xf0e/open-ocr.sha1ver=${SHA1VER}' -X 'github.com/xf0e/open-ocr.version=${VERSION}'" cli-worker/main.go
-	@go build -o ${OUT_HTTPD} -buildmode=pie -a -trimpath -ldflags="-s -w -X main.buildTime=${DATE} \
+	go build -o ${OUT_HTTPD} -buildmode=pie -a -tags 'netgo,static_build' -trimpath -ldflags="-linkmode external -s -w -extldflags '--static-pie' -X main.buildTime=${DATE} \
 	 -X main.sha1ver=${SHA1VER} -X main.version=${VERSION} -X 'github.com/xf0e/open-ocr.version=${VERSION}'" cli-httpd/main.go
-	@go build -o ${OUT_PREPROCESSOR} -buildmode=pie -a -trimpath -ldflags="-s -w -X main.buildTime=${DATE} \
+	go build -o ${OUT_PREPROCESSOR} -buildmode=pie -a -tags 'netgo,static_build' -trimpath -ldflags="-linkmode external -s -w -extldflags '--static-pie' -X main.buildTime=${DATE} \
 	 -X main.sha1ver=${SHA1VER} -X main.version=${VERSION}" cli-preprocessor/main.go
 
 debug:
-	@go build -o ${OUT_WORKER} -buildmode=pie -a -ldflags="-w -X github.com/xf0e/open-ocr.buildTime=${DATE} \
+	@go build -o ${OUT_WORKER} -buildmode=pie -a -tags netgo -ldflags="-w -X github.com/xf0e/open-ocr.buildTime=${DATE} \
 	 -X github.com/xf0e/open-ocr.sha1ver=${SHA1VER} -X github.com/xf0e/open-ocr.version=${VERSION}" cli-worker/main.go
-	@go build -o ${OUT_HTTPD} -buildmode=pie -a -ldflags="-w -X main.buildTime=${DATE} \
+	@go build -o ${OUT_HTTPD} -buildmode=pie -a -tags netgo -ldflags="-w -X main.buildTime=${DATE} \
 	 -X main.sha1ver=${SHA1VER} -X main.version=${VERSION}" cli-httpd/main.go
-	@go build -o ${OUT_PREPROCESSOR} -buildmode=pie -a -ldflags="-w -X main.buildTime=${DATE} \
+	@go build -o ${OUT_PREPROCESSOR} -buildmode=pie -a -tags netgo -ldflags="-w -X main.buildTime=${DATE} \
 	 -X main.sha1ver=${SHA1VER} -X main.version=${VERSION}" cli-preprocessor/main.go
 
 test:
@@ -50,3 +50,4 @@ clean:
 	-@rm ${OUT_WORKER} ${OUT_HTTPD} ${OUT_PREPROCESSOR}
 
 .PHONY: run release static vet lint
+
