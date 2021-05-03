@@ -40,13 +40,13 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	defer req.Body.Close()
 	var httpStatus = 200
 
-	ServiceCanAcceptMu.Lock()
-	serviceCanAcceptLocal := ServiceCanAccept
-	appStopLocal := AppStop
-	ServiceCanAcceptMu.Unlock()
+	/*	ServiceCanAcceptMu.Lock()
+		serviceCanAcceptLocal := ServiceCanAccept
+		appStopLocal := AppStop
+		ServiceCanAcceptMu.Unlock()*/
 	// check if the API should accept new requests. The part after || is needed because the first part can be slow
 	// TODO: elaborate if the slow part makes sense at all
-	if (!serviceCanAcceptLocal && !appStopLocal) || !schedulerByWorkerNumber() {
+	if (!ServiceCanAccept && !AppStop) || !schedulerByWorkerNumber() {
 		err := "no resources available to process the request. RequestID " + requestID
 		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
 			Str("RequestID", requestID).
@@ -56,7 +56,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	if !serviceCanAcceptLocal && appStopLocal {
+	if !ServiceCanAccept && AppStop {
 		err := "service is going down. RequestID " + requestID
 		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
 			Str("RequestID", requestID).
