@@ -28,7 +28,7 @@ var (
 	// AppStop and ServiceCanAccept are global. Used to set the flag for logging and stopping the application
 	AppStop            bool
 	ServiceCanAccept   bool
-	ServiceCanAcceptMu sync.Mutex
+	ServiceCanAcceptMu sync.RWMutex
 )
 
 func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
