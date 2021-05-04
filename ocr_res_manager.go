@@ -156,17 +156,17 @@ Loop:
 		} // break the loop if the have to stop the app
 		select {
 		case <-StopChan:
-			ServiceCanAcceptMu.Lock()
+			//ServiceCanAcceptMu.Lock()
 			ServiceCanAccept = false
 			AppStop = true
-			ServiceCanAcceptMu.Unlock()
+			//ServiceCanAcceptMu.Unlock()
 			break Loop
 		default:
 			// only print the RESMAN output if the state has changed
-			ServiceCanAcceptMu.Lock()
+			//ServiceCanAcceptMu.Lock()
 			boolOldValue, boolCurValue = boolCurValue, CheckForAcceptRequest(urlQueue, urlStat, boolCurValue != boolOldValue)
 			ServiceCanAccept = boolCurValue
-			ServiceCanAcceptMu.Unlock()
+			//ServiceCanAcceptMu.Unlock()
 			time.Sleep(sleepFor * time.Second)
 		}
 	}
