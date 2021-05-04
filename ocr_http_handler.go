@@ -3,14 +3,12 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	//"github.com/sasha-s/go-deadlock"
-	"net/http"
-	"os"
-	"sync"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/ksuid"
+	//"github.com/sasha-s/go-deadlock"
+	"net/http"
+	"os"
 )
 
 // OcrHTTPStatusHandler is for initial handling of ocr request
@@ -26,9 +24,9 @@ func NewOcrHttpHandler(r *RabbitConfig) *OcrHTTPStatusHandler {
 
 var (
 	// AppStop and ServiceCanAccept are global. Used to set the flag for logging and stopping the application
-	AppStop            bool
-	ServiceCanAccept   bool
-	ServiceCanAcceptMu sync.RWMutex
+	AppStop          bool
+	ServiceCanAccept bool
+	//ServiceCanAcceptMu sync.RWMutex
 )
 
 func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
