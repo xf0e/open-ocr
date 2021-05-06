@@ -1,6 +1,9 @@
 package ocrworker
 
 import (
+	"reflect"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -10,76 +13,63 @@ var (
 	// Requests is for holding and monitoring queued requests
 	Requests           = make(map[string]chan OcrResult)
 	ocrWasSentBackChan = make(chan string)
+	RequestsTrack      = sync.Map{}
+	RequestTrackLength = uint32(0)
 )
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
-	//requestsAndTimersMu.RLock()
-	if _, ok := Requests[requestID]; !ok {
-		//requestsAndTimersMu.RUnlock()
+
+	if _, ok := RequestsTrack.Load(requestID); !ok {
 		// log.Info().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
-		return OcrResult{}, false // fmt.Errorf("no such request %s", requestID)
+		return OcrResult{}, false
 	}
 
-	// log.Debug().Str("component", "OCR_CLIENT").Msg("getting ocrResult := <-Requests[requestID]")
 	ocrResult := OcrResult{}
+
+	test, okk := RequestsTrack.Load(requestID)
+	if okk {
+		ocrResult <- test
+	}
+
 	select {
-	case ocrResult = <-Requests[requestID]:
+	case ocrResult, _ = <-RequestsTrack.Load(requestID):
 		// log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
 	default:
-		_, ok := Requests[requestID]
-		if ok {
-			return OcrResult{Status: "processing", ID: requestID}, true
-		}
+		return OcrResult{Status: "processing", ID: requestID}, true
 	}
-	//requestsAndTimersMu.RUnlock()
 
 	return ocrResult, true
 }
 
 func getQueueLen() uint {
-	//requestsAndTimersMu.RLock()
-	queueLength := uint(len(Requests))
-	//requestsAndTimersMu.RUnlock()
-	return queueLength
+
+	return uint(RequestTrackLength)
 }
 
 func deleteRequestFromQueue(requestID string) {
-	//requestsAndTimersMu.Lock()
-	inFlightGauge.Dec()
-	/*		println("!!!!!!!!!!before deleting from Requests and requestChannels" + requestID)
-			for key, element := range Requests {
-				fmt.Println("Key:", key, "=>", "Element:", element)
-			}*/
-	_, ok := Requests[requestID]
-	if ok {
-		delete(Requests, requestID)
-	}
 
-	//requestsAndTimersMu.Unlock()
+	inFlightGauge.Dec()
+	atomic.AddUint32(&RequestTrackLength, -1)
+	RequestsTrack.Delete(requestID)
 }
 
 func addNewOcrResultToQueue(storageTime int, requestID string, rpcResponseChan chan OcrResult) {
 
 	inFlightGauge.Inc()
-	//requestsAndTimersMu.Lock()
-	Requests[requestID] = rpcResponseChan
-	//requestsAndTimersMu.Unlock()
+	atomic.AddUint32(&RequestTrackLength, 1)
+	RequestsTrack.Store(requestID, rpcResponseChan)
 
 	// this go routine will cancel the request after global timeout or if request was sent back
 	// if the requestID arrives on ocrWasSentBackChan - ocrResult was send back to requester an request deletion is triggered
 	go func() {
 		select {
 		case <-ocrWasSentBackChan:
-			//requestsAndTimersMu.RLock()
-			if _, ok := Requests[requestID]; ok {
-				//requestsAndTimersMu.RUnlock()
+			if _, ok := RequestsTrack.Load(requestID); ok {
 				deleteRequestFromQueue(requestID)
 			}
 		case <-time.After(time.Second * time.Duration(storageTime+10)):
-			//requestsAndTimersMu.RLock()
-			if _, ok := Requests[requestID]; ok {
-				//requestsAndTimersMu.RUnlock()
+			if _, ok := RequestsTrack.Load(requestID); ok {
 				deleteRequestFromQueue(requestID)
 			}
 		}
