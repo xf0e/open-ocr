@@ -45,7 +45,7 @@ Content-Type: application/json
 
 ###  sane request, ocrlayer only  output
 
-POST http://dms-t-to1.bghw.de:8080/ocr
+POST http://localhost:8080/ocr
 Content-Type: application/json
 
 {
@@ -67,7 +67,7 @@ Content-Type: application/json
 
 ### sane request, client doesn't disconnect
 
-POST https://localhost:8080/ocr
+POST http://localhost:8080/ocr
 Content-Type: application/json
 
 {
@@ -89,7 +89,7 @@ Content-Type: application/json
 
 ### sane request, automatic delivery. reply adress is set
 
-POST https://localhost:8080/ocr
+POST http://localhost:8080/ocr
 Content-Type: application/json
 
 {
@@ -114,7 +114,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-  "img_url": "1bjIBnFhMXFtac4ANCsIysxWrvw"
+  "img_url": "1sDPnk3k7JqNx5N3TazUZOkaYvK"
 }
 
 ############################################
