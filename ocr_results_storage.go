@@ -68,6 +68,8 @@ func addNewOcrResultToQueue(storageTime int, requestID string, rpcResponseChan c
 			if _, ok := RequestsTrack.Load(requestID); ok {
 				deleteRequestFromQueue(requestID)
 			}
+			// TODO: a bug leaking goroutines if the global timeout is set to a low value the routine in ocr_rpc_client:221 will leak
+			// TODO since there is no listener in this goroutine since this goroutine is dead
 		case <-time.After(time.Second * time.Duration(storageTime+10)):
 			if _, ok := RequestsTrack.Load(requestID); ok {
 				deleteRequestFromQueue(requestID)

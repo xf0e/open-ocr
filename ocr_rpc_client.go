@@ -215,10 +215,10 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 		}
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
-		go func() {
+		go func(requestID string) {
 			// trigger deleting request from internal queue
 			defer func() {
-				ocrWasSentBackChan <- ocrRequest.RequestID
+				ocrWasSentBackChan <- requestID
 			}()
 			ocrRes := OcrResult{ID: ocrRequest.RequestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()
@@ -256,7 +256,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 					break T
 				}
 			}
-		}()
+		}(ocrRequest.RequestID)
 		// initial response to the caller to inform it with request id
 		return OcrResult{
 			ID:     ocrRequest.RequestID,
