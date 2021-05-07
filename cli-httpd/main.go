@@ -37,9 +37,7 @@ func init() {
 
 func handleIndex(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
-	//ocrworker.ServiceCanAcceptMu.Lock()
 	appStopLocal = ocrworker.AppStop
-	//ocrworker.ServiceCanAcceptMu.Unlock()
 	text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager)
 	_, _ = fmt.Fprint(writer, text)
 }
@@ -91,12 +89,18 @@ func main() {
 
 			ocrworker.StopChan <- true
 			for {
-				log.Info().Str("component", "OCR_HTTP").Int("Length of Requests", len(ocrworker.Requests))
-				for k := range ocrworker.Requests {
+				log.Info().Str("component", "OCR_HTTP").Uint32("Length of Requests", ocrworker.RequestTrackLength)
+				// prepare "requests" map for displaying in flight requests upon service shutdown
+				request := map[string]interface{}{}
+				ocrworker.RequestsTrack.Range(func(key, value interface{}) bool {
+					request[fmt.Sprint(key)] = value
+					return true
+				})
+				for k := range request {
 					log.Info().Str("component", "OCR_HTTP").Msg("Inflight request " + k)
 				}
 				// as soon number of queued requests reaches zero, http daemon will exit
-				if len(ocrworker.Requests) == 0 {
+				if ocrworker.RequestTrackLength == 0 {
 					log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
 						Msg("ocr queue is now empty. open-ocr http daemon will now exit. You may stop workers now")
 					time.Sleep(20 * time.Second) // delay puffer for sending all requests back
@@ -179,9 +183,9 @@ func main() {
 
 	if useHttps {
 		if certFile == "" || keyFile == "" {
-			log.Fatal().Msg("usehttp flag only makes sense if both the private key and a certificate are available")
+			log.Fatal().Msg("usehttps flag only makes sense if both the private key and a certificate are available")
 		}
-		var httpsSrv *http.Server = makeHTTPServer(&rabbitConfig, ocrChain)
+		var httpsSrv = makeHTTPServer(&rabbitConfig, ocrChain)
 		httpsSrv.Addr = listenAddr
 
 		// crypto settings
@@ -203,7 +207,7 @@ func main() {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_https has failed to start")
 		}
 	} else {
-		var httpSrv *http.Server = makeHTTPServer(&rabbitConfig, ocrChain)
+		var httpSrv = makeHTTPServer(&rabbitConfig, ocrChain)
 		httpSrv.Addr = listenAddr
 		if err := httpSrv.ListenAndServe(); err != nil {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_http has failed to start")

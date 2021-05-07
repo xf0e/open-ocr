@@ -1,7 +1,6 @@
 package ocrworker
 
 import (
-	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -26,11 +25,6 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 	}
 
 	ocrResult := OcrResult{}
-
-	test, okk := RequestsTrack.Load(requestID)
-	if okk {
-		ocrResult <- test
-	}
 
 	select {
 	case ocrResult, _ = <-RequestsTrack.Load(requestID):
