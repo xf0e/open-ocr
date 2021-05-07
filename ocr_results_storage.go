@@ -7,10 +7,7 @@ import (
 )
 
 var (
-	// requestsAndTimersMu sync.RWMutex
-	// requestsAndTimersMu sync.RWMutex
-	// Requests is for holding and monitoring queued requests
-	// Requests           = make(map[string]chan OcrResult)
+	// RequestTrackLength is for holding and monitoring queued requests
 	ocrWasSentBackChan = make(chan string)
 	RequestsTrack      = sync.Map{}
 	RequestTrackLength = uint32(0)
