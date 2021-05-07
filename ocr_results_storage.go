@@ -26,8 +26,16 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 
 	ocrResult := OcrResult{}
 
+	tempChannel := make(chan OcrResult)
+	v, ok := RequestsTrack.Load(requestID)
+	if ok {
+		tempChannel = v.(chan OcrResult)
+	} else {
+		return OcrResult{}, false
+	}
+
 	select {
-	case ocrResult, _ = <-RequestsTrack.Load(requestID):
+	case ocrResult, _ = <-tempChannel:
 		// log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
 	default:
 		return OcrResult{Status: "processing", ID: requestID}, true
