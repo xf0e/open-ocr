@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -89,7 +90,7 @@ func main() {
 
 			ocrworker.StopChan <- true
 			for {
-				log.Info().Str("component", "OCR_HTTP").Uint32("Length of Requests", ocrworker.RequestTrackLength)
+				log.Info().Str("component", "OCR_HTTP").Uint32("Length of Requests", atomic.LoadUint32(&ocrworker.RequestTrackLength))
 				// prepare "requests" map for displaying in flight requests upon service shutdown
 
 				ocrworker.RequestsTrack.Range(func(key, value interface{}) bool {
@@ -98,7 +99,7 @@ func main() {
 				})
 
 				// as soon number of queued requests reaches zero, http daemon will exit
-				if ocrworker.RequestTrackLength == 0 {
+				if atomic.LoadUint32(&ocrworker.RequestTrackLength) == 0 {
 					log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
 						Msg("ocr queue is now empty. open-ocr http daemon will now exit. You may stop workers now")
 					time.Sleep(20 * time.Second) // delay puffer for sending all requests back
