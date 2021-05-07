@@ -210,6 +210,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 		if ocrRequest.ReplyTo == "" {
 			return OcrResult{
 				Status: "processing",
+				ID:     ocrRequest.RequestID,
 			}, 200, nil
 		}
 		// automatic delivery oder POST to the requester
