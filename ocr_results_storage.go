@@ -7,10 +7,10 @@ import (
 )
 
 var (
-	//requestsAndTimersMu sync.RWMutex
-	//requestsAndTimersMu sync.RWMutex
+	// requestsAndTimersMu sync.RWMutex
+	// requestsAndTimersMu sync.RWMutex
 	// Requests is for holding and monitoring queued requests
-	Requests           = make(map[string]chan OcrResult)
+	// Requests           = make(map[string]chan OcrResult)
 	ocrWasSentBackChan = make(chan string)
 	RequestsTrack      = sync.Map{}
 	RequestTrackLength = uint32(0)
@@ -44,7 +44,7 @@ func getQueueLen() uint {
 func deleteRequestFromQueue(requestID string) {
 
 	inFlightGauge.Dec()
-	atomic.AddUint32(&RequestTrackLength, -1)
+	atomic.AddUint32(&RequestTrackLength, ^uint32(0))
 	RequestsTrack.Delete(requestID)
 }
 

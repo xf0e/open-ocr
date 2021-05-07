@@ -91,14 +91,12 @@ func main() {
 			for {
 				log.Info().Str("component", "OCR_HTTP").Uint32("Length of Requests", ocrworker.RequestTrackLength)
 				// prepare "requests" map for displaying in flight requests upon service shutdown
-				request := map[string]interface{}{}
+
 				ocrworker.RequestsTrack.Range(func(key, value interface{}) bool {
-					request[fmt.Sprint(key)] = value
+					log.Info().Str("component", "OCR_HTTP").Msg("Inflight request " + fmt.Sprint(key))
 					return true
 				})
-				for k := range request {
-					log.Info().Str("component", "OCR_HTTP").Msg("Inflight request " + k)
-				}
+
 				// as soon number of queued requests reaches zero, http daemon will exit
 				if ocrworker.RequestTrackLength == 0 {
 					log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
