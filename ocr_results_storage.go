@@ -37,6 +37,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 	select {
 	case ocrResult, _ = <-tempChannel:
 		// log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
+		defer deleteRequestFromQueue(requestID)
 	default:
 		return OcrResult{Status: "processing", ID: requestID}, true
 	}
