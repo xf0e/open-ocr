@@ -9,7 +9,7 @@ import (
 
 // OcrQueueManager is used as a main component of resource manager
 type OcrQueueManager struct {
-	NumMessages  uint `json:"messages"` //TODO: do not read the number of messages from API because it is slow, and the clients of this product may not behave and put too many requests in too fast.
+	NumMessages  uint `json:"messages"` // TODO: do not read the number of messages from API because it is slow, and the clients of this product may not behave and put too many requests in too fast.
 	NumConsumers uint `json:"consumers"`
 	MessageBytes uint `json:"message_bytes"`
 }
@@ -156,17 +156,17 @@ Loop:
 		} // break the loop if the have to stop the app
 		select {
 		case <-StopChan:
-			//ServiceCanAcceptMu.Lock()
+			ServiceCanAcceptMu.Lock()
 			ServiceCanAccept = false
 			AppStop = true
-			//ServiceCanAcceptMu.Unlock()
+			ServiceCanAcceptMu.Unlock()
 			break Loop
 		default:
 			// only print the RESMAN output if the state has changed
-			//ServiceCanAcceptMu.Lock()
+			ServiceCanAcceptMu.Lock()
 			boolOldValue, boolCurValue = boolCurValue, CheckForAcceptRequest(urlQueue, urlStat, boolCurValue != boolOldValue)
 			ServiceCanAccept = boolCurValue
-			//ServiceCanAcceptMu.Unlock()
+			ServiceCanAcceptMu.Unlock()
 			time.Sleep(sleepFor * time.Second)
 		}
 	}

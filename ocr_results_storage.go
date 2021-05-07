@@ -47,7 +47,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 
 func getQueueLen() uint {
 
-	return uint(RequestTrackLength)
+	return uint(atomic.LoadUint32(&RequestTrackLength))
 }
 
 func deleteRequestFromQueue(requestID string) {
