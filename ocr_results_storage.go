@@ -3,12 +3,11 @@ package ocrworker
 import (
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 var (
 	// RequestTrackLength is for holding and monitoring queued requests
-	ocrWasSentBackChan = make(chan string)
+	// ocrWasSentBackChan = make(chan string)
 	RequestsTrack      = sync.Map{}
 	RequestTrackLength = uint32(0)
 )
@@ -54,7 +53,7 @@ func deleteRequestFromQueue(requestID string) {
 	RequestsTrack.Delete(requestID)
 }
 
-func addNewOcrResultToQueue(storageTime int, requestID string, rpcResponseChan chan OcrResult) {
+func addNewOcrResultToQueue(requestID string, rpcResponseChan chan OcrResult) {
 
 	inFlightGauge.Inc()
 	atomic.AddUint32(&RequestTrackLength, 1)
@@ -62,18 +61,20 @@ func addNewOcrResultToQueue(storageTime int, requestID string, rpcResponseChan c
 
 	// this go routine will cancel the request after global timeout or if request was sent back
 	// if the requestID arrives on ocrWasSentBackChan - ocrResult was send back to requester an request deletion is triggered
-	go func() {
-		select {
-		case <-ocrWasSentBackChan:
-			if _, ok := RequestsTrack.Load(requestID); ok {
-				deleteRequestFromQueue(requestID)
-			}
-			// TODO: a bug leaking goroutines if the global timeout is set to a low value the routine in ocr_rpc_client:221 will leak
-			// TODO since there is no listener in this goroutine since this goroutine is dead
-		case <-time.After(time.Second * time.Duration(storageTime+10)):
-			if _, ok := RequestsTrack.Load(requestID); ok {
-				deleteRequestFromQueue(requestID)
-			}
-		}
-	}()
+	// go func() {
+	// 	select {
+	// 	case <-ocrWasSentBackChan:
+	// 		if _, ok := RequestsTrack.Load(requestID); ok {
+	// 			deleteRequestFromQueue(requestID)
+	// 		}
+	// 		// TODO: a bug leaking goroutines if the global timeout is set to a low value the routine in ocr_rpc_client:221 will leak
+	// 		// TODO since there is no listener in this goroutine since this goroutine is dead
+	// 	/* case <-time.After(time.Second * time.Duration(storageTime+10)):
+	// 		if _, ok := RequestsTrack.Load(requestID); ok {
+	// 			deleteRequestFromQueue(requestID)
+	// 		}*/
+	// //default:
+	//
+	// 	}
+	// }()
 }

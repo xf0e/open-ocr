@@ -89,15 +89,8 @@ func main() {
 					" http daemon will terminate.")
 
 			ocrworker.StopChan <- true
+
 			for {
-				log.Info().Str("component", "OCR_HTTP").Uint32("Length of Requests", atomic.LoadUint32(&ocrworker.RequestTrackLength))
-				// prepare "requests" map for displaying in flight requests upon service shutdown
-
-				ocrworker.RequestsTrack.Range(func(key, value interface{}) bool {
-					log.Info().Str("component", "OCR_HTTP").Msg("Inflight request " + fmt.Sprint(key))
-					return true
-				})
-
 				// as soon number of queued requests reaches zero, http daemon will exit
 				if atomic.LoadUint32(&ocrworker.RequestTrackLength) == 0 {
 					log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
@@ -105,6 +98,12 @@ func main() {
 					time.Sleep(20 * time.Second) // delay puffer for sending all requests back
 					break
 				}
+				ocrworker.RequestsTrack.Range(func(key, value interface{}) bool {
+					log.Info().Str("component", "OCR_HTTP").Msg("In-flight request " + fmt.Sprint(key))
+					return true
+				})
+				log.Info().Str("component", "OCR_HTTP").Uint32("Length of Requests", atomic.LoadUint32(&ocrworker.RequestTrackLength)).
+					Msg("In-flight requests queue is not empty. You can either wait until all request get processed(may take a long time), or just kill the process")
 				time.Sleep(1 * time.Second)
 			}
 			os.Exit(0)

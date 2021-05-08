@@ -203,7 +203,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 	if ocrRequest.Deferred {
 		logger.Info().Msg("Asynchronous request accepted")
 
-		addNewOcrResultToQueue(int(c.rabbitConfig.ResponseCacheTimeout), ocrRequest.RequestID, rpcResponseChan)
+		addNewOcrResultToQueue(ocrRequest.RequestID, rpcResponseChan)
 
 		// deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
@@ -218,7 +218,8 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 		go func(requestID string) {
 			// trigger deleting request from internal queue
 			defer func() {
-				ocrWasSentBackChan <- requestID
+				// ocrWasSentBackChan <- requestID
+				deleteRequestFromQueue(requestID)
 			}()
 			ocrRes := OcrResult{ID: ocrRequest.RequestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()
