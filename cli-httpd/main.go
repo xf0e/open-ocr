@@ -103,8 +103,8 @@ func main() {
 					return true
 				})
 				log.Info().Str("component", "OCR_HTTP").Uint32("Length of Requests", atomic.LoadUint32(&ocrworker.RequestTrackLength)).
-					Msg("In-flight requests queue is not empty. You can either wait until all request get processed(may take a long time), or just kill the process")
-				time.Sleep(1 * time.Second)
+					Msg("In-flight requests queue is not empty. You can either wait until all request get processed(may take a long time), or just kill the process. Next check happens in 60 seconds.")
+				time.Sleep(60 * time.Second)
 			}
 			os.Exit(0)
 		}
