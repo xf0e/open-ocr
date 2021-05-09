@@ -16,7 +16,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// This variant of the SandwichEngine calls pdfsandwich via exec
+// SandwichEngine calls pdfsandwich via exec
 // This implementation returns either the pdf with ocr layer only
 // or merged variant of pdf plus ocr layer with the ability to
 // optimize the output pdf file by calling "gs" tool
@@ -106,7 +106,7 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 
 }
 
-// return a slice that can be passed to tesseract binary as command line
+// Export return a slice that can be passed to tesseract binary as command line
 // args, eg, ["-c", "tessedit_char_whitelist=0123456789", "-c", "foo=bar"]
 func (t *SandwichEngineArgs) Export() []string {
 	var result []string
@@ -325,7 +325,8 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 	logger.Info().Interface("engineArgs", engineArgs).Msg("Engine arguments")
 
 	fileToDeliver := "temp.file"
-	cmdArgs := make([]string, 0)
+	var cmdArgs []string
+
 	ocrLayerFile := ""
 
 	logger.Info().Str("file_name", inputFilename).Msg("input file name")
@@ -468,7 +469,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 		return OcrResult{Status: "error"}, err
 	}
 	// if command line argument save_files is set or any internal processing is failed the input file won't be deleted
-	if !engineArgs.saveFiles || errorFlag == true {
+	if !engineArgs.saveFiles || errorFlag {
 		defer func() {
 			logger.Info().Str("file_name", ocrLayerFile).
 				Msg("step 1: deleting file (pdfsandwich run)")

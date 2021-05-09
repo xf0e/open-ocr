@@ -151,7 +151,7 @@ func SetResManagerState(ampqAPIConfig *RabbitConfig) {
 	var boolOldValue = true
 Loop:
 	for {
-		if AppStop == true {
+		if AppStop {
 			break
 		} // break the loop if the have to stop the app
 		select {

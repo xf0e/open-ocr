@@ -74,6 +74,9 @@ func (w *OcrRpcWorker) Run() error {
 		Str("tag", tag).
 		Msg("got Connection, getting channel")
 	w.channel, err = w.conn.Channel()
+	if err != nil {
+		return err
+	}
 	// setting the prefetchCount to 1 reduces the Memory Consumption by the worker
 	err = w.channel.Qos(int(w.workerConfig.NumParallelJobs), 0, true)
 	if err != nil {
