@@ -6,10 +6,10 @@ import (
 )
 
 var (
-	// RequestTrackLength is for holding and monitoring queued requests
-	// ocrWasSentBackChan = make(chan string)
+	// RequestTrack is for holding and monitoring queued requests
 	RequestsTrack      = sync.Map{}
 	RequestTrackLength = uint32(0)
+	ocrWasSentBackChan = make(chan string)
 )
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
