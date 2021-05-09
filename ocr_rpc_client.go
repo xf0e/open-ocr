@@ -207,15 +207,15 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 		// deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
 		if ocrRequest.ReplyTo == "" {
-			// this go routine will cancel the request after global timeout or if requester doesnt recall the request
+			// this go routine will cancel the request after global timeout or if requester doesn't recall the request
 			logger.Info().Msg("deferred request without reply-to address set, will decay automatically after " + strconv.FormatUint(uint64(ocrRequest.TimeOut), 10) + " seconds")
 			go func() {
 				select {
-				case <-ocrWasSentBackChan:
-					if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
-						deleteRequestFromQueue(ocrRequest.RequestID)
-						logger.Info().Msg("deferred request without reply-to address has been claimed")
-					}
+				// case <-ocrWasSentBackChan:
+				// 	if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
+				// 		deleteRequestFromQueue(ocrRequest.RequestID)
+				// 		logger.Info().Msg("deferred request without reply-to address has been claimed")
+				// 	}
 				case <-time.After(time.Second * time.Duration(ocrRequest.TimeOut+10)):
 					if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
 						deleteRequestFromQueue(ocrRequest.RequestID)

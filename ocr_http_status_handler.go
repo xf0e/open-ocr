@@ -46,6 +46,8 @@ func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_STATUS")
 	}
-
+	if ocrRequestExists {
+		log.Info().Str("component", "OCR_STATUS").Str("RequestID", ocrRequest.ImgUrl).Msg("ocr request was claimed")
+	}
 	_ = req.Body.Close()
 }
