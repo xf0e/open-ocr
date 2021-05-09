@@ -210,17 +210,22 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 			// this go routine will cancel the request after global timeout or if requester doesn't recall the request
 			logger.Info().Msg("deferred request without reply-to address set, will decay automatically after " + strconv.FormatUint(uint64(ocrRequest.TimeOut), 10) + " seconds")
 			go func() {
-				select {
-				// case <-ocrWasSentBackChan:
-				// 	if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
-				// 		deleteRequestFromQueue(ocrRequest.RequestID)
-				// 		logger.Info().Msg("deferred request without reply-to address has been claimed")
-				// 	}
-				case <-time.After(time.Second * time.Duration(ocrRequest.TimeOut+10)):
-					if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
-						deleteRequestFromQueue(ocrRequest.RequestID)
-						logger.Info().Msg("deferred request without reply-to address has decayed")
+				timeout := time.After(time.Second * time.Duration(ocrRequest.TimeOut+10))
+			Loop:
+				for {
+					select {
+					case <-timeout:
+						if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
+							deleteRequestFromQueue(ocrRequest.RequestID)
+							logger.Info().Msg("deferred request without reply-to address has decayed")
+							break Loop
+						}
+					default:
+						if _, ok := RequestsTrack.Load(ocrRequest.RequestID); !ok {
+							break Loop
+						}
 					}
+					time.Sleep(5 * time.Second)
 				}
 			}()
 			return OcrResult{
