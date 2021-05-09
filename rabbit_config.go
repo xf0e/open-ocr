@@ -25,9 +25,7 @@ type RabbitConfig struct {
 	ResponseCacheTimeout uint
 	// MaximalResponseCacheTimeout client won't be able set the ResponseCacheTimeout higher of it's value
 	MaximalResponseCacheTimeout uint
-	// check interval for request to be ready
-	// tickerWithPostActionInterval time.Duration
-	FactorForMessageAccept uint
+	FactorForMessageAccept      uint
 }
 
 func DefaultTestConfig() RabbitConfig {

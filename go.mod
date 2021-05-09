@@ -11,5 +11,6 @@ require (
 	github.com/segmentio/ksuid v1.0.3
 	github.com/streadway/amqp v1.0.0
 	golang.org/x/sys v0.0.0-20210305034016-7844c3c200c3 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 )

@@ -2,91 +2,78 @@ package ocrworker
 
 import (
 	"sync"
-	"time"
+	"sync/atomic"
 )
 
 var (
-	requestsAndTimersMu sync.RWMutex
-	// Requests is for holding and monitoring queued requests
-	Requests           = make(map[string]chan OcrResult)
-	ocrWasSentBackChan = make(chan string)
+	RequestsTrack      = sync.Map{}
+	RequestTrackLength = uint32(0)
+	// ocrWasSentBackChan = make(chan string)
 )
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
-	requestsAndTimersMu.RLock()
-	if _, ok := Requests[requestID]; !ok {
-		requestsAndTimersMu.RUnlock()
-		// log.Info().Str("component", "OCR_CLIENT").Str("requestID", requestID).Msg("no such request found in the queue")
-		return OcrResult{}, false // fmt.Errorf("no such request %s", requestID)
+
+	if _, ok := RequestsTrack.Load(requestID); !ok {
+		// log.Info().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
+		return OcrResult{}, false
 	}
 
-	// log.Debug().Str("component", "OCR_CLIENT").Msg("getting ocrResult := <-Requests[requestID]")
 	ocrResult := OcrResult{}
-	select {
-	case ocrResult = <-Requests[requestID]:
-		// log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
-	default:
-		_, ok := Requests[requestID]
-		if ok {
-			return OcrResult{Status: "processing", ID: requestID}, true
-		}
+
+	tempChannel := make(chan OcrResult)
+	v, ok := RequestsTrack.Load(requestID)
+	if ok {
+		tempChannel = v.(chan OcrResult)
+	} else {
+		return OcrResult{}, false
 	}
-	requestsAndTimersMu.RUnlock()
+
+	select {
+	case ocrResult = <-tempChannel:
+		// log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
+		defer deleteRequestFromQueue(requestID)
+	default:
+		return OcrResult{Status: "processing", ID: requestID}, true
+	}
 
 	return ocrResult, true
 }
 
 func getQueueLen() uint {
-	requestsAndTimersMu.RLock()
-	queueLength := uint(len(Requests))
-	requestsAndTimersMu.RUnlock()
-	return queueLength
+
+	return uint(atomic.LoadUint32(&RequestTrackLength))
 }
 
 func deleteRequestFromQueue(requestID string) {
-	requestsAndTimersMu.Lock()
-	inFlightGauge.Dec()
-	/*	println("!!!!!!!!!!before deleting from Requests and requestChannels")
-		for key, element := range Requests {
-			fmt.Println("Key:", key, "=>", "Element:", element)
-		}*/
-	_, ok := Requests[requestID]
-	if ok {
-		delete(Requests, requestID)
-	}
 
-	requestsAndTimersMu.Unlock()
-	/*log.Info().Str("component", "OCR_CLIENT").
-	  Int("nOfPendingReqs", len(Requests)).
-	  Int("nOfPendingTimers", len(requestChannels)).
-	  Msg("deleted request from the queue")
-	*/
+	inFlightGauge.Dec()
+	atomic.AddUint32(&RequestTrackLength, ^uint32(0))
+	RequestsTrack.Delete(requestID)
 }
 
-func addNewOcrResultToQueue(storageTime int, requestID string, rpcResponseChan chan OcrResult) {
+func addNewOcrResultToQueue(requestID string, rpcResponseChan chan OcrResult) {
 
 	inFlightGauge.Inc()
-	requestsAndTimersMu.Lock()
-	Requests[requestID] = rpcResponseChan
-	requestsAndTimersMu.Unlock()
+	atomic.AddUint32(&RequestTrackLength, 1)
+	RequestsTrack.Store(requestID, rpcResponseChan)
 
 	// this go routine will cancel the request after global timeout or if request was sent back
 	// if the requestID arrives on ocrWasSentBackChan - ocrResult was send back to requester an request deletion is triggered
-	go func() {
-		select {
-		case <-ocrWasSentBackChan:
-			requestsAndTimersMu.RLock()
-			if _, ok := Requests[requestID]; ok {
-				requestsAndTimersMu.RUnlock()
-				deleteRequestFromQueue(requestID)
-			}
-		case <-time.After(time.Second * time.Duration(storageTime+10)):
-			requestsAndTimersMu.RLock()
-			if _, ok := Requests[requestID]; ok {
-				requestsAndTimersMu.RUnlock()
-				deleteRequestFromQueue(requestID)
-			}
-		}
-	}()
+	// go func() {
+	// 	select {
+	// 	case <-ocrWasSentBackChan:
+	// 		if _, ok := RequestsTrack.Load(requestID); ok {
+	// 			deleteRequestFromQueue(requestID)
+	// 		}
+	// 		// TODO: a bug leaking goroutines if the global timeout is set to a low value the routine in ocr_rpc_client:221 will leak
+	// 		// TODO since there is no listener in this goroutine since this goroutine is dead
+	// 	/* case <-time.After(time.Second * time.Duration(storageTime+10)):
+	// 		if _, ok := RequestsTrack.Load(requestID); ok {
+	// 			deleteRequestFromQueue(requestID)
+	// 		}*/
+	// //default:
+	//
+	// 	}
+	// }()
 }

@@ -38,7 +38,7 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 	}
 	req.Close = true
 	req.Header.Set("User-Agent", "open-ocr/"+version)
-	req.Header.Set("X-Custom-Header", "automated reply")
+	req.Header.Set("X-open-ocr-reply-type", "automated reply")
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{Timeout: postTimeout}

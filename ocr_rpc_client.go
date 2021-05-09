@@ -49,13 +49,13 @@ func NewOcrRpcClient(rc *RabbitConfig) (*OcrRpcClient, error) {
 
 // DecodeImage is the main function to do a ocr on incoming request.
 // It's handling the parameter and the whole workflow
-func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (OcrResult, int, error) {
+func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, error) {
 	var err error
 
 	logger := zerolog.New(os.Stdout).With().
 		Str("component", "OCR_CLIENT").
 		Uint("Timeout", ocrRequest.TimeOut).
-		Str("RequestID", requestID).Timestamp().Logger()
+		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
 
 	logger.Info().Bool("Deferred", ocrRequest.Deferred).
 		Str("DocType", ocrRequest.DocType).
@@ -72,7 +72,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (Oc
 		logger.Info().Msg("Automated response requested")
 		validURL, err := checkURLForReplyTo(ocrRequest.ReplyTo)
 		if err != nil {
-			return OcrResult{ID: requestID}, 400, err
+			return OcrResult{}, 400, err
 		}
 		ocrRequest.ReplyTo = validURL
 		// force set the deferred flag to drop the connection and deliver
@@ -98,7 +98,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (Oc
 	}
 
 	// setting rabbitMQ correlation ID. There is no reason to be different from requestID
-	correlationID := requestID
+	correlationID := ocrRequest.RequestID
 	urlToLog, _ := url.Parse(c.rabbitConfig.AmqpURI)
 	logger.Info().Str("DocType", ocrRequest.DocType).
 		Str("AmqpURI", urlToLog.Scheme+"://"+urlToLog.Host+urlToLog.Path).
@@ -197,33 +197,51 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (Oc
 			// a bunch of application/implementation-specific fields
 		},
 	); err != nil {
-		return OcrResult{ID: requestID}, 500, nil
+		return OcrResult{}, 500, nil
 	}
 
 	if ocrRequest.Deferred {
 		logger.Info().Msg("Asynchronous request accepted")
 
-		addNewOcrResultToQueue(int(c.rabbitConfig.ResponseCacheTimeout), requestID, rpcResponseChan)
-
+		addNewOcrResultToQueue(ocrRequest.RequestID, rpcResponseChan)
 		// deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
 		if ocrRequest.ReplyTo == "" {
+			// this go routine will cancel the request after global timeout or if requester doesn't recall the request
+			logger.Info().Msg("deferred request without reply-to address set, will decay automatically after " + strconv.FormatUint(uint64(ocrRequest.TimeOut), 10) + " seconds")
+			go func() {
+				timeout := time.After(time.Second * time.Duration(ocrRequest.TimeOut+10))
+			Loop:
+				for {
+					select {
+					case <-timeout:
+						if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
+							deleteRequestFromQueue(ocrRequest.RequestID)
+							logger.Info().Msg("deferred request without reply-to address has decayed")
+							break Loop
+						}
+					default:
+						if _, ok := RequestsTrack.Load(ocrRequest.RequestID); !ok {
+							break Loop
+						}
+					}
+					time.Sleep(5 * time.Second)
+				}
+			}()
 			return OcrResult{
-				ID:     requestID,
 				Status: "processing",
+				ID:     ocrRequest.RequestID,
 			}, 200, nil
 		}
 		// automatic delivery oder POST to the requester
 		// check interval for order to be ready to deliver
-		go func() {
+		go func(requestID string) {
 			// trigger deleting request from internal queue
 			defer func() {
-				select {
-				case ocrWasSentBackChan <- requestID:
-				default:
-				}
+				// ocrWasSentBackChan <- requestID
+				deleteRequestFromQueue(requestID)
 			}()
-			ocrRes := OcrResult{ID: requestID, Status: "error", Text: ""}
+			ocrRes := OcrResult{ID: ocrRequest.RequestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()
 			var tryCounter uint = 1
 		T:
@@ -259,10 +277,10 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest, requestID string) (Oc
 					break T
 				}
 			}
-		}()
+		}(ocrRequest.RequestID)
 		// initial response to the caller to inform it with request id
 		return OcrResult{
-			ID:     requestID,
+			ID:     ocrRequest.RequestID,
 			Status: "processing",
 		}, 200, nil
 	} else {

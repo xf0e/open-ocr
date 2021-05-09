@@ -2,7 +2,6 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/rs/zerolog/log"
@@ -17,7 +16,7 @@ func NewOcrHttpStatusHandler() *OcrHttpStatusHandler {
 
 func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	log.Info().Str("component", "OCR_STATUS").Msg("OcrHttpStatusHandler called")
+	log.Debug().Str("component", "OCR_STATUS").Msg("OcrHttpStatusHandler called")
 
 	ocrRequest := OcrRequest{}
 	decoder := json.NewDecoder(req.Body)
@@ -30,24 +29,30 @@ func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 
 	ocrResult, ocrRequestExists := CheckOcrStatusByID(ocrRequest.ImgUrl)
 	if !ocrRequestExists {
-		msg := "no such ocr request. request time out reached?"
-		errMsg := fmt.Sprint(msg)
-		log.Error().Err(err).Str("component", "OCR_STATUS")
-		http.Error(w, errMsg, 404)
-		return
+		ocrResult.Text = ""
+		ocrResult.ID = ocrRequest.ImgUrl
+		ocrResult.Status = "not found"
+		log.Info().Str("component", "OCR_STATUS").Str("RequestID", ocrRequest.ImgUrl).
+			Str("RemoteAddr", req.RemoteAddr).
+			Msg("no such ocr request. timeout was probably reached for this request ID")
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	js, err := json.Marshal(ocrResult)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Error().Err(err).Str("component", "OCR_STATUS")
+		log.Error().Err(err).Str("component", "OCR_STATUS").Str("RequestID", ocrRequest.ImgUrl).Str("RemoteAddr", req.RemoteAddr)
 		return
 	}
 	_, err = w.Write(js)
 	if err != nil {
-		log.Error().Err(err).Str("component", "OCR_STATUS")
+		log.Error().Err(err).Str("component", "OCR_STATUS").Str("RequestID", ocrRequest.ImgUrl).Str("RemoteAddr", req.RemoteAddr)
 	}
-
+	if ocrRequestExists && err == nil {
+		log.Info().Str("component", "OCR_STATUS").
+			Str("RequestID", ocrRequest.ImgUrl).
+			Str("RemoteAddr", req.RemoteAddr).
+			Msg("ocr request was claimed")
+	}
 	_ = req.Body.Close()
 }

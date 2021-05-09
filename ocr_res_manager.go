@@ -9,7 +9,7 @@ import (
 
 // OcrQueueManager is used as a main component of resource manager
 type OcrQueueManager struct {
-	NumMessages  uint `json:"messages"`
+	NumMessages  uint `json:"messages"` // TODO: do not read the number of messages from API because it is slow, and the clients of this product may not behave and put too many requests in too fast.
 	NumConsumers uint `json:"consumers"`
 	MessageBytes uint `json:"message_bytes"`
 }
@@ -24,7 +24,7 @@ const (
 )
 
 func newOcrQueueManager() *OcrQueueManager {
-	return &OcrQueueManager{}
+	return &OcrQueueManager{NumMessages: 0}
 }
 
 func newOcrResManager() []ocrResManager {
@@ -41,7 +41,7 @@ var (
 	TechnicalErrorResManager bool
 )
 
-// checks if resources for incoming request are available
+// CheckForAcceptRequest will check by reading the RabbitMQ API if resources for incoming request are available
 func CheckForAcceptRequest(urlQueue, urlStat string, statusChanged bool) bool {
 
 	isAvailable := false
@@ -151,7 +151,7 @@ func SetResManagerState(ampqAPIConfig *RabbitConfig) {
 	var boolOldValue = true
 Loop:
 	for {
-		if AppStop == true {
+		if AppStop {
 			break
 		} // break the loop if the have to stop the app
 		select {

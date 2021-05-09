@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -37,9 +38,7 @@ func init() {
 
 func handleIndex(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
-	ocrworker.ServiceCanAcceptMu.Lock()
 	appStopLocal = ocrworker.AppStop
-	ocrworker.ServiceCanAcceptMu.Unlock()
 	text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager)
 	_, _ = fmt.Fprint(writer, text)
 }
@@ -88,16 +87,24 @@ func main() {
 			log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
 				Msg("Caught signal to terminate, will not serve any further requests. Once the ocr queue is empty," +
 					" http daemon will terminate.")
+
 			ocrworker.StopChan <- true
+
 			for {
 				// as soon number of queued requests reaches zero, http daemon will exit
-				if len(ocrworker.Requests) == 0 {
+				if atomic.LoadUint32(&ocrworker.RequestTrackLength) == 0 {
 					log.Info().Str("component", "OCR_HTTP").Str("signal", sig.String()).
 						Msg("ocr queue is now empty. open-ocr http daemon will now exit. You may stop workers now")
 					time.Sleep(20 * time.Second) // delay puffer for sending all requests back
 					break
 				}
-				time.Sleep(1 * time.Second)
+				ocrworker.RequestsTrack.Range(func(key, value interface{}) bool {
+					log.Info().Str("component", "OCR_HTTP").Msg("In-flight request " + fmt.Sprint(key))
+					return true
+				})
+				log.Info().Str("component", "OCR_HTTP").Uint32("Length of Requests", atomic.LoadUint32(&ocrworker.RequestTrackLength)).
+					Msg("In-flight requests queue is not empty. You can either wait until all request get processed(may take a long time), or just kill the process. Next check happens in 60 seconds.")
+				time.Sleep(60 * time.Second)
 			}
 			os.Exit(0)
 		}
@@ -174,9 +181,9 @@ func main() {
 
 	if useHttps {
 		if certFile == "" || keyFile == "" {
-			log.Fatal().Msg("usehttp flag only makes sense if both the private key and a certificate are available")
+			log.Fatal().Msg("usehttps flag only makes sense if both the private key and a certificate are available")
 		}
-		var httpsSrv *http.Server = makeHTTPServer(&rabbitConfig, ocrChain)
+		var httpsSrv = makeHTTPServer(&rabbitConfig, ocrChain)
 		httpsSrv.Addr = listenAddr
 
 		// crypto settings
@@ -198,7 +205,7 @@ func main() {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_https has failed to start")
 		}
 	} else {
-		var httpSrv *http.Server = makeHTTPServer(&rabbitConfig, ocrChain)
+		var httpSrv = makeHTTPServer(&rabbitConfig, ocrChain)
 		httpSrv.Addr = listenAddr
 		if err := httpSrv.ListenAndServe(); err != nil {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_http has failed to start")
