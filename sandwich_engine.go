@@ -328,20 +328,35 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 	var cmdArgs []string
 
 	ocrLayerFile := ""
+	alternativeConverter := ""
 
 	logger.Info().Str("file_name", inputFilename).Msg("input file name")
 
 	if uplFileType == "TIFF" {
 		switch engineArgs.t2pConverter {
 		case "convert":
+			alternativeConverter = "tiff2pdf"
 			inputFilename = convertImageToPdf(inputFilename)
 		case "tiff2pdf":
+			alternativeConverter = "convert"
 			inputFilename = tiff2Pdf(inputFilename)
 		}
+		/* if the first converter fails, we will automatically try the second one.
+		If the second one fails, we will break up processing and return an error to a caller */
 		if inputFilename == "" {
-			err := fmt.Errorf("can not convert input image to intermediate pdf")
-			logger.Error().Err(err).Caller().Msg("Error exec " + engineArgs.t2pConverter)
-			return OcrResult{Status: "error"}, err
+			err := fmt.Errorf("can not convert input image to intermediate pdf, usually this is caused by a damaged input file")
+			logger.Warn().Err(err).Caller().Msg("Error exec " + engineArgs.t2pConverter + "Try to switch the image converter to " + alternativeConverter)
+			switch alternativeConverter {
+			case "convert":
+				inputFilename = convertImageToPdf(inputFilename)
+			case "tiff2pdf":
+				inputFilename = tiff2Pdf(inputFilename)
+			}
+			if inputFilename == "" {
+				err := fmt.Errorf("entirely failed to convert the input image to intermediate pdf, usually this is caused by a damaged input file")
+				logger.Error().Err(err).Caller().Msg("Error exec " + alternativeConverter)
+				return OcrResult{Status: "error"}, err
+			}
 		}
 	}
 
