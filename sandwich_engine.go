@@ -329,6 +329,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 
 	ocrLayerFile := ""
 	alternativeConverter := ""
+	originalInputfileName := inputFilename
 
 	logger.Info().Str("file_name", inputFilename).Msg("input file name")
 
@@ -348,9 +349,9 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 			logger.Error().Err(err).Caller().Msg("Error exec " + engineArgs.t2pConverter + "Try to switch the image converter to " + alternativeConverter)
 			switch alternativeConverter {
 			case "convert":
-				inputFilename = convertImageToPdf(inputFilename)
+				inputFilename = convertImageToPdf(originalInputfileName)
 			case "tiff2pdf":
-				inputFilename = tiff2Pdf(inputFilename)
+				inputFilename = tiff2Pdf(originalInputfileName)
 			}
 			if inputFilename == "" {
 				err := fmt.Errorf("entirely failed to convert the input image to intermediate pdf, usually this is caused by a damaged input file")
