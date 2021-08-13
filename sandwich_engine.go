@@ -345,7 +345,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 		If the second one fails, we will break up processing and return an error to a caller */
 		if inputFilename == "" {
 			err := fmt.Errorf("can not convert input image to intermediate pdf, usually this is caused by a damaged input file")
-			logger.Warn().Err(err).Caller().Msg("Error exec " + engineArgs.t2pConverter + "Try to switch the image converter to " + alternativeConverter)
+			logger.Error().Err(err).Caller().Msg("Error exec " + engineArgs.t2pConverter + "Try to switch the image converter to " + alternativeConverter)
 			switch alternativeConverter {
 			case "convert":
 				inputFilename = convertImageToPdf(inputFilename)
