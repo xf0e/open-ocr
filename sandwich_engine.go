@@ -428,8 +428,8 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 			compressedArgs = append(
 				compressedArgs,
 				"-sDEVICE=pdfwrite",
-				"-dCompatibilityLevel=1.5",
-				"-dPDFSETTINGS=/screen",
+				"-dCompatibilityLevel=1.7",
+				"-dPDFSETTINGS=/prepress",
 				"-dNOPAUSE",
 				"-dBATCH",
 				"-dQUIET",
