@@ -126,6 +126,7 @@ func convertImageToPdf(inputFilename string) string {
 	cmd := exec.Command("convert", inputFilename, tmpFileImgToPdf)
 	_, err := cmd.CombinedOutput()
 	if err != nil {
+		log.Debug().Str("component", "OCR_IMAGECONVERT").Interface("tiff2pdf_args", cmd.Args)
 		log.Warn().Str("component", "OCR_IMAGECONVERT").Err(err).
 			Msg("error exec convert for transforming TIFF to PDF")
 		return ""
