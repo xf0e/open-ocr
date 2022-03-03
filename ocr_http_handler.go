@@ -3,6 +3,8 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+
 	// "github.com/sasha-s/go-deadlock"
 	"net/http"
 	"os"
@@ -37,7 +39,12 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	requestID := requestIDRaw.String()
 	log.Info().Str("component", "OCR_HTTP").Str("RequestID", requestID).
 		Msg("serveHttp called")
-	defer req.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Warn().Err(err).Caller().Str("component", "OCR_HTTP").Msg(req.RequestURI + " request Body could not be removed")
+		}
+	}(req.Body)
 	var httpStatus = 200
 
 	ServiceCanAcceptMu.Lock()

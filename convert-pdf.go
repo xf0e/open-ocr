@@ -27,14 +27,24 @@ func (c ConvertPdf) preprocess(ocrRequest *OcrRequest) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpFileNameInput)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			log.Warn().Err(err).Str("component", "PREPROCESSOR_WORKER").Msg(name + " could not be removed")
+		}
+	}(tmpFileNameInput)
 
 	tmpFileNameOutput, err := createTempFileName("")
 	tmpFileNameOutput = fmt.Sprintf("%s.tif", tmpFileNameOutput)
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpFileNameOutput)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			log.Warn().Err(err).Str("component", "PREPROCESSOR_WORKER").Msg(name + " could not be removed")
+		}
+	}(tmpFileNameOutput)
 
 	err = saveBytesToFileName(ocrRequest.ImgBytes, tmpFileNameInput)
 	if err != nil {

@@ -350,9 +350,12 @@ func (c *OcrRpcClient) handleRPCResponse(deliveries <-chan amqp.Delivery, correl
 		Str("component", "OCR_CLIENT").Str("RequestID", correlationID).Timestamp().Logger()
 	logger.Info().Msg("looping over deliveries...:")
 
+	logger.Debug().Int("deliveries", len(deliveries)).Msg("Number of elements in deliveries variable")
 	for d := range deliveries {
+		logger.Debug().Str("deliveries", d.CorrelationId).Msg("looping over deliveries variable")
 		if d.CorrelationId == correlationID {
 			bodyLenToLog := len(d.Body)
+			logger.Debug().Str("deliveries", d.CorrelationId).Msg("reached if in d.CorrelationId == correlationID")
 			defer func(connection *amqp.Connection) {
 				err := connection.Close()
 				if err != nil {

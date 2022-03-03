@@ -3,6 +3,8 @@ package ocrworker
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/rs/zerolog/log"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -49,7 +51,12 @@ func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress stri
 			Msg("ocr was not delivered. Target did not respond")
 		return err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Warn().Err(err).Caller().Str("component", "OCR_HTTP").Msg(req.RequestURI + " response Body could not be removed")
+		}
+	}(resp.Body)
 
 	body, err := ioutil.ReadAll(resp.Body)
 	header := resp.StatusCode

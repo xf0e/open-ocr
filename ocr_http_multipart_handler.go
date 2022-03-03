@@ -93,7 +93,12 @@ func (s *OcrHttpMultipartHandler) extractParts(req *http.Request) (OcrRequest, e
 
 func (s *OcrHttpMultipartHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	defer req.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Warn().Err(err).Caller().Str("component", "OCR_HTTP").Msg(req.RequestURI + " request Body could not be removed")
+		}
+	}(req.Body)
 	var httpStatus = 200
 	ocrRequest, err := s.extractParts(req)
 	if err != nil {
