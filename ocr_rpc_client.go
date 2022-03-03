@@ -47,7 +47,7 @@ func NewOcrRpcClient(rc *RabbitConfig) (*OcrRpcClient, error) {
 	return ocrRpcClient, nil
 }
 
-// DecodeImage is the main function to do a ocr on incoming request.
+// DecodeImage is the main function to do an ocr on incoming request.
 // It's handling the parameter and the whole workflow
 func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, error) {
 	var err error
@@ -108,7 +108,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 	if err != nil {
 		return OcrResult{Text: "Internal Server Error: message broker is not reachable", Status: "error"}, 500, err
 	}
-	// if we close the connection here, the deferred status wont get the ocr result
+	// if we close the connection here, the deferred status won't get the ocr result
 	// and will be always returning "processing"
 	// defer c.connection.Close()
 
@@ -353,7 +353,12 @@ func (c *OcrRpcClient) handleRPCResponse(deliveries <-chan amqp.Delivery, correl
 	for d := range deliveries {
 		if d.CorrelationId == correlationID {
 			bodyLenToLog := len(d.Body)
-			defer c.connection.Close()
+			defer func(connection *amqp.Connection) {
+				err := connection.Close()
+				if err != nil {
+					logger.Warn().Err(err).Msg("Could not close RabbitMq connection ")
+				}
+			}(c.connection)
 			if bodyLenToLog > 32 {
 				bodyLenToLog = 32
 			}

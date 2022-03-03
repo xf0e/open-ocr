@@ -23,7 +23,7 @@ type RabbitConfig struct {
 	/* ResponseCacheTimeout sets default(!!!) global timeout in seconds for request
 	   engine will be killed after reaching the time limit, user will get timeout error */
 	ResponseCacheTimeout uint
-	// MaximalResponseCacheTimeout client won't be able set the ResponseCacheTimeout higher of it's value
+	// MaximalResponseCacheTimeout client won't be able to set the ResponseCacheTimeout higher of it's value
 	MaximalResponseCacheTimeout uint
 	FactorForMessageAccept      uint
 }

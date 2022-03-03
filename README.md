@@ -61,11 +61,11 @@ The ip address `10.0.2.15` will be used as the `RABBITMQ_HOST` env variable belo
  * [Install docker-compose](https://docs.docker.com/compose/)
  * `git clone https://github.com/tleyden/open-ocr.git`
  * `cd open-ocr/docker-compose`
- * Type ```./run.sh ``` (in case you don't have execute right type ```sudo chmod +x run.sh```
+ * Type ```./run.sh ``` (in case you don't have "execute" right type ```sudo chmod +x run.sh```
  * The runner will ask you if you want to delete the images (choose y or n for each)
  * The runner will ask you to choose between version 1 and 2
-   * Version 1 is using the ocr Tesseract 3.04. The memory usage is light. It is pretty fast and not costly in term of size (a simple aws instance with 1GB of ram and 8GB of storage is sufficiant). Result are acceptable
-   * Version 2 is using the ocr Tesseract 4.00. The memory usage is light. It is less fast than tesseract 3 and more costly in term of size (an simple aws instance with 1GB of ram is sufficient but with an EBS of 16GB of storage). Result are really better compared to version 3.04.
+   * Version 1 is using the ocr Tesseract 3.04. The memory usage is light. It is pretty fast and not costly in terms of size (a simple aws instance with 1GB of ram and 8GB of storage is sufficiant). Result are acceptable
+   * Version 2 is using the ocr Tesseract 4.00. The memory usage is light. It is less fast than tesseract 3 and more costly in terms of size (a simple aws instance with 1GB of ram is sufficient but with an EBS of 16GB of storage). Result are really better compared to version 3.04.
    * To see a comparative you can have a look to the [official page of tesseract](https://github.com/tesseract-ocr/tesseract/wiki/4.0-Accuracy-and-Performance)
 
 
@@ -179,7 +179,7 @@ $ curl -X POST -H "Content-Type: application/json" -d '{"img_base64":"<YOUR BASE
 
 * Uploading the image content via `multipart/related`, rather than passing an image URL.  (example client code provided in the [Go REST client](http://github.com/tleyden/open-ocr-client))
 * Tesseract config vars (eg, equivalent of -c arguments when using Tesseract via the command line) and Page Seg Mode 
-* Ability to use an image pre-processing chain, eg [Stroke Width Transform](https://github.com/tleyden/open-ocr/wiki/Stroke-Width-Transform).
+* Ability to use an image pre-processing chain, e.g. [Stroke Width Transform](https://github.com/tleyden/open-ocr/wiki/Stroke-Width-Transform).
 * Non-English languages
 
 See the [REST API docs](http://docs.openocr.apiary.io/) and the [Go REST client](http://github.com/tleyden/open-ocr-client) for details.

@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// This variant of the TesseractEngine calls tesseract via exec
+// TesseractEngine calls tesseract via exec
 type TesseractEngine struct {
 }
 
@@ -77,7 +77,7 @@ func NewTesseractEngineArgs(ocrRequest *OcrRequest) (*TesseractEngineArgs, error
 
 }
 
-// return a slice that can be passed to tesseract binary as command line
+// Export return a slice that can be passed to tesseract binary as command line
 // args, eg, ["-c", "tessedit_char_whitelist=0123456789", "-c", "foo=bar"]
 func (t TesseractEngineArgs) Export() []string {
 	var result []string
@@ -97,7 +97,7 @@ func (t TesseractEngineArgs) Export() []string {
 }
 
 // ProcessRequest will process incoming OCR request by routing it through the whole process chain
-func (t TesseractEngine) ProcessRequest(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (OcrResult, error) {
+func (t TesseractEngine) ProcessRequest(ocrRequest *OcrRequest, _ *WorkerConfig) (OcrResult, error) {
 
 	tmpFileName, err := func() (string, error) {
 		switch {
@@ -122,7 +122,12 @@ func (t TesseractEngine) ProcessRequest(ocrRequest *OcrRequest, workerConfig *Wo
 	}
 
 	if engineArgs.saveFiles {
-		defer os.Remove(tmpFileName)
+		defer func(name string) {
+			err := os.Remove(name)
+			if err != nil {
+				log.Warn().Err(err).Str("component", "OCR_TESSERACT").Caller().Msg(name + " could not be removed")
+			}
+		}(tmpFileName)
 	}
 
 	ocrResult, err := t.processImageFile(tmpFileName, *engineArgs)
@@ -223,7 +228,12 @@ func (t TesseractEngine) processImageFile(inputFilename string, engineArgs Tesse
 
 	// delete output file when we are done
 	if engineArgs.saveFiles {
-		defer os.Remove(outFile)
+		defer func(name string) {
+			err := os.Remove(name)
+			if err != nil {
+				log.Warn().Err(err).Str("component", "OCR_TESSERACT").Caller().Msg(name + " could not be removed")
+			}
+		}(outFile)
 	}
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_TESSERACT").
