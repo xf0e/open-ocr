@@ -45,7 +45,7 @@ var (
 // InstrumentHttpStatusHandler wraps httpHandler to provide prometheus metrics
 func InstrumentHttpStatusHandler(ocrHttpHandler *OcrHTTPStatusHandler) http.Handler {
 
-	// Register all of the metrics in the standard registry.
+	// Register all the metrics in the standard registry.
 	prometheus.MustRegister(inFlightGauge, counter, duration, requestSize)
 
 	ocrChain := promhttp.InstrumentHandlerInFlight(inFlightGauge,

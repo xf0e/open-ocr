@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/ksuid"
 
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type PreprocessorRpcWorker struct {
@@ -193,13 +193,23 @@ func (w *PreprocessorRpcWorker) strokeWidthTransform(ocrRequest *OcrRequest) err
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpFileNameInput)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			log.Warn().Err(err).Str("component", "PREPROCESSOR_WORKER").Msg(name + " could not be removed")
+		}
+	}(tmpFileNameInput)
 
 	tmpFileNameOutput, err := createTempFileName("")
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpFileNameOutput)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			log.Warn().Err(err).Str("component", "PREPROCESSOR_WORKER").Msg(name + " could not be removed")
+		}
+	}(tmpFileNameOutput)
 
 	err = saveBytesToFileName(ocrRequest.ImgBytes, tmpFileNameInput)
 	if err != nil {

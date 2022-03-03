@@ -21,14 +21,24 @@ func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpFileNameInput)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			log.Warn().Err(err).Caller().Str("component", "OCR_UTIL").Msg(tmpFileNameInput + " could not be removed")
+		}
+	}(tmpFileNameInput)
 
 	tmpFileNameOutput, err := createTempFileName("")
 	tmpFileNameOutput = fmt.Sprintf("%s.png", tmpFileNameOutput)
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpFileNameOutput)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			log.Warn().Err(err).Caller().Str("component", "OCR_UTIL").Msg(tmpFileNameOutput + " could not be removed")
+		}
+	}(tmpFileNameOutput)
 
 	err = saveBytesToFileName(ocrRequest.ImgBytes, tmpFileNameInput)
 	if err != nil {

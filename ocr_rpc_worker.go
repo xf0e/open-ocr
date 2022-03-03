@@ -3,6 +3,7 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"net/url"
 	"os"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/ksuid"
-	"github.com/streadway/amqp"
 )
 
 type OcrRpcWorker struct {
@@ -22,7 +22,7 @@ type OcrRpcWorker struct {
 }
 
 var (
-	// tag is based on ksuid K-Sortable Globally Unique IDs
+	// tag is based on K-Sortable Globally Unique IDs
 	tag = ksuid.New().String()
 )
 

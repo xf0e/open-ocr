@@ -22,26 +22,34 @@ func saveUrlContentToFileName(uri, tmpFileName string) error {
 	if err != nil {
 		return err
 	}
+	defer func(outFile *os.File) {
+		err := outFile.Close()
+		if err != nil {
+			log.Warn().Err(err).Caller().Str("component", "OCR_UTIL").Msg(outFile.Name() + " could not be closed")
+		}
+	}(outFile)
 
 	resp, err := http.Get(uri)
 	if err != nil {
-		outFile.Close()
 		return err
 	}
-
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Warn().Err(err).Caller().Str("component", "OCR_UTIL").Msg(resp.Request.RequestURI + " request Body could not be closed")
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		outFile.Close()
 		return err
 	}
 
 	_, err = io.Copy(outFile, resp.Body)
 	if err != nil {
-		outFile.Close()
+		log.Warn().Err(err).Caller().Str("component", "OCR_UTIL").Msg(outFile.Name() + " could not be written")
 		return err
 	}
-	return outFile.Close()
+	return err
 }
 
 func saveBytesToFileName(bytes []byte, tmpFileName string) error {
@@ -56,10 +64,16 @@ func url2bytes(uri string) ([]byte, error) {
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Warn().Err(err).Caller().Str("component", "OCR_UTIL").Msg(resp.Request.RequestURI + " could not be closed")
+		}
+	}(resp.Body)
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Warn().Err(err).Caller().Str("component", "OCR_UTIL").Msg("request from " + resp.Request.RequestURI + " could not be read")
 		return nil, err
 	}
 
@@ -86,7 +100,12 @@ func readFirstBytes(filePath string, nBytesToRead uint) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Warn().Err(err).Caller().Str("component", "OCR_UTIL").Msg(file.Name() + " could not be closed")
+		}
+	}(file)
 
 	buffer := make([]byte, nBytesToRead)
 	_, err = file.Read(buffer)
