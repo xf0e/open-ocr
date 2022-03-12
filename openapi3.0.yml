@@ -83,12 +83,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseNOK"
 servers:
-  - url: https://dms-t-to1.bghw.de:8080/
-  - url: http://dms-t-to1.bghw.de:8080/
+  - url: https://localhost:8080/
+  - url: http://localhost:8080/
 components:
   schemas:
-
-
     DecodeOCR:
       properties:
         deffered:
@@ -123,7 +121,7 @@ components:
           type: integer
           format: int32
           minimum: 1
-          description: "only user in logging now"
+          description: "only used for logging now"
 
         time_out:
           type: integer
@@ -336,11 +334,21 @@ components:
           type: string
           example: 1sDRnIKpJSijZaMXmXoCqQVc32N
           description: K-Sortable Unique IDentifier
-          maxLength: 28
-          minLength: 28
+          maxLength: 27
+          minLength: 27
         status:
           type: string
           description: can be error, not found, processing or done
+          enum:
+            - done
+            - error
+            - not found
+            - processing
+      required:
+        - text
+        - status
+        - id
+
     ApiResponseNOK:
       type: string
       example: Unable to unmarshal json, malformed request. RequestID
@@ -352,6 +360,6 @@ components:
         img_url:
           type: string
           description: The ID of the Request, ID is K-Sortable Unique IDentifier
-          example: 1sDRnIKpJSijZaMXmXoCqQVc32N
-          maxLength: 28
-          minLength: 28
+          example: 26EaJxRYY2njljk9kLhTMSCGgeI
+          maxLength: 27
+          minLength: 27
