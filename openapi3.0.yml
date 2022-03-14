@@ -98,23 +98,40 @@ components:
         reply_to:
           type: string
           format: uri
+          nullable: false
+          minLength: 5
+          maxLength: 200
           example: http://localhost:8888/postback-ocr
           description: if set the Server will deliver the result to the given adress
+        engine:
+          type: string
+          nullable: false
+          description: only use sandwich or tesseract in production.
+          default: sandwich
+          enum:
+            - sandwich
+            - tesseract
       oneOf:
         - $ref: '#/components/schemas/DecodeORCSandwich'
         - $ref: '#/components/schemas/DecodeORCTesseract'
+      discriminator:
+        propertyName: engine
+        mapping:
+          sandwich: '#/components/schemas/DecodeORCSandwich'
+          tesseract: '#/components/schemas/DecodeORCTesseract'
+      required:
+        - engine
+
 
     DecodeORCSandwich:
       title: sandwich engine
       type: object
       properties:
-        engine:
-          type: string
-          description: only use sandwich in production
-          enum:
-            - sandwich
         doc_type:
           type: string
+          nullable: false
+          minLength: 5
+          maxLength: 30
           description: "the service can prioritise some document types if the admin has configured document types priorities."
 
         page_number:
@@ -133,10 +150,14 @@ components:
           type: string
           minLength: 3
           maxLength: 100
+          nullable: false
           description: "please always set the user-agent for loggin purposes"
 
         reference_id:
           type: string
+          minLength: 3
+          maxLength: 100
+          nullable: false
           description: "please always set the reference ID (e.g. Internal job ID)"
 
         engine_args:
@@ -156,9 +177,13 @@ components:
               description: If set the resulting pdf will be delivered with pdf 1.7 specification and the resolution at 300 x 300 (prepress settings of gs)
             config_vars:
               type: string
+              minLength: 3
+              maxLength: 100
+              nullable: false
               description: Config vars - equivalent of -c args to tesseract
             psm:
               type: string
+              nullable: false
               description: Page Segment Mode, equivalent of -psm arg to tesseract.  To use
                 default, omit this field from the JSON.
               enum:
@@ -175,6 +200,7 @@ components:
                 - "10"
             lang:
               type: "string"
+              nullable: false
               description: "The language to use. If omitted, will use English"
               enum:
                 - "eng"
@@ -212,23 +238,12 @@ components:
       oneOf:
         - $ref: '#/components/schemas/imgBase64'
         - $ref: '#/components/schemas/imgURL'
-      required:
-        - engine
-
 
 
     DecodeORCTesseract:
       title: tesseract engine
       type: object
       properties:
-        engine:
-          type: string
-          description: only use tesseract in production
-          default: tesseract
-          enum:
-            - tesseract
-            - mock
-            - go_tesseract
         inplace_decode:
           type: boolean
           default: false
@@ -241,9 +256,13 @@ components:
           properties:
             config_vars:
               type: string
+              minLength: 3
+              maxLength: 100
+              nullable: false
               description: Config vars - equivalent of -c args to tesseract
             psm:
               type: string
+              nullable: false
               description: Page Segment Mode, equivalent of -psm arg to tesseract.  To use
                 default, omit this field from the JSON.
               enum:
@@ -260,6 +279,7 @@ components:
                 - "10"
             lang:
               type: "string"
+              nullable: false
               description: "The language to use. If omitted, will use English"
               enum:
                 - "eng"
@@ -297,8 +317,6 @@ components:
       oneOf:
         - $ref: '#/components/schemas/imgBase64'
         - $ref: '#/components/schemas/imgURL'
-      required:
-        - engine
 
     imgBase64:
       type: object
@@ -306,6 +324,8 @@ components:
         img_base64:
           type: string
           format: byte
+          nullable: false
+          minLength: 5
           description: "Base64 encoded document to process"
       required:
         - img_base64
@@ -316,6 +336,9 @@ components:
         img_url:
           type: string
           format: uri
+          minLength: 5
+          maxLength: 200
+          nullable: false
           description: "The URL of the image or the pdf to process. If set, ocr server will
             try to download the image"
       required:
@@ -334,10 +357,13 @@ components:
           type: string
           example: 1sDRnIKpJSijZaMXmXoCqQVc32N
           description: K-Sortable Unique IDentifier
+          nullable: false
+          pattern: ^[a-zA-Z0-9]{27}$
           maxLength: 27
           minLength: 27
         status:
           type: string
+          nullable: false
           description: can be error, not found, processing or done
           enum:
             - done
@@ -351,6 +377,7 @@ components:
 
     ApiResponseNOK:
       type: string
+      pattern: ^[a-zA-Z0-9]{27}$
       example: Unable to unmarshal json, malformed request. RequestID
         26EaJxRYY2njljk9kLhTMSCGgeI
     OCRStatus:
@@ -361,5 +388,8 @@ components:
           type: string
           description: The ID of the Request, ID is K-Sortable Unique IDentifier
           example: 26EaJxRYY2njljk9kLhTMSCGgeI
+          pattern: ^[a-zA-Z0-9]{27}$
           maxLength: 27
           minLength: 27
+      required:
+        - img_url
