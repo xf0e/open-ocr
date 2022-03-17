@@ -21,17 +21,13 @@ paths:
       tags:
         - ocr
       summary: Place a new OCR request
-      description: a path to place a new ocr request
+      description: 'place ocr request'
       operationId: addOCR
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DecodeOCR'
-            examples:
-              example-1:
-                value:
-                  img_base64: string
         description: Pass image url and other info to decode image to text via OCR
         required: true
       responses:
@@ -134,6 +130,7 @@ components:
           tesseract: '#/components/schemas/DecodeORCTesseract'
     DecodeORCSandwich:
       title: sandwich engine
+      type: object
       properties:
         doc_type:
           type: string
@@ -240,8 +237,6 @@ components:
       oneOf:
         - $ref: '#/components/schemas/imageBase64'
         - $ref: '#/components/schemas/imageURL'
-        - {}
-      type: object
     DecodeORCTesseract:
       title: tesseract engine
       type: object
@@ -369,7 +364,7 @@ components:
     ApiResponseNOK:
       type: string
       pattern: '^[a-zA-Z0-9]{27}$'
-      example: 26EaJxRYY2njljk9kLhTMSCGgeI
+      example: '26EaJxRYY2njljk9kLhTMSCGgeI'
       description: 'Unable to unmarshal json, malformed request. RequestID 26EaJxRYY2njljk9kLhTMSCGgeI'
     OCRStatus:
       type: object
