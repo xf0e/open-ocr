@@ -6,9 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-)
 
-import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	legacyrouter "github.com/getkin/kin-openapi/routers/legacy"
@@ -17,10 +15,10 @@ import (
 func main() {
 	ctx := context.Background()
 	loader := openapi3.Loader{Context: ctx}
-	doc, _ := loader.LoadFromFile("openapi3.0.yml")
+	doc, _ := loader.LoadFromFile("openapi3_spec.json")
 	_ = doc.Validate(ctx)
 	router, _ := legacyrouter.NewRouter(doc)
-	httpReq, _ := http.NewRequest(http.MethodGet, "/ocr", nil)
+	httpReq, _ := http.NewRequest(http.MethodGet, "/items", nil)
 
 	// Find route
 	route, pathParams, _ := router.FindRoute(httpReq)

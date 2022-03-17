@@ -111,6 +111,17 @@ components:
           enum:
             - sandwich
             - tesseract
+        preprocessors:
+          type: array
+          nullable: false
+          items:
+            type: string
+            minItems: 1
+            maxLength: 20
+            minLength: 3
+            example: convert-pdf
+            nullable: false
+          description: can have one ore more values. all preprocessors will run in a chain before ocr is performed. Currenly only convert-pdf can be used if engine is tesseract.
       oneOf:
         - $ref: '#/components/schemas/DecodeORCSandwich'
         - $ref: '#/components/schemas/DecodeORCTesseract'
@@ -119,8 +130,6 @@ components:
         mapping:
           sandwich: '#/components/schemas/DecodeORCSandwich'
           tesseract: '#/components/schemas/DecodeORCTesseract'
-      required:
-        - engine
 
 
     DecodeORCSandwich:
@@ -236,8 +245,8 @@ components:
                 - "chi-sim"
                 - "chi-tra"
       oneOf:
-        - $ref: '#/components/schemas/imgBase64'
-        - $ref: '#/components/schemas/imgURL'
+        - $ref: '#/components/schemas/imageBase64'
+        - $ref: '#/components/schemas/imageURL'
 
 
     DecodeORCTesseract:
@@ -315,10 +324,10 @@ components:
                 - "chi-sim"
                 - "chi-tra"
       oneOf:
-        - $ref: '#/components/schemas/imgBase64'
-        - $ref: '#/components/schemas/imgURL'
+        - $ref: '#/components/schemas/imageBase64'
+        - $ref: '#/components/schemas/imageURL'
 
-    imgBase64:
+    imageBase64:
       type: object
       properties:
         img_base64:
@@ -330,7 +339,7 @@ components:
       required:
         - img_base64
 
-    imgURL:
+    imageURL:
       type: object
       properties:
         img_url:
