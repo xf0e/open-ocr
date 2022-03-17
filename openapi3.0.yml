@@ -8,83 +8,87 @@ info:
     email: droidlove@ya.ru
   license:
     name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
 tags:
   - name: OpenOCR
     description: Service wrapper around Tesseract
     externalDocs:
       description: Find out more
-      url: https://github.com/xf0e/open-ocr
+      url: 'https://github.com/xf0e/open-ocr'
 paths:
   /ocr:
     post:
       tags:
         - ocr
       summary: Place a new OCR request
-      description: ""
+      description: a path to place a new ocr request
       operationId: addOCR
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DecodeOCR"
+              $ref: '#/components/schemas/DecodeOCR'
+            examples:
+              example-1:
+                value:
+                  img_base64: string
         description: Pass image url and other info to decode image to text via OCR
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiResponse"
-        "400":
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
           description: Invalid input
           content:
             text/plain:
               schema:
-                $ref: "#/components/schemas/ApiResponseNOK"
-        "503":
+                $ref: '#/components/schemas/ApiResponseNOK'
+        '503':
           description: Service Unavailable
           content:
             text/plain:
               schema:
-                $ref: "#/components/schemas/ApiResponseNOK"
+                $ref: '#/components/schemas/ApiResponseNOK'
   /ocr-status:
     post:
       tags:
         - ocr-status
       summary: returns status of given request
-      description: returns status of given request, submit id
+      description: 'returns status of given request, submit id'
       operationId: ocr-status
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/OCRStatus"
+              $ref: '#/components/schemas/OCRStatus'
         description: Pass request id to get the status of that request
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiResponse"
-        "400":
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
           description: client error
           content:
             text/plain:
               schema:
-                $ref: "#/components/schemas/ApiResponseNOK"
-        "500":
+                $ref: '#/components/schemas/ApiResponseNOK'
+        '500':
           description: internal server error
           content:
             text/plain:
               schema:
-                $ref: "#/components/schemas/ApiResponseNOK"
+                $ref: '#/components/schemas/ApiResponseNOK'
 servers:
-  - url: https://localhost:8080/
-  - url: http://localhost:8080/
+  - url: 'https://localhost:8080'
+  - url: 'http://localhost:8080'
 components:
   schemas:
     DecodeOCR:
@@ -92,16 +96,14 @@ components:
         deffered:
           type: boolean
           default: false
-          description: if set (default is false) the connection will be reset after request
-            is placed. The client have to either set reply_to or poll to on
-            /orc-status get the request.
+          description: if set (default is false) the connection will be reset after request is placed. The client have to either set reply_to or poll to on /orc-status get the request.
         reply_to:
           type: string
           format: uri
           nullable: false
           minLength: 5
           maxLength: 200
-          example: http://localhost:8888/postback-ocr
+          example: 'http://localhost:8888/postback-ocr'
           description: if set the Server will deliver the result to the given adress
         engine:
           type: string
@@ -130,56 +132,48 @@ components:
         mapping:
           sandwich: '#/components/schemas/DecodeORCSandwich'
           tesseract: '#/components/schemas/DecodeORCTesseract'
-
-
     DecodeORCSandwich:
       title: sandwich engine
-      type: object
       properties:
         doc_type:
           type: string
           nullable: false
           minLength: 5
           maxLength: 30
-          description: "the service can prioritise some document types if the admin has configured document types priorities."
-
+          description: the service can prioritise some document types if the admin has configured document types priorities.
         page_number:
           type: integer
           format: int32
           minimum: 1
-          description: "only used for logging now"
-
+          description: only used for logging now
         time_out:
           type: integer
           format: int32
           minimum: 10
-          description: "You can set the maximum processing time for a particular request. If timeout has been reached prior finisching request the service will stop processing"
-
+          description: You can set the maximum processing time for a particular request. If timeout has been reached prior finisching request the service will stop processing
         user_agent:
           type: string
           minLength: 3
           maxLength: 100
           nullable: false
-          description: "please always set the user-agent for loggin purposes"
-
+          description: please always set the user-agent for loggin purposes
         reference_id:
           type: string
           minLength: 3
           maxLength: 100
           nullable: false
-          description: "please always set the reference ID (e.g. Internal job ID)"
-
+          description: please always set the reference ID (e.g. Internal job ID)
         engine_args:
           type: object
           description: The OCR engine arguments to pass (engine-specific)
           properties:
             ocr_type:
               type: string
-              description: "txt will return text, combinedpdf will return original pdf with ocr layer, if ocrlayeronly is set the service will return a pdf with orc layer (in pdf viewer the text is invisible, but searchable). All values will return base64 encoded value except for an erroneuous request. In this case the service will terurn the same object but the key text will contain human error"
+              description: 'txt will return text, combinedpdf will return original pdf with ocr layer, if ocrlayeronly is set the service will return a pdf with orc layer (in pdf viewer the text is invisible, but searchable). All values will return base64 encoded value except for an erroneuous request. In this case the service will terurn the same object but the key text will contain human error'
               enum:
-                - "txt"
-                - "combinedpdf"
-                - "ocrlayeronly"
+                - txt
+                - combinedpdf
+                - ocrlayeronly
             result_optimize:
               type: boolean
               default: false
@@ -193,62 +187,61 @@ components:
             psm:
               type: string
               nullable: false
-              description: Page Segment Mode, equivalent of -psm arg to tesseract.  To use
-                default, omit this field from the JSON.
+              description: 'Page Segment Mode, equivalent of -psm arg to tesseract.  To use default, omit this field from the JSON.'
               enum:
-                - "0"
-                - "1"
-                - "2"
-                - "3"
-                - "4"
-                - "5"
-                - "6"
-                - "7"
-                - "8"
-                - "9"
-                - "10"
+                - '0'
+                - '1'
+                - '2'
+                - '3'
+                - '4'
+                - '5'
+                - '6'
+                - '7'
+                - '8'
+                - '9'
+                - '10'
             lang:
-              type: "string"
+              type: string
               nullable: false
-              description: "The language to use. If omitted, will use English"
+              description: 'The language to use. If omitted, will use English'
               enum:
-                - "eng"
-                - "ara"
-                - "bel"
-                - "ben"
-                - "bul"
-                - "ces"
-                - "dan"
-                - "deu"
-                - "ell"
-                - "fin"
-                - "fra"
-                - "heb"
-                - "hin"
-                - "ind"
-                - "isl"
-                - "ita"
-                - "jpn"
-                - "kor"
-                - "nld"
-                - "nor"
-                - "pol"
-                - "por"
-                - "ron"
-                - "rus"
-                - "spa"
-                - "swe"
-                - "tha"
-                - "tur"
-                - "ukr"
-                - "vie"
-                - "chi-sim"
-                - "chi-tra"
+                - eng
+                - ara
+                - bel
+                - ben
+                - bul
+                - ces
+                - dan
+                - deu
+                - ell
+                - fin
+                - fra
+                - heb
+                - hin
+                - ind
+                - isl
+                - ita
+                - jpn
+                - kor
+                - nld
+                - nor
+                - pol
+                - por
+                - ron
+                - rus
+                - spa
+                - swe
+                - tha
+                - tur
+                - ukr
+                - vie
+                - chi-sim
+                - chi-tra
       oneOf:
         - $ref: '#/components/schemas/imageBase64'
         - $ref: '#/components/schemas/imageURL'
-
-
+        - {}
+      type: object
     DecodeORCTesseract:
       title: tesseract engine
       type: object
@@ -256,9 +249,7 @@ components:
         inplace_decode:
           type: boolean
           default: false
-          description: If true, will attempt to do ocr decode in-place rather than queuing
-            a message on RabbitMQ for worker processing.  Useful for local
-            testing, not recommended for production.
+          description: 'If true, will attempt to do ocr decode in-place rather than queuing a message on RabbitMQ for worker processing.  Useful for local testing, not recommended for production.'
         engine_args:
           type: object
           description: The OCR engine arguments to pass (engine-specific)
@@ -272,61 +263,59 @@ components:
             psm:
               type: string
               nullable: false
-              description: Page Segment Mode, equivalent of -psm arg to tesseract.  To use
-                default, omit this field from the JSON.
+              description: 'Page Segment Mode, equivalent of -psm arg to tesseract.  To use default, omit this field from the JSON.'
               enum:
-                - "0"
-                - "1"
-                - "2"
-                - "3"
-                - "4"
-                - "5"
-                - "6"
-                - "7"
-                - "8"
-                - "9"
-                - "10"
+                - '0'
+                - '1'
+                - '2'
+                - '3'
+                - '4'
+                - '5'
+                - '6'
+                - '7'
+                - '8'
+                - '9'
+                - '10'
             lang:
-              type: "string"
+              type: string
               nullable: false
-              description: "The language to use. If omitted, will use English"
+              description: 'The language to use. If omitted, will use English'
               enum:
-                - "eng"
-                - "ara"
-                - "bel"
-                - "ben"
-                - "bul"
-                - "ces"
-                - "dan"
-                - "deu"
-                - "ell"
-                - "fin"
-                - "fra"
-                - "heb"
-                - "hin"
-                - "ind"
-                - "isl"
-                - "ita"
-                - "jpn"
-                - "kor"
-                - "nld"
-                - "nor"
-                - "pol"
-                - "por"
-                - "ron"
-                - "rus"
-                - "spa"
-                - "swe"
-                - "tha"
-                - "tur"
-                - "ukr"
-                - "vie"
-                - "chi-sim"
-                - "chi-tra"
+                - eng
+                - ara
+                - bel
+                - ben
+                - bul
+                - ces
+                - dan
+                - deu
+                - ell
+                - fin
+                - fra
+                - heb
+                - hin
+                - ind
+                - isl
+                - ita
+                - jpn
+                - kor
+                - nld
+                - nor
+                - pol
+                - por
+                - ron
+                - rus
+                - spa
+                - swe
+                - tha
+                - tur
+                - ukr
+                - vie
+                - chi-sim
+                - chi-tra
       oneOf:
         - $ref: '#/components/schemas/imageBase64'
         - $ref: '#/components/schemas/imageURL'
-
     imageBase64:
       type: object
       properties:
@@ -335,10 +324,9 @@ components:
           format: byte
           nullable: false
           minLength: 5
-          description: "Base64 encoded document to process"
+          description: Base64 encoded document to process
       required:
         - img_base64
-
     imageURL:
       type: object
       properties:
@@ -348,32 +336,27 @@ components:
           minLength: 5
           maxLength: 200
           nullable: false
-          description: "The URL of the image or the pdf to process. If set, ocr server will
-            try to download the image"
+          description: 'The URL of the image or the pdf to process. If set, ocr server will try to download the image'
       required:
         - img_url
-
-
     ApiResponse:
       type: object
       properties:
         text:
           type: string
-          description: "Contains either the OCR-Result of the error message if field status
-            is set to error. Text can contain a plain text or a base64 encoded
-            file. It depends on the parameter ocr_type at placing request"
+          description: Contains either the OCR-Result of the error message if field status is set to error. Text can contain a plain text or a base64 encoded file. It depends on the parameter ocr_type at placing request
         id:
           type: string
           example: 1sDRnIKpJSijZaMXmXoCqQVc32N
           description: K-Sortable Unique IDentifier
           nullable: false
-          pattern: ^[a-zA-Z0-9]{27}$
+          pattern: '^[a-zA-Z0-9]{27}$'
           maxLength: 27
           minLength: 27
         status:
           type: string
           nullable: false
-          description: can be error, not found, processing or done
+          description: 'can be error, not found, processing or done'
           enum:
             - done
             - error
@@ -383,21 +366,20 @@ components:
         - text
         - status
         - id
-
     ApiResponseNOK:
       type: string
-      pattern: ^[a-zA-Z0-9]{27}$
-      example: Unable to unmarshal json, malformed request. RequestID
-        26EaJxRYY2njljk9kLhTMSCGgeI
+      pattern: '^[a-zA-Z0-9]{27}$'
+      example: 26EaJxRYY2njljk9kLhTMSCGgeI
+      description: 'Unable to unmarshal json, malformed request. RequestID 26EaJxRYY2njljk9kLhTMSCGgeI'
     OCRStatus:
       type: object
       description: status of request to given ID
       properties:
         img_url:
           type: string
-          description: The ID of the Request, ID is K-Sortable Unique IDentifier
+          description: 'The ID of the Request, ID is K-Sortable Unique IDentifier'
           example: 26EaJxRYY2njljk9kLhTMSCGgeI
-          pattern: ^[a-zA-Z0-9]{27}$
+          pattern: '^[a-zA-Z0-9]{27}$'
           maxLength: 27
           minLength: 27
       required:
