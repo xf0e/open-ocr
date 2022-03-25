@@ -8,9 +8,9 @@ info:
   version: '1.8.1'
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 servers:
-- url: https://localhost:8080/
+- url: https://localhost:8080
   variables: {}
-- url: http://localhost:8080/
+- url: http://localhost:8080
   variables: {}
 paths:
   /ocr:
@@ -18,7 +18,7 @@ paths:
       tags:
       - ocr
       summary: addOCR
-      description: Place a new OCR request
+      description: place ocr request
       operationId: addOCR
       parameters: []
       requestBody:
@@ -44,6 +44,7 @@ paths:
               schema:
                 pattern: ^[a-zA-Z0-9]{27}$
                 type: string
+                description: Unable to unmarshal json, malformed request. RequestID 26EaJxRYY2njljk9kLhTMSCGgeI
                 contentMediaType: text/plain
         '503':
           description: Service Unavailable
@@ -53,6 +54,7 @@ paths:
               schema:
                 pattern: ^[a-zA-Z0-9]{27}$
                 type: string
+                description: Unable to unmarshal json, malformed request. RequestID 26EaJxRYY2njljk9kLhTMSCGgeI
                 contentMediaType: text/plain
       deprecated: false
     parameters: []
@@ -87,6 +89,7 @@ paths:
               schema:
                 pattern: ^[a-zA-Z0-9]{27}$
                 type: string
+                description: Unable to unmarshal json, malformed request. RequestID 26EaJxRYY2njljk9kLhTMSCGgeI
                 contentMediaType: text/plain
         '500':
           description: internal server error
@@ -96,6 +99,7 @@ paths:
               schema:
                 pattern: ^[a-zA-Z0-9]{27}$
                 type: string
+                description: Unable to unmarshal json, malformed request. RequestID 26EaJxRYY2njljk9kLhTMSCGgeI
                 contentMediaType: text/plain
       deprecated: false
     parameters: []
