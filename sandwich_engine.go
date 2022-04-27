@@ -418,10 +418,10 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 		logger.Info().Interface("combinedArgs", combinedArgs).
 			Msg("Arguments for pdftk to combine pdf files")
 
-		outPdftk, errPdftk := exec.Command("pdftk", combinedArgs...).CombinedOutput()
+		_, errPdftk := exec.Command("pdftk", combinedArgs...).CombinedOutput()
 		if errPdftk != nil {
 			logger.Error().Err(errPdftk).Caller().
-				Str("file_name", string(outPdftk)).
+				Str("file_name", tmpOutCombinedPdf).
 				Msg("Error running command")
 			errorFlag = true
 			return OcrResult{Status: "error"}, err
@@ -431,15 +431,8 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 			logger.Info().Msg("optimizing was requested, performing selected operation")
 			var compressedArgs []string
 			tmpOutCompressedPdf := inputFilename
-			filesToDelete = append(filesToDelete, tmpOutCompressedPdf)
 			tmpOutCompressedPdf = fmt.Sprintf("%s%s", tmpOutCompressedPdf, "_compr.pdf")
-			defer func() {
-				logger.Info().Str("file_name", tmpOutCompressedPdf).
-					Msg("step 3: deleting compressed result file (gs run)")
-				if err := os.Remove(tmpOutCompressedPdf); err != nil {
-					logger.Warn().Err(err)
-				}
-			}()
+			filesToDelete = append(filesToDelete, tmpOutCompressedPdf)
 
 			compressedArgs = append(
 				compressedArgs,
@@ -473,8 +466,10 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 	case "OCRLAYERONLY":
 		fileToDeliver = ocrLayerFile
 	case "TXT":
+		// pdftotext will create %filename%.txt
 		logger.Info().Msg("extracting text from ocr")
 		textFile := fmt.Sprintf("%s%s", strings.TrimSuffix(ocrLayerFile, filepath.Ext(ocrLayerFile)), ".txt")
+		filesToDelete = append(filesToDelete, textFile)
 		cmdArgsPdfToText := exec.Command("pdftotext", ocrLayerFile)
 		outputPdfToText, err := cmdArgsPdfToText.CombinedOutput()
 		if err != nil {
@@ -483,14 +478,6 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 			logger.Error().Caller().Err(err).Msg("error exec pdftotext")
 			errorFlag = true
 		}
-		// pdftotext will create %filename%.txt
-		defer func() {
-			logger.Info().Str("file_name", textFile).
-				Msg("step 2: deleting file (pdftotext run)")
-			if err := os.Remove(textFile); err != nil {
-				logger.Warn().Err(err)
-			}
-		}()
 
 		fileToDeliver = textFile
 
