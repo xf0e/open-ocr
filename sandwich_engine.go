@@ -314,10 +314,29 @@ func (t SandwichEngine) runExternalCmd(commandToRun string, cmdArgs []string, de
 func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engineArgs *SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
 	// if error flag is true, input files won't be deleted
 	errorFlag := false
-
+	filesToDelete := make([]string, 0)
 	logger := zerolog.New(os.Stdout).With().
 		Str("component", "OCR_SANDWICH").
 		Str("RequestID", engineArgs.requestID).Timestamp().Logger()
+
+	// if command line argument save_files is set or any internal processing is failed the input file won't be deleted
+	defer func() {
+		if !engineArgs.saveFiles || !errorFlag {
+			for _, element := range filesToDelete {
+				fileToDelete, _ := filepath.Abs(element)
+				logger.Info().Str("file_name", element).
+					Bool("save_files_flag", engineArgs.saveFiles).
+					Bool("errorFlag", errorFlag).
+					Msg("deleting file " + element)
+				if err := os.Remove(fileToDelete); err != nil {
+					logger.Warn().Err(err)
+				}
+			}
+		} else {
+			logger.Info().Interface("fileList", filesToDelete).
+				Msg("All input files were not removed for debugging purposes due to flags or errors while processing")
+		}
+	}()
 
 	// timeTrack(start time.Time, operation string, message string, requestID string)
 	defer timeTrack(time.Now(), "processing_time", "processing time", engineArgs.requestID)
@@ -332,6 +351,8 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 	originalInputfileName := inputFilename
 
 	logger.Info().Str("file_name", inputFilename).Msg("input file name")
+
+	filesToDelete = append(filesToDelete, inputFilename)
 
 	if uplFileType == "TIFF" {
 		switch engineArgs.t2pConverter {
@@ -356,6 +377,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 			if inputFilename == "" {
 				err := fmt.Errorf("entirely failed to convert the input image to intermediate pdf, usually this is caused by a damaged input file")
 				logger.Error().Err(err).Caller().Msg("Error exec " + alternativeConverter)
+				errorFlag = true
 				return OcrResult{Status: "error"}, err
 			}
 		}
@@ -388,14 +410,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 	case "COMBINEDPDF":
 
 		tmpOutCombinedPdf := fmt.Sprintf("%s%s", inputFilename, "_comb.pdf")
-
-		defer func() {
-			logger.Info().Str("file_name", tmpOutCombinedPdf).
-				Msg("step 2: deleting file (pdftk run)")
-			if err := os.Remove(tmpOutCombinedPdf); err != nil {
-				logger.Warn().Err(err)
-			}
-		}()
+		filesToDelete = append(filesToDelete, tmpOutCombinedPdf)
 
 		var combinedArgs []string
 		// pdftk FILE_only_TEXT-LAYER.pdf multistamp FILE_ORIGINAL_IMAGE.pdf output FILE_OUTPUT_IMAGE_AND_TEXT_LAYER.pdf
@@ -413,9 +428,10 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 		}
 
 		if engineArgs.ocrOptimize {
-			logger.Info().Msg("optimizing was requested, perform selected operation")
+			logger.Info().Msg("optimizing was requested, performing selected operation")
 			var compressedArgs []string
 			tmpOutCompressedPdf := inputFilename
+			filesToDelete = append(filesToDelete, tmpOutCompressedPdf)
 			tmpOutCompressedPdf = fmt.Sprintf("%s%s", tmpOutCompressedPdf, "_compr.pdf")
 			defer func() {
 				logger.Info().Str("file_name", tmpOutCompressedPdf).
@@ -483,27 +499,6 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 		logger.Error().Err(err).Caller()
 		errorFlag = true
 		return OcrResult{Status: "error"}, err
-	}
-	// if command line argument save_files is set or any internal processing is failed the input file won't be deleted
-	if !engineArgs.saveFiles || errorFlag {
-		defer func() {
-			logger.Info().Str("file_name", ocrLayerFile).
-				Msg("step 1: deleting file (pdfsandwich run)")
-			if err := os.Remove(ocrLayerFile); err != nil {
-				logger.Warn().Err(err)
-			}
-			logger.Info().Str("file_name", inputFilename).
-				Msg("step 1: deleting file (pdfsandwich run)")
-			if err := os.Remove(inputFilename); err != nil {
-				logger.Warn().Err(err)
-			}
-		}()
-	} else {
-		inputFilenamePath, _ := filepath.Abs(inputFilename)
-		ocrLayerFilePath, _ := filepath.Abs(ocrLayerFile)
-		logger.Info().Str("ocrLayerFile", ocrLayerFilePath).
-			Str("inputFilename", inputFilenamePath).
-			Msg("Input file and ocrLayer file were not removed for debugging purposes")
 	}
 
 	logger.Info().Str("file_name", fileToDeliver).Msg("resulting file")
