@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/couchbaselabs/go.assert v0.0.0-20130325201400-cfb33e3a0dac
 	github.com/prometheus/client_golang v1.12.1
-	github.com/rabbitmq/amqp091-go v1.3.0
+	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/rs/zerolog v1.26.0
 	github.com/segmentio/ksuid v1.0.4
 )
