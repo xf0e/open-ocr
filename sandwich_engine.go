@@ -321,7 +321,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 
 	// if command line argument save_files is set or any internal processing is failed the input file won't be deleted
 	defer func() {
-		if !engineArgs.saveFiles || !errorFlag {
+		if !engineArgs.saveFiles && !errorFlag {
 			for _, element := range filesToDelete {
 				fileToDelete, _ := filepath.Abs(element)
 				logger.Info().Str("file_name", element).

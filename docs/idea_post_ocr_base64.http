@@ -97,7 +97,7 @@ Content-Type: application/json
 
 ### sane request, client doesn't disconnect
 
-POST http://localhost:8080/ocr
+POST http://192.168.178.77:8080/ocr
 Content-Type: application/json
 
 {
