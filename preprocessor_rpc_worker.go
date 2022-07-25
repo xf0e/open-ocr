@@ -3,7 +3,6 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -230,7 +229,7 @@ func (w *PreprocessorRpcWorker) strokeWidthTransform(ocrRequest *OcrRequest) err
 	log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("finish DetectText")
 
 	// read bytes from output file into ocrRequest.ImgBytes
-	resultBytes, err := ioutil.ReadFile(tmpFileNameOutput)
+	resultBytes, err := os.ReadFile(tmpFileNameOutput)
 	if err != nil {
 		return err
 	}
