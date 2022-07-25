@@ -1,10 +1,12 @@
 package ocrworker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/ksuid"
@@ -271,7 +273,11 @@ func (w *PreprocessorRpcWorker) handleDelivery(d *amqp.Delivery) error {
 	log.Info().Str("component", "PREPROCESSOR_WORKER").Str("routingKey", routingKey).
 		Msg("sendRpcResponse via routingKey")
 
-	if err := w.channel.Publish(
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := w.channel.PublishWithContext(
+		ctx,
 		w.rabbitConfig.Exchange, // publish to an exchange
 		routingKey,              // routing to 0 or more queues
 		false,                   // mandatory
