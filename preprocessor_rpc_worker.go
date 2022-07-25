@@ -3,11 +3,11 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
-	"github.com/segmentio/ksuid"
-	"io/ioutil"
 	"os"
 	"os/exec"
+
+	"github.com/rs/zerolog/log"
+	"github.com/segmentio/ksuid"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -229,7 +229,7 @@ func (w *PreprocessorRpcWorker) strokeWidthTransform(ocrRequest *OcrRequest) err
 	log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("finish DetectText")
 
 	// read bytes from output file into ocrRequest.ImgBytes
-	resultBytes, err := ioutil.ReadFile(tmpFileNameOutput)
+	resultBytes, err := os.ReadFile(tmpFileNameOutput)
 	if err != nil {
 		return err
 	}
