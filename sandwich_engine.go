@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -203,7 +202,7 @@ func (t SandwichEngine) ProcessRequest(ocrRequest *OcrRequest, workerConfig *Wor
 	return ocrResult, err
 }
 
-func (t SandwichEngine) tmpFileFromImageBytes(imgBytes []byte, tmpFileName string) (string, error) {
+func (SandwichEngine) tmpFileFromImageBytes(imgBytes []byte, tmpFileName string) (string, error) {
 
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with bytes image")
 	var err error
@@ -223,7 +222,7 @@ func (t SandwichEngine) tmpFileFromImageBytes(imgBytes []byte, tmpFileName strin
 
 }
 
-func (t SandwichEngine) tmpFileFromImageBase64(base64Image, tmpFileName string) (string, error) {
+func (SandwichEngine) tmpFileFromImageBase64(base64Image, tmpFileName string) (string, error) {
 
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with base 64")
 	var err error
@@ -249,7 +248,7 @@ func (t SandwichEngine) tmpFileFromImageBase64(base64Image, tmpFileName string) 
 
 }
 
-func (t SandwichEngine) tmpFileFromImageURL(imgURL, tmpFileName string) (string, error) {
+func (SandwichEngine) tmpFileFromImageURL(imgURL, tmpFileName string) (string, error) {
 
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with url")
 	var err error
@@ -270,7 +269,7 @@ func (t SandwichEngine) tmpFileFromImageURL(imgURL, tmpFileName string) (string,
 
 }
 
-func (t SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs *SandwichEngineArgs) (cmdArgs []string, ocrLayerFile string) {
+func (SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs *SandwichEngineArgs) (cmdArgs []string, ocrLayerFile string) {
 
 	// sets output file name for pdfsandwich output file
 	// and builds the argument list for external program
@@ -291,7 +290,7 @@ func (t SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs *Sandw
 
 }
 
-func (t SandwichEngine) runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds time.Duration) (string, error) {
+func (SandwichEngine) runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds time.Duration) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeOutSeconds)
 	defer cancel()
 
@@ -489,7 +488,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 	}
 
 	logger.Info().Str("file_name", fileToDeliver).Msg("resulting file")
-	outBytes, err := ioutil.ReadFile(fileToDeliver)
+	outBytes, err := os.ReadFile(fileToDeliver)
 	if err != nil {
 		logger.Error().Caller().Err(err).Msg("Error getting data from result file")
 		return OcrResult{Status: "error"}, err
