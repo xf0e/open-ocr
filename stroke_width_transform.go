@@ -73,7 +73,7 @@ func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
 
 }
 
-func (s StrokeWidthTransformer) extractDarkOnLightParam(ocrRequest *OcrRequest) string {
+func (StrokeWidthTransformer) extractDarkOnLightParam(ocrRequest *OcrRequest) string {
 
 	log.Info().Str("component", "PREPROCESSOR_WORKER").
 		Msg("extract dark on light param")

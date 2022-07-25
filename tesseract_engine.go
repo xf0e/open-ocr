@@ -136,7 +136,7 @@ func (t TesseractEngine) ProcessRequest(ocrRequest *OcrRequest, _ *WorkerConfig)
 
 }
 
-func (t TesseractEngine) tmpFileFromImageBytes(imgBytes []byte) (string, error) {
+func (TesseractEngine) tmpFileFromImageBytes(imgBytes []byte) (string, error) {
 
 	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with bytes image")
 
@@ -156,7 +156,7 @@ func (t TesseractEngine) tmpFileFromImageBytes(imgBytes []byte) (string, error) 
 
 }
 
-func (t TesseractEngine) tmpFileFromImageBase64(base64Image string) (string, error) {
+func (TesseractEngine) tmpFileFromImageBase64(base64Image string) (string, error) {
 
 	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with base 64")
 
@@ -181,7 +181,7 @@ func (t TesseractEngine) tmpFileFromImageBase64(base64Image string) (string, err
 
 }
 
-func (t TesseractEngine) tmpFileFromImageUrl(imgUrl string) (string, error) {
+func (TesseractEngine) tmpFileFromImageUrl(imgUrl string) (string, error) {
 
 	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with url")
 
@@ -200,7 +200,7 @@ func (t TesseractEngine) tmpFileFromImageUrl(imgUrl string) (string, error) {
 
 }
 
-func (t TesseractEngine) processImageFile(inputFilename string, engineArgs TesseractEngineArgs) (OcrResult, error) {
+func (TesseractEngine) processImageFile(inputFilename string, engineArgs TesseractEngineArgs) (OcrResult, error) {
 
 	// if the input filename is /tmp/ocrimage, set the output file basename
 	// to /tmp/ocrimage as well, which will produce /tmp/ocrimage.txt output

@@ -11,16 +11,17 @@ package ocrworker
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"os"
 	"os/exec"
+
+	"github.com/rs/zerolog/log"
 )
 
 type ConvertPdf struct {
 }
 
-func (c ConvertPdf) preprocess(ocrRequest *OcrRequest) error {
+func (ConvertPdf) preprocess(ocrRequest *OcrRequest) error {
 
 	tmpFileNameInput, err := createTempFileName("")
 	tmpFileNameInput = fmt.Sprintf("%s.pdf", tmpFileNameInput)
