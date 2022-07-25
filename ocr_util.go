@@ -3,7 +3,6 @@ package ocrworker
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -53,7 +52,7 @@ func saveUrlContentToFileName(uri, tmpFileName string) error {
 }
 
 func saveBytesToFileName(bytes []byte, tmpFileName string) error {
-	return ioutil.WriteFile(tmpFileName, bytes, 0600)
+	return os.WriteFile(tmpFileName, bytes, 0600)
 }
 
 func url2bytes(uri string) ([]byte, error) {
@@ -71,7 +70,7 @@ func url2bytes(uri string) ([]byte, error) {
 		}
 	}(resp.Body)
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Warn().Err(err).Caller().Str("component", "OCR_UTIL").Msg("request from " + resp.Request.RequestURI + " could not be read")
 		return nil, err
