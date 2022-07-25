@@ -1,6 +1,7 @@
 package ocrworker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -277,7 +278,11 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo, correlationId strin
 		return err
 	}
 
-	if err := w.channel.Publish(
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := w.channel.PublishWithContext(
+		ctx,
 		w.workerConfig.Exchange, // publish to an exchange
 		replyTo,                 // routing to 0 or more queues
 		false,                   // mandatory
