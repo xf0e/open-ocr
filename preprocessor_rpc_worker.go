@@ -3,12 +3,11 @@ package ocrworker
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog/log"
+	"github.com/segmentio/ksuid"
 	"io/ioutil"
 	"os"
 	"os/exec"
-
-	"github.com/rs/zerolog/log"
-	"github.com/segmentio/ksuid"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
