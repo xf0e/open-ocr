@@ -11,7 +11,6 @@ package ocrworker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -72,7 +71,7 @@ func (ConvertPdf) preprocess(ocrRequest *OcrRequest) error {
 	}
 
 	// read bytes from output file
-	resultBytes, err := ioutil.ReadFile(tmpFileNameOutput)
+	resultBytes, err := os.ReadFile(tmpFileNameOutput)
 
 	if err != nil {
 		return err

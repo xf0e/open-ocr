@@ -3,7 +3,6 @@ package ocrworker
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -272,7 +271,7 @@ func findAndReadOutfile(outfileBaseName string, fileExtensions []string) (outByt
 	if err != nil {
 		return nil, "", err
 	}
-	outBytes, err = ioutil.ReadFile(outfile)
+	outBytes, err = os.ReadFile(outfile)
 	if err != nil {
 		return nil, "", err
 	}

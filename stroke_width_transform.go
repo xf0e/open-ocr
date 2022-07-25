@@ -2,7 +2,6 @@ package ocrworker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -62,7 +61,7 @@ func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
 	}
 
 	// read bytes from output file into ocrRequest.ImgBytes
-	resultBytes, err := ioutil.ReadFile(tmpFileNameOutput)
+	resultBytes, err := os.ReadFile(tmpFileNameOutput)
 	if err != nil {
 		return err
 	}
