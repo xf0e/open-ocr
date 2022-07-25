@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -71,7 +70,7 @@ func (*OcrHttpMultipartHandler) extractParts(req *http.Request) (OcrRequest, err
 					return ocrReq, fmt.Errorf("expected content-type: image/*")
 				}
 
-				partContents, err := ioutil.ReadAll(part)
+				partContents, err := io.ReadAll(part)
 				if err != nil {
 					return ocrReq, fmt.Errorf("failed to read mime part: %v", err)
 				}
