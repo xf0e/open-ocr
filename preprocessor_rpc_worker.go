@@ -185,7 +185,7 @@ func (w *PreprocessorRpcWorker) preprocessImage(ocrRequest *OcrRequest) error {
 
 }
 
-func (w *PreprocessorRpcWorker) strokeWidthTransform(ocrRequest *OcrRequest) error {
+func (*PreprocessorRpcWorker) strokeWidthTransform(ocrRequest *OcrRequest) error {
 
 	// write bytes to a temp file
 

@@ -3,12 +3,13 @@ package ocrworker
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/rs/zerolog/log"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/rs/zerolog"
 )
@@ -22,7 +23,7 @@ func newOcrPostClient() *ocrPostClient {
 	return &ocrPostClient{}
 }
 
-func (c *ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint) error {
+func (*ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string, numTry uint) error {
 	logger := zerolog.New(os.Stdout).With().Str("RequestID", ocrResult.ID).Timestamp().Logger()
 	logger.Info().Str("component", "OCR_HTTP").
 		Uint("attempt", numTry).

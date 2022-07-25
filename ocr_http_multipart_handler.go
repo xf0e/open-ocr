@@ -23,7 +23,7 @@ func NewOcrHttpMultipartHandler(r *RabbitConfig) *OcrHttpMultipartHandler {
 	}
 }
 
-func (s *OcrHttpMultipartHandler) extractParts(req *http.Request) (OcrRequest, error) {
+func (*OcrHttpMultipartHandler) extractParts(req *http.Request) (OcrRequest, error) {
 
 	log.Info().Str("component", "OCR_HTTP").Msg("request to ocr-file-upload")
 	ocrReq := OcrRequest{}
