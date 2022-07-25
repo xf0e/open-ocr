@@ -47,7 +47,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-  "img_url": "1sJJmvEPINc9thh1am3eGgbP4Jw"
+  "img_url": "27mgODYT0bFF0EaPtcPeFe0alJn"
 }
 
 ### sane request combined pdf
@@ -97,7 +97,7 @@ Content-Type: application/json
 
 ### sane request, client doesn't disconnect
 
-POST http://localhost:8080/ocr
+POST http://192.168.178.77:8080/ocr
 Content-Type: application/json
 
 {

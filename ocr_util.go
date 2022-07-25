@@ -3,7 +3,6 @@ package ocrworker
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -53,7 +52,7 @@ func saveUrlContentToFileName(uri, tmpFileName string) error {
 }
 
 func saveBytesToFileName(bytes []byte, tmpFileName string) error {
-	return ioutil.WriteFile(tmpFileName, bytes, 0600)
+	return os.WriteFile(tmpFileName, bytes, 0600)
 }
 
 func url2bytes(uri string) ([]byte, error) {
@@ -71,7 +70,7 @@ func url2bytes(uri string) ([]byte, error) {
 		}
 	}(resp.Body)
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Warn().Err(err).Caller().Str("component", "OCR_UTIL").Msg("request from " + resp.Request.RequestURI + " could not be read")
 		return nil, err
@@ -145,8 +144,8 @@ func convertImageToPdf(inputFilename string) string {
 	cmd := exec.Command("convert", inputFilename, tmpFileImgToPdf)
 	_, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Debug().Str("component", "OCR_IMAGECONVERT").Interface("tiff2pdf_args", cmd.Args)
-		log.Warn().Str("component", "OCR_IMAGECONVERT").Err(err).
+		log.Debug().Err(err).Str("component", "OCR_IMAGECONVERT").Interface("tiff2pdf_args", cmd.Args)
+		log.Warn().Err(err).Str("component", "OCR_IMAGECONVERT").Err(err).
 			Msg("error exec convert for transforming TIFF to PDF")
 		return ""
 	}
@@ -165,8 +164,8 @@ func tiff2Pdf(inputFilename string) string {
 	cmd := exec.Command("tiff2pdf", inputFilename, "-o", tmpFileImgToPdf)
 	_, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Debug().Str("component", "OCR_IMAGECONVERT").Interface("tiff2pdf_args", cmd.Args)
-		log.Warn().Str("component", "OCR_IMAGECONVERT").Err(err).
+		log.Debug().Err(err).Str("component", "OCR_IMAGECONVERT").Interface("tiff2pdf_args", cmd.Args)
+		log.Warn().Err(err).Str("component", "OCR_IMAGECONVERT").Err(err).
 			Msg("error exec tiff2pdf for transforming TIFF to PDF")
 		return ""
 	}
