@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -59,7 +58,7 @@ func (*ocrPostClient) postOcrRequest(ocrResult *OcrResult, replyToAddress string
 		}
 	}(resp.Body)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	header := resp.StatusCode
 	if err != nil {
 		logger.Warn().Err(err).Str("component", "OCR_HTTP").
