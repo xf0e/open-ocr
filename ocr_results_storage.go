@@ -14,7 +14,6 @@ var (
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 	if _, ok := RequestsTrack.Load(requestID); !ok {
-		// log.Info().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
 		return OcrResult{}, false
 	}
 
@@ -25,6 +24,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 	if ok {
 		tempChannel = v.(chan OcrResult)
 	} else {
+		// log.Info().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
 		return OcrResult{}, false
 	}
 
@@ -44,14 +44,14 @@ func getQueueLen() uint {
 }
 
 func deleteRequestFromQueue(requestID string) {
-	inFlightGauge.Dec()
 	atomic.AddUint32(&RequestTrackLength, ^uint32(0))
+	inFlightGauge.Dec()
 	RequestsTrack.Delete(requestID)
 }
 
 func addNewOcrResultToQueue(requestID string, rpcResponseChan chan OcrResult) {
-	inFlightGauge.Inc()
 	atomic.AddUint32(&RequestTrackLength, 1)
+	inFlightGauge.Inc()
 	RequestsTrack.Store(requestID, rpcResponseChan)
 
 	// this go routine will cancel the request after global timeout or if request was sent back
