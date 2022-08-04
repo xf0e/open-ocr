@@ -11,7 +11,6 @@ import (
 )
 
 func TestTesseractEngineWithRequest(t *testing.T) {
-
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
@@ -33,11 +32,9 @@ func TestTesseractEngineWithRequest(t *testing.T) {
 	result, err := engine.ProcessRequest(&ocrRequest, &workerConfig)
 	assert.True(t, err == nil)
 	log.Info().Str("component", "TEST").Interface("result", result)
-
 }
 
 func TestTesseractEngineWithJson(t *testing.T) {
-
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
@@ -65,7 +62,6 @@ func TestTesseractEngineWithJson(t *testing.T) {
 		assert.True(t, err == nil)
 		log.Info().Str("component", "TEST").Interface("result", result)
 	}
-
 }
 
 func TestNewTesseractEngineArgs(t *testing.T) {
@@ -79,11 +75,9 @@ func TestNewTesseractEngineArgs(t *testing.T) {
 	assert.Equals(t, engineArgs.configVars["tessedit_char_whitelist"], "0123456789")
 	assert.Equals(t, engineArgs.pageSegMode, "0")
 	assert.Equals(t, engineArgs.lang, "jpn")
-
 }
 
 func TestTesseractEngineWithFile(t *testing.T) {
-
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
@@ -93,5 +87,4 @@ func TestTesseractEngineWithFile(t *testing.T) {
 	result, err := engine.processImageFile("docs/testimage.png", engineArgs)
 	assert.True(t, err == nil)
 	log.Info().Str("component", "TEST").Interface("result", result)
-
 }

@@ -14,7 +14,6 @@ import (
 
 // This test assumes that rabbit mq is running
 func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
-
 	rabbitConfig := rabbitConfigForTests()
 	workerConfig := workerConfigForTests()
 
@@ -59,7 +58,6 @@ func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 }
 
 func spawnOcrWorker(workerConfig *WorkerConfig) error {
-
 	// kick off a worker
 	// this would normally happen on a different machine ..
 	ocrWorker, err := NewOcrRpcWorker(workerConfig)
@@ -68,5 +66,4 @@ func spawnOcrWorker(workerConfig *WorkerConfig) error {
 	}
 	ocrWorker.Run()
 	return nil
-
 }

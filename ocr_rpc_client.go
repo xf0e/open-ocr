@@ -36,9 +36,7 @@ func newOcrResult(id string) OcrResult {
 	return *ocrResult
 }
 
-var (
-	numRetries uint = 3
-)
+var numRetries uint = 3
 
 func NewOcrRpcClient(rc *RabbitConfig) (*OcrRpcClient, error) {
 	ocrRpcClient := &OcrRpcClient{
@@ -153,7 +151,6 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 	// as open-ocr, it will be expensive in terms of bandwidth
 	// to have image binary in messages
 	if ocrRequest.ImgBytes == nil {
-
 		// if we do not have bytes use base 64 file by converting it to bytes
 		if ocrRequest.hasBase64() {
 			logger.Info().Msg("OCR request has base 64 convert it to bytes")
@@ -295,7 +292,6 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 }
 
 func (c *OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseChan chan OcrResult) (amqp.Queue, error) {
-
 	queueArgs := make(amqp.Table)
 	queueArgs["x-max-priority"] = uint8(10)
 
@@ -341,7 +337,6 @@ func (c *OcrRpcClient) subscribeCallbackQueue(correlationID string, rpcResponseC
 	go c.handleRPCResponse(deliveries, correlationID, rpcResponseChan)
 
 	return callbackQueue, nil
-
 }
 
 func (c *OcrRpcClient) handleRPCResponse(deliveries <-chan amqp.Delivery, correlationID string, rpcResponseChan chan OcrResult) {

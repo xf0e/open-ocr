@@ -27,7 +27,6 @@ type PreprocessorRpcWorker struct {
 var preprocessorTag = ksuid.New().String()
 
 func NewPreprocessorRpcWorker(rc *RabbitConfig, preprocessor string) (*PreprocessorRpcWorker, error) {
-
 	preprocessorMap := make(map[string]Preprocessor)
 	preprocessorMap[PreprocessorStrokeWidthTransform] = StrokeWidthTransformer{}
 	preprocessorMap[PreprocessorIdentity] = IdentityPreprocessor{}
@@ -51,7 +50,6 @@ func NewPreprocessorRpcWorker(rc *RabbitConfig, preprocessor string) (*Preproces
 }
 
 func (w *PreprocessorRpcWorker) Run() error {
-
 	var err error
 	log.Info().Str("component", "PREPROCESSOR_WORKER").Msg("Run() called...")
 	log.Info().Str("component", "PREPROCESSOR_WORKER").
@@ -168,7 +166,6 @@ func (w *PreprocessorRpcWorker) handle(deliveries <-chan amqp.Delivery, done cha
 }
 
 func (w *PreprocessorRpcWorker) preprocessImage(ocrRequest *OcrRequest) error {
-
 	descriptor := w.bindingKey // eg, "stroke-width-transform"
 	preprocessor := w.preprocessorMap[descriptor]
 	log.Info().Str("component", "PREPROCESSOR_WORKER").
@@ -183,11 +180,9 @@ func (w *PreprocessorRpcWorker) preprocessImage(ocrRequest *OcrRequest) error {
 		return err
 	}
 	return nil
-
 }
 
 func (*PreprocessorRpcWorker) strokeWidthTransform(ocrRequest *OcrRequest) error {
-
 	// write bytes to a temp file
 
 	tmpFileNameInput, err := createTempFileName("")
@@ -239,11 +234,9 @@ func (*PreprocessorRpcWorker) strokeWidthTransform(ocrRequest *OcrRequest) error
 	ocrRequest.ImgBytes = resultBytes
 
 	return nil
-
 }
 
 func (w *PreprocessorRpcWorker) handleDelivery(d *amqp.Delivery) error {
-
 	ocrRequest := OcrRequest{}
 	err := json.Unmarshal(d.Body, &ocrRequest)
 	if err != nil {

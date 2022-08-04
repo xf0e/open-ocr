@@ -17,11 +17,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type ConvertPdf struct {
-}
+type ConvertPdf struct{}
 
 func (ConvertPdf) preprocess(ocrRequest *OcrRequest) error {
-
 	tmpFileNameInput, err := createTempFileName("")
 	tmpFileNameInput = fmt.Sprintf("%s.pdf", tmpFileNameInput)
 	if err != nil {
@@ -72,7 +70,6 @@ func (ConvertPdf) preprocess(ocrRequest *OcrRequest) error {
 
 	// read bytes from output file
 	resultBytes, err := os.ReadFile(tmpFileNameOutput)
-
 	if err != nil {
 		return err
 	}

@@ -19,8 +19,7 @@ import (
 // This implementation returns either the pdf with ocr layer only
 // or merged variant of pdf plus ocr layer with the ability to
 // optimize the output pdf file by calling "gs" tool
-type SandwichEngine struct {
-}
+type SandwichEngine struct{}
 
 type SandwichEngineArgs struct {
 	configVars   map[string]string `json:"config_vars"`
@@ -102,7 +101,6 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 	engineArgs.t2pConverter = workerConfig.Tiff2pdfConverter
 
 	return engineArgs, nil
-
 }
 
 // Export return a slice that can be passed to tesseract binary as command line
@@ -126,7 +124,6 @@ func (t *SandwichEngineArgs) Export() []string {
 
 // ProcessRequest will process incoming OCR request by routing it through the whole process chain
 func (t SandwichEngine) ProcessRequest(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (OcrResult, error) {
-
 	logger := zerolog.New(os.Stdout).With().
 		Str("component", "OCR_SANDWICH").
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
@@ -164,7 +161,6 @@ func (t SandwichEngine) ProcessRequest(ocrRequest *OcrRequest, workerConfig *Wor
 			return t.tmpFileFromImageBytes(ocrRequest.ImgBytes, ocrRequest.RequestID)
 		}
 	}()
-
 	if err != nil {
 		logger.Error().Caller().Err(err).Msg("error getting tmpFileName")
 		return OcrResult{Text: "Internal server error", Status: "error"}, err
@@ -203,7 +199,6 @@ func (t SandwichEngine) ProcessRequest(ocrRequest *OcrRequest, workerConfig *Wor
 }
 
 func (SandwichEngine) tmpFileFromImageBytes(imgBytes []byte, tmpFileName string) (string, error) {
-
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with bytes image")
 	var err error
 	tmpFileName, err = createTempFileName(tmpFileName)
@@ -219,11 +214,9 @@ func (SandwichEngine) tmpFileFromImageBytes(imgBytes []byte, tmpFileName string)
 	}
 
 	return tmpFileName, nil
-
 }
 
 func (SandwichEngine) tmpFileFromImageBase64(base64Image, tmpFileName string) (string, error) {
-
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with base 64")
 	var err error
 	if tmpFileName == "" {
@@ -245,11 +238,9 @@ func (SandwichEngine) tmpFileFromImageBase64(base64Image, tmpFileName string) (s
 	}
 
 	return tmpFileName, nil
-
 }
 
 func (SandwichEngine) tmpFileFromImageURL(imgURL, tmpFileName string) (string, error) {
-
 	log.Info().Str("component", "OCR_SANDWICH").Msg("Use pdfsandwich with url")
 	var err error
 	if tmpFileName == "" {
@@ -266,11 +257,9 @@ func (SandwichEngine) tmpFileFromImageURL(imgURL, tmpFileName string) (string, e
 	}
 
 	return tmpFileName, nil
-
 }
 
 func (SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs *SandwichEngineArgs) (cmdArgs []string, ocrLayerFile string) {
-
 	// sets output file name for pdfsandwich output file
 	// and builds the argument list for external program
 	// since pdfsandwich can only return pdf files the will deliver work with pdf intermediates
@@ -287,7 +276,6 @@ func (SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs *Sandwic
 	log.Info().Str("component", "OCR_SANDWICH").Interface("cmdArgs", cmdArgs)
 
 	return cmdArgs, ocrLayerFile
-
 }
 
 func (SandwichEngine) runExternalCmd(commandToRun string, cmdArgs []string, defaultTimeOutSeconds time.Duration) (string, error) {

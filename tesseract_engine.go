@@ -10,8 +10,7 @@ import (
 )
 
 // TesseractEngine calls tesseract via exec
-type TesseractEngine struct {
-}
+type TesseractEngine struct{}
 
 type TesseractEngineArgs struct {
 	configVars  map[string]string `json:"config_vars"`
@@ -21,7 +20,6 @@ type TesseractEngineArgs struct {
 }
 
 func NewTesseractEngineArgs(ocrRequest *OcrRequest) (*TesseractEngineArgs, error) {
-
 	engineArgs := &TesseractEngineArgs{}
 
 	if ocrRequest.EngineArgs == nil {
@@ -73,7 +71,6 @@ func NewTesseractEngineArgs(ocrRequest *OcrRequest) (*TesseractEngineArgs, error
 	}
 
 	return engineArgs, nil
-
 }
 
 // Export return a slice that can be passed to tesseract binary as command line
@@ -97,7 +94,6 @@ func (t TesseractEngineArgs) Export() []string {
 
 // ProcessRequest will process incoming OCR request by routing it through the whole process chain
 func (t TesseractEngine) ProcessRequest(ocrRequest *OcrRequest, _ *WorkerConfig) (OcrResult, error) {
-
 	tmpFileName, err := func() (string, error) {
 		switch {
 		case ocrRequest.ImgBase64 != "":
@@ -108,7 +104,6 @@ func (t TesseractEngine) ProcessRequest(ocrRequest *OcrRequest, _ *WorkerConfig)
 			return t.tmpFileFromImageBytes(ocrRequest.ImgBytes)
 		}
 	}()
-
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_TESSERACT").Msg("error getting tmpFileName")
 		return OcrResult{}, err
@@ -132,11 +127,9 @@ func (t TesseractEngine) ProcessRequest(ocrRequest *OcrRequest, _ *WorkerConfig)
 	ocrResult, err := t.processImageFile(tmpFileName, *engineArgs)
 
 	return ocrResult, err
-
 }
 
 func (TesseractEngine) tmpFileFromImageBytes(imgBytes []byte) (string, error) {
-
 	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with bytes image")
 
 	tmpFileName, err := createTempFileName("")
@@ -152,11 +145,9 @@ func (TesseractEngine) tmpFileFromImageBytes(imgBytes []byte) (string, error) {
 	}
 
 	return tmpFileName, nil
-
 }
 
 func (TesseractEngine) tmpFileFromImageBase64(base64Image string) (string, error) {
-
 	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with base 64")
 
 	tmpFileName, err := createTempFileName("")
@@ -177,11 +168,9 @@ func (TesseractEngine) tmpFileFromImageBase64(base64Image string) (string, error
 	}
 
 	return tmpFileName, nil
-
 }
 
 func (TesseractEngine) tmpFileFromImageUrl(imgUrl string) (string, error) {
-
 	log.Info().Str("component", "OCR_TESSERACT").Msg("Use tesseract with url")
 
 	tmpFileName, err := createTempFileName("")
@@ -196,11 +185,9 @@ func (TesseractEngine) tmpFileFromImageUrl(imgUrl string) (string, error) {
 	}
 
 	return tmpFileName, nil
-
 }
 
 func (TesseractEngine) processImageFile(inputFilename string, engineArgs TesseractEngineArgs) (OcrResult, error) {
-
 	// if the input filename is /tmp/ocrimage, set the output file basename
 	// to /tmp/ocrimage as well, which will produce /tmp/ocrimage.txt output
 	tmpOutFileBaseName := inputFilename
@@ -244,11 +231,9 @@ func (TesseractEngine) processImageFile(inputFilename string, engineArgs Tessera
 		Text:   string(outBytes),
 		Status: "done",
 	}, nil
-
 }
 
 func findOutfile(outfileBaseName string, fileExtensions []string) (string, error) {
-
 	for _, fileExtension := range fileExtensions {
 
 		outFile := fmt.Sprintf("%v.%v", outfileBaseName, fileExtension)
@@ -262,11 +247,9 @@ func findOutfile(outfileBaseName string, fileExtensions []string) (string, error
 	}
 
 	return "", fmt.Errorf("Could not find outfile.  Basename: %v Extensions: %v", outfileBaseName, fileExtensions)
-
 }
 
 func findAndReadOutfile(outfileBaseName string, fileExtensions []string) (outBytes []byte, outfile string, err error) {
-
 	outfile, err = findOutfile(outfileBaseName, fileExtensions)
 	if err != nil {
 		return nil, "", err
@@ -276,5 +259,4 @@ func findAndReadOutfile(outfileBaseName string, fileExtensions []string) (outByt
 		return nil, "", err
 	}
 	return outBytes, outfile, nil
-
 }

@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"net/url"
 	"os"
 	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -22,10 +23,8 @@ type OcrRpcWorker struct {
 	Done         chan error
 }
 
-var (
-	// tag is based on K-Sortable Globally Unique IDs
-	tag = ksuid.New().String()
-)
+// tag is based on K-Sortable Globally Unique IDs
+var tag = ksuid.New().String()
 
 // NewOcrRpcWorker is needed to establish a connection to a message broker
 func NewOcrRpcWorker(wc *WorkerConfig) (*OcrRpcWorker, error) {
@@ -40,7 +39,6 @@ func NewOcrRpcWorker(wc *WorkerConfig) (*OcrRpcWorker, error) {
 }
 
 func (w *OcrRpcWorker) Run() error {
-
 	var err error
 	queueArgs := make(amqp.Table)
 	queueArgs["x-max-priority"] = uint8(9)
@@ -214,7 +212,6 @@ func (w *OcrRpcWorker) handle(deliveries <-chan amqp.Delivery, done chan error) 
 }
 
 func (w *OcrRpcWorker) resultForDelivery(d *amqp.Delivery) (OcrResult, error) {
-
 	ocrRequest := OcrRequest{}
 	ocrResult := OcrResult{ID: d.CorrelationId}
 	err := json.Unmarshal(d.Body, &ocrRequest)
@@ -247,7 +244,6 @@ func (w *OcrRpcWorker) resultForDelivery(d *amqp.Delivery) (OcrResult, error) {
 	}
 
 	return ocrResult, nil
-
 }
 
 func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo, correlationId string) error {
@@ -306,7 +302,6 @@ func (w *OcrRpcWorker) sendRpcResponse(r OcrResult, replyTo, correlationId strin
 		Str("replyTo", replyTo).
 		Msg("sendRpcResponse succeeded")
 	return nil
-
 }
 
 func confirmDeliveryWorker(ack, nack chan uint64) {

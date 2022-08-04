@@ -35,7 +35,7 @@ var (
 
 func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// _ = pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
-	var requestIDRaw = ksuid.New()
+	requestIDRaw := ksuid.New()
 	requestID := requestIDRaw.String()
 	log.Info().Str("component", "OCR_HTTP").Str("RequestID", requestID).
 		Msg("serveHttp called")
@@ -45,7 +45,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 			log.Warn().Err(err).Caller().Str("component", "OCR_HTTP").Msg(req.RequestURI + " request Body could not be removed")
 		}
 	}(req.Body)
-	var httpStatus = 200
+	httpStatus := 200
 
 	ServiceCanAcceptMu.Lock()
 	serviceCanAcceptLocal := ServiceCanAccept
@@ -84,7 +84,6 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	}
 
 	ocrResult, httpStatus, err := HandleOcrRequest(&ocrRequest, &s.RabbitConfig)
-
 	if err != nil {
 		msg := "Unable to perform OCR decode. Error: %v"
 		errMsg := fmt.Sprintf(msg, err)
@@ -108,7 +107,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 
 // HandleOcrRequest will process incoming OCR request by routing it through the whole process chain
 func HandleOcrRequest(ocrRequest *OcrRequest, workerConfig *RabbitConfig) (OcrResult, int, error) {
-	var httpStatus = 200
+	httpStatus := 200
 	ocrResult := newOcrResult(ocrRequest.RequestID)
 	// set the context for zerolog, RequestID will be printed on each logging event
 	logger := zerolog.New(os.Stdout).With().
@@ -120,7 +119,6 @@ func HandleOcrRequest(ocrRequest *OcrRequest, workerConfig *RabbitConfig) (OcrRe
 
 		workingConfig := WorkerConfig{}
 		ocrResult, err := ocrEngine.ProcessRequest(ocrRequest, &workingConfig)
-
 		if err != nil {
 			logger.Error().Err(err).Str("component", "OCR_HTTP").Msg("Error processing ocr request")
 			httpStatus = 500
@@ -145,5 +143,4 @@ func HandleOcrRequest(ocrRequest *OcrRequest, workerConfig *RabbitConfig) (OcrRe
 
 		return ocrResult, httpStatus, nil
 	}
-
 }
