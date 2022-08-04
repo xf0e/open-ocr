@@ -108,7 +108,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 // HandleOcrRequest will process incoming OCR request by routing it through the whole process chain
 func HandleOcrRequest(ocrRequest *OcrRequest, workerConfig *RabbitConfig) (OcrResult, int, error) {
 	httpStatus := 200
-	ocrResult := newOcrResult(ocrRequest.RequestID)
+	//ocrResult := newOcrResult(ocrRequest.RequestID)
 	// set the context for zerolog, RequestID will be printed on each logging event
 	logger := zerolog.New(os.Stdout).With().
 		Str("RequestID", ocrRequest.RequestID).Timestamp().Logger()
@@ -135,7 +135,7 @@ func HandleOcrRequest(ocrRequest *OcrRequest, workerConfig *RabbitConfig) (OcrRe
 			return OcrResult{}, httpStatus, err
 		}
 
-		ocrResult, httpStatus, err = ocrClient.DecodeImage(ocrRequest)
+		ocrResult, httpStatus, err := ocrClient.DecodeImage(ocrRequest)
 		if err != nil {
 			logger.Error().Err(err).Str("component", "OCR_HTTP")
 			return OcrResult{}, httpStatus, err

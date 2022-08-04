@@ -2,7 +2,7 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/rs/zerolog/log"
@@ -16,7 +16,7 @@ func TestTesseractEngineWithRequest(t *testing.T) {
 	}
 
 	engine := TesseractEngine{}
-	bytes, err := ioutil.ReadFile("docs/testimage.png")
+	bytes, err := os.ReadFile("docs/testimage.png")
 	assert.True(t, err == nil)
 
 	cFlags := make(map[string]interface{})
@@ -51,7 +51,7 @@ func TestTesseractEngineWithJson(t *testing.T) {
 		ocrRequest := OcrRequest{}
 		err := json.Unmarshal([]byte(testJson), &ocrRequest)
 		assert.True(t, err == nil)
-		bytes, err := ioutil.ReadFile("docs/testimage.png")
+		bytes, err := os.ReadFile("docs/testimage.png")
 		assert.True(t, err == nil)
 		ocrRequest.ImgBytes = bytes
 		workerConfig := workerConfigForTests()
