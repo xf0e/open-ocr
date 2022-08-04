@@ -1,6 +1,7 @@
 package ocrworker
 
 import (
+	"github.com/rs/zerolog/log"
 	"sync"
 	"sync/atomic"
 )
@@ -13,17 +14,17 @@ var (
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
-	if _, ok := RequestsTrack.Load(requestID); !ok {
-		// log.Info().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
-		return OcrResult{}, false
-	}
-
 	v, ok := RequestsTrack.Load(requestID)
 	if ok {
 		defer deleteRequestFromQueue(requestID)
 		ocrResult := v.(OcrResult)
+		if ocrResult.Status == "processing" {
+			log.Debug().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Str("Status", ocrResult.Status).Msg("job ist not finished yed; ocrRequest is being processed")
+			return OcrResult{Status: "processing", ID: requestID}, true
+		}
 		return ocrResult, true
 	} else {
+		log.Info().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
 		return OcrResult{}, false
 	}
 }
