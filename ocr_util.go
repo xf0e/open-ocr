@@ -16,7 +16,6 @@ import (
 )
 
 func saveUrlContentToFileName(uri, tmpFileName string) error {
-
 	outFile, err := os.Create(tmpFileName)
 	if err != nil {
 		return err
@@ -56,8 +55,7 @@ func saveBytesToFileName(bytes []byte, tmpFileName string) error {
 }
 
 func url2bytes(uri string) ([]byte, error) {
-
-	var client = &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(uri)
 	if err != nil {
 		return nil, err
@@ -77,7 +75,6 @@ func url2bytes(uri string) ([]byte, error) {
 	}
 
 	return bodyBytes, nil
-
 }
 
 // createTempFileName generating a file name within of a temp directory. If function argument ist empty string
@@ -94,7 +91,6 @@ func createTempFileName(fileName string) (string, error) {
 }
 
 func readFirstBytes(filePath string, nBytesToRead uint) ([]byte, error) {
-
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -151,7 +147,6 @@ func convertImageToPdf(inputFilename string) string {
 	}
 
 	return tmpFileImgToPdf
-
 }
 
 // if sandwich engine gets a TIFF image instead of PDF file
@@ -199,7 +194,6 @@ func timeTrack(start time.Time, operation, message, requestID string) {
 
 // StripPasswordFromUrl strips passwords from URL
 func StripPasswordFromUrl(urlToLog *url.URL) string {
-
 	pass, passSet := urlToLog.User.Password()
 
 	if passSet {

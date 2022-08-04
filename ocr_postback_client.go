@@ -15,8 +15,7 @@ import (
 
 var postTimeout = 50 * time.Second
 
-type ocrPostClient struct {
-}
+type ocrPostClient struct{}
 
 func newOcrPostClient() *ocrPostClient {
 	return &ocrPostClient{}

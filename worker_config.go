@@ -31,7 +31,6 @@ type WorkerConfig struct {
 
 // DefaultWorkerConfig will set the default set of worker parameters which are needed for testing and connecting to a broker
 func DefaultWorkerConfig() WorkerConfig {
-
 	// Reliable: false due to major issues that would completely
 	// wedge the rpc worker.  Setting the buffered channels length
 	// higher would delay the problem, but then it would still happen later.
@@ -52,7 +51,6 @@ func DefaultWorkerConfig() WorkerConfig {
 		NumParallelJobs:   1,
 	}
 	return workerConfig
-
 }
 
 // FlagFunctionWorker will be used as argument type for DefaultConfigFlagsWorkerOverride

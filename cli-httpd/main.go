@@ -70,7 +70,6 @@ func makeHTTPServer(rabbitConfig *ocrworker.RabbitConfig, ocrChain http.Handler)
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
 	return makeServerFromMux(mux)
-
 }
 
 func main() {
@@ -183,7 +182,7 @@ func main() {
 		if certFile == "" || keyFile == "" {
 			log.Fatal().Msg("usehttps flag only makes sense if both the private key and a certificate are available")
 		}
-		var httpsSrv = makeHTTPServer(&rabbitConfig, ocrChain)
+		httpsSrv := makeHTTPServer(&rabbitConfig, ocrChain)
 		httpsSrv.Addr = listenAddr
 
 		// crypto settings
@@ -204,7 +203,7 @@ func main() {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_https has failed to start")
 		}
 	} else {
-		var httpSrv = makeHTTPServer(&rabbitConfig, ocrChain)
+		httpSrv := makeHTTPServer(&rabbitConfig, ocrChain)
 		httpSrv.Addr = listenAddr
 		if err := httpSrv.ListenAndServe(); err != nil {
 			log.Fatal().Err(err).Str("component", "CLI_HTTP").Caller().Msg("cli_http has failed to start")

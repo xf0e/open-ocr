@@ -67,5 +67,4 @@ func main() {
 			Str("component", "OCR_WORKER").Err(err).
 			Msg("OCR Worker failed with error")
 	}
-
 }

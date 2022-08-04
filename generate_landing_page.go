@@ -5,7 +5,6 @@ import (
 )
 
 func randomMOTD() string {
-
 	names := [...]string{
 		`<p>Nice day to put slinkies on an escalator!</p>
 		<pre>__   ; '.'  :
@@ -198,5 +197,4 @@ pre {
 </section></body> </html>`
 
 	return head + buttons + middle + MOTD + tail
-
 }

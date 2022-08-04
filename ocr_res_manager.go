@@ -43,7 +43,6 @@ var (
 
 // CheckForAcceptRequest will check by reading the RabbitMQ API if resources for incoming request are available
 func CheckForAcceptRequest(urlQueue, urlStat string, statusChanged bool) bool {
-
 	isAvailable := false
 	TechnicalErrorResManager = false
 	jsonQueueStat, err := url2bytes(urlQueue)
@@ -147,8 +146,8 @@ func SetResManagerState(ampqAPIConfig *RabbitConfig) {
 	urlStat := ampqAPIConfig.AmqpAPIURI + ampqAPIConfig.APIPathStats
 	factorForMessageAccept = ampqAPIConfig.FactorForMessageAccept
 
-	var boolCurValue = false
-	var boolOldValue = true
+	boolCurValue := false
+	boolOldValue := true
 Loop:
 	for {
 		if AppStop {

@@ -23,7 +23,6 @@ func rabbitConfigForTests() RabbitConfig {
 
 // This test assumes that rabbit mq is running
 func DisabledTestOcrRpcClientIntegration(t *testing.T) {
-
 	// TODO: serve this up through a fake webserver
 	// that reads from the filesystem
 	testImageUrl := "http://localhost:8080/img"
@@ -31,7 +30,7 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 	rabbitConfig := rabbitConfigForTests()
 	workerConfig := workerConfigForTests()
 
-	//requestID := "426d0ef9-a0c9-48cb-4562-f9d6f29a6ba5"
+	// requestID := "426d0ef9-a0c9-48cb-4562-f9d6f29a6ba5"
 
 	// kick off a worker
 	// this would normally happen on a different machine ..
@@ -59,5 +58,4 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 		assert.Equals(t, decodeResult.Text, MockEngineResponse)
 
 	}
-
 }

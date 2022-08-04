@@ -8,11 +8,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type StrokeWidthTransformer struct {
-}
+type StrokeWidthTransformer struct{}
 
 func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
-
 	// write bytes to a temp file
 
 	tmpFileNameInput, err := createTempFileName("")
@@ -69,11 +67,9 @@ func (s StrokeWidthTransformer) preprocess(ocrRequest *OcrRequest) error {
 	ocrRequest.ImgBytes = resultBytes
 
 	return nil
-
 }
 
 func (StrokeWidthTransformer) extractDarkOnLightParam(ocrRequest *OcrRequest) string {
-
 	log.Info().Str("component", "PREPROCESSOR_WORKER").
 		Msg("extract dark on light param")
 

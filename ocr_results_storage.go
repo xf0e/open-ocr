@@ -13,7 +13,6 @@ var (
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
-
 	if _, ok := RequestsTrack.Load(requestID); !ok {
 		// log.Info().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
 		return OcrResult{}, false
@@ -41,19 +40,16 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 }
 
 func getQueueLen() uint {
-
 	return uint(atomic.LoadUint32(&RequestTrackLength))
 }
 
 func deleteRequestFromQueue(requestID string) {
-
 	inFlightGauge.Dec()
 	atomic.AddUint32(&RequestTrackLength, ^uint32(0))
 	RequestsTrack.Delete(requestID)
 }
 
 func addNewOcrResultToQueue(requestID string, rpcResponseChan chan OcrResult) {
-
 	inFlightGauge.Inc()
 	atomic.AddUint32(&RequestTrackLength, 1)
 	RequestsTrack.Store(requestID, rpcResponseChan)
