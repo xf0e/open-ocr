@@ -29,7 +29,6 @@ type RabbitConfig struct {
 }
 
 func DefaultTestConfig() RabbitConfig {
-
 	// Reliable: false due to major issues that would completely
 	// wedge the rpc worker.  Setting the buffered channels length
 	// higher would delay the problem, but then it would still happen later.
@@ -51,7 +50,6 @@ func DefaultTestConfig() RabbitConfig {
 		FactorForMessageAccept: 2,
 	}
 	return rabbitConfig
-
 }
 
 type FlagFunction func()

@@ -23,7 +23,6 @@ func NewOcrHttpMultipartHandler(r *RabbitConfig) *OcrHttpMultipartHandler {
 }
 
 func (*OcrHttpMultipartHandler) extractParts(req *http.Request) (OcrRequest, error) {
-
 	log.Info().Str("component", "OCR_HTTP").Msg("request to ocr-file-upload")
 	ocrReq := OcrRequest{}
 
@@ -87,18 +86,16 @@ func (*OcrHttpMultipartHandler) extractParts(req *http.Request) (OcrRequest, err
 	default:
 		return ocrReq, fmt.Errorf("this endpoint only accepts POST requests")
 	}
-
 }
 
 func (s *OcrHttpMultipartHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
 			log.Warn().Err(err).Caller().Str("component", "OCR_HTTP").Msg(req.RequestURI + " request Body could not be removed")
 		}
 	}(req.Body)
-	var httpStatus = 200
+	httpStatus := 200
 	ocrRequest, err := s.extractParts(req)
 	if err != nil {
 		log.Error().Err(err).Str("component", "OCR_HTTP")
@@ -108,7 +105,6 @@ func (s *OcrHttpMultipartHandler) ServeHTTP(w http.ResponseWriter, req *http.Req
 	}
 
 	ocrResult, httpStatus, err := HandleOcrRequest(&ocrRequest, &s.RabbitConfig)
-
 	if err != nil {
 		msg := "Unable to perform OCR decode."
 		log.Error().Err(err).Str("component", "OCR_HTTP").Msg(msg)
@@ -117,5 +113,4 @@ func (s *OcrHttpMultipartHandler) ServeHTTP(w http.ResponseWriter, req *http.Req
 	}
 
 	_, _ = fmt.Fprintf(w, ocrResult.Text)
-
 }

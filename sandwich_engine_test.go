@@ -11,7 +11,6 @@ import (
 )
 
 func TestSandwichEngineWithRequest(t *testing.T) {
-
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
@@ -38,11 +37,9 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 	result, err := engine.ProcessRequest(&ocrRequest, &workerConfig)
 	assert.True(t, err == nil)
 	log.Info().Str("component", "TEST").Interface("result", result)
-
 }
 
 func TestSandwichEngineWithJson(t *testing.T) {
-
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
@@ -73,7 +70,6 @@ func TestSandwichEngineWithJson(t *testing.T) {
 		log.Info().Str("component", "TEST").Interface("result", result)
 
 	}
-
 }
 
 func TestNewsandwichEngineArgs(t *testing.T) {
@@ -88,11 +84,9 @@ func TestNewsandwichEngineArgs(t *testing.T) {
 	assert.Equals(t, engineArgs.configVars["tessedit_char_whitelist"], "0123456789")
 	// assert.Equals(t, engineArgs.pageSegMode, "0")
 	assert.Equals(t, engineArgs.lang, "eng")
-
 }
 
 func TestSandwichEngineWithFile(t *testing.T) {
-
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
@@ -108,5 +102,4 @@ func TestSandwichEngineWithFile(t *testing.T) {
 	assert.True(t, err == nil)
 
 	log.Info().Str("component", "TEST").Interface("result", result)
-
 }

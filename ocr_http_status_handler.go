@@ -7,15 +7,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type OcrHttpStatusHandler struct {
-}
+type OcrHttpStatusHandler struct{}
 
 func NewOcrHttpStatusHandler() *OcrHttpStatusHandler {
 	return &OcrHttpStatusHandler{}
 }
 
 func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
 	log.Debug().Str("component", "OCR_STATUS").Msg("OcrHttpStatusHandler called")
 
 	ocrRequest := OcrRequest{}

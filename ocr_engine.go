@@ -48,7 +48,6 @@ func (e OcrEngineType) String() string {
 }
 
 func (e *OcrEngineType) UnmarshalJSON(b []byte) (err error) {
-
 	var engineTypeStr string
 
 	if err := json.Unmarshal(b, &engineTypeStr); err == nil {
@@ -78,5 +77,4 @@ func (e *OcrEngineType) UnmarshalJSON(b []byte) (err error) {
 	} else {
 		return err
 	}
-
 }

@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
+	"time"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"time"
 
 	"github.com/xf0e/open-ocr"
 )
@@ -17,7 +18,6 @@ func init() {
 }
 
 func main() {
-
 	var preprocessor string
 	flagFunc := func() {
 		flag.StringVar(
@@ -26,7 +26,6 @@ func main() {
 			"identity",
 			"The preprocessor to use, eg, stroke-width-transform",
 		)
-
 	}
 
 	rabbitConfig := ocrworker.DefaultConfigFlagsOverride(flagFunc)
@@ -51,5 +50,4 @@ func main() {
 		err = <-preprocessorWorker.Done
 		log.Error().Err(err).Str("component", "MAIN_PREPROSSOR").Msg("preprocessor worker failed")
 	}
-
 }
