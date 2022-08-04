@@ -13,26 +13,23 @@ var (
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
-	ocrResult := OcrResult{}
-
-	tempChannel := make(chan OcrResult)
 	v, ok := RequestsTrack.Load(requestID)
 	if ok {
+		tempChannel := make(chan OcrResult)
 		tempChannel = v.(chan OcrResult)
+		defer deleteRequestFromQueue(requestID)
+		ocrResult := OcrResult{}
+		select {
+		case ocrResult = <-tempChannel:
+			// log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
+			return ocrResult, true
+		default:
+			return OcrResult{Status: "processing", ID: requestID}, true
+		}
 	} else {
 		// log.Info().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
 		return OcrResult{}, false
 	}
-
-	select {
-	case ocrResult = <-tempChannel:
-		// log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
-		defer deleteRequestFromQueue(requestID)
-	default:
-		return OcrResult{Status: "processing", ID: requestID}, true
-	}
-
-	return ocrResult, true
 }
 
 func getQueueLen() uint {
