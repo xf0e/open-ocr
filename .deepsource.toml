@@ -1,13 +1,18 @@
 version = 1
 
-test_patterns = [
-  "*_test.go",
-]
+test_patterns = ["*_test.go"]
 
 [[analyzers]]
 name = "go"
 enabled = true
 
+  [analyzers.meta]
+  import_root = "github.com/xf0e/open-ocr"
 
-    [analyzers.meta]
-    import_paths = ["github.com/xf0e/open-ocr"]
+[[transformers]]
+name = "gofumpt"
+enabled = true
+
+[[transformers]]
+name = "gofmt"
+enabled = true
