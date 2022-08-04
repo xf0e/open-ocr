@@ -1,6 +1,7 @@
 package ocrworker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -177,7 +178,11 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 	if err != nil {
 		return OcrResult{}, 500, err
 	}
-	if err = c.channel.Publish(
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err = c.channel.PublishWithContext(
+		ctx,
 		c.rabbitConfig.Exchange, // publish to an exchange
 		routingKey,
 		false, // mandatory
