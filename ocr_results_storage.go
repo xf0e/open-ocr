@@ -13,10 +13,6 @@ var (
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request
 func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
-	if _, ok := RequestsTrack.Load(requestID); !ok {
-		return OcrResult{}, false
-	}
-
 	ocrResult := OcrResult{}
 
 	tempChannel := make(chan OcrResult)
