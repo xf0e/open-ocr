@@ -15,7 +15,7 @@ var (
 	counter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "ocr_api_requests_total",
-			Help: "A counter for requests to the wrapped handler.",
+			Help: "A counter for http requests.",
 		},
 		[]string{"code", "method"},
 	)
