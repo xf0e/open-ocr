@@ -8,7 +8,6 @@ import (
 var (
 	RequestsTrack      = sync.Map{}
 	RequestTrackLength = uint32(0)
-	// ocrWasSentBackChan = make(chan string)
 )
 
 // CheckOcrStatusByID checks status of an ocr request based on origin of request

@@ -32,7 +32,7 @@ func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 		ocrResult.Status = "not found"
 		log.Info().Str("component", "OCR_STATUS").Str("RequestID", ocrRequest.ImgUrl).
 			Str("RemoteAddr", req.RemoteAddr).
-			Msg("no such ocr request. timeout was probably reached for this request ID")
+			Msg("no such ocr request, processing time limit was probably reached for this request")
 	}
 
 	w.Header().Set("Content-Type", "application/json")
