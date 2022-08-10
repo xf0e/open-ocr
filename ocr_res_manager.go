@@ -42,7 +42,7 @@ var (
 )
 
 // CheckForAcceptRequest will check by reading the RabbitMQ API if resources for incoming request are available
-func CheckForAcceptRequest(urlQueue, urlStat string, statusChanged bool) bool {
+func CheckForAcceptRequest(urlQueue, urlStat string) bool {
 	isAvailable := false
 	TechnicalErrorResManager = false
 	jsonQueueStat, err := url2bytes(urlQueue)
@@ -91,23 +91,6 @@ func CheckForAcceptRequest(urlQueue, urlStat string, statusChanged bool) bool {
 		TechnicalErrorResManager = false
 		isAvailable = true
 	}
-
-	if statusChanged {
-		log.Info().Str("component", "OCR_RESMAN").
-			Uint("MessageBytes", queueManager.MessageBytes).
-			Uint("NumConsumers", queueManager.NumConsumers).
-			Uint("NumMessages", queueManager.NumMessages).
-			Interface("resManager", resManager).
-			Msg("OCR_RESMAN stats")
-
-		if isAvailable {
-			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is operational with free resources, we are ready to serve")
-		} else {
-			log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is alive but won't serve any requests; workers are busy or not connected")
-		}
-
-	}
-
 	return isAvailable
 }
 
@@ -163,9 +146,23 @@ Loop:
 		default:
 			// only print the RESMAN output if the state has changed
 			ServiceCanAcceptMu.Lock()
-			boolOldValue, boolCurValue = boolCurValue, CheckForAcceptRequest(urlQueue, urlStat, boolCurValue != boolOldValue)
+			boolOldValue, boolCurValue = boolCurValue, CheckForAcceptRequest(urlQueue, urlStat)
 			ServiceCanAccept = boolCurValue
 			ServiceCanAcceptMu.Unlock()
+			if boolCurValue != boolOldValue {
+				log.Info().Str("component", "OCR_RESMAN").
+					Uint("MessageBytes", queueManager.MessageBytes).
+					Uint("NumConsumers", queueManager.NumConsumers).
+					Uint("NumMessages", queueManager.NumMessages).
+					Interface("resManager", resManager).
+					Msg("OCR_RESMAN stats")
+
+				if boolCurValue {
+					log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is operational with free resources, we are ready to serve")
+				} else {
+					log.Info().Str("component", "OCR_RESMAN").Msg("open-ocr is alive but won't serve any requests; workers are busy or not connected")
+				}
+			}
 			time.Sleep(sleepFor * time.Second)
 		}
 	}
