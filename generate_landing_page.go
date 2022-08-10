@@ -68,7 +68,7 @@ func randomMOTD() string {
 }
 
 // GenerateLandingPage will generate a simple landing page
-func GenerateLandingPage(appStop, technicalError bool) string {
+func GenerateLandingPage(appStop, technicalError bool, version string) string {
 	statusArray := [4]string{}
 
 	if technicalError {
@@ -177,7 +177,7 @@ pre {
     font-family: "Press Start 2P";
 
 }
-</style></head><body><section class="nes-container with-title">	<h2 class="title">Open-ocr  ></h2>
+</style></head><body><section class="nes-container with-title">	<h2 class="title">Open-ocr ` + version + `  ></h2>
   <div class="nes-balloon from-left">
       <p>` + statusArray[3] + `</p>
     </div>
