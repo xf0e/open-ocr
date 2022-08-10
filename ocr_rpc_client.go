@@ -245,7 +245,6 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 				logger.Info().Msg("request handling finished, deleting it from the queue")
 				deleteRequestFromQueue(requestID)
 				//	}
-
 			}()
 			ocrRes := OcrResult{ID: ocrRequest.RequestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()
