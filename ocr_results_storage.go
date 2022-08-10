@@ -1,9 +1,10 @@
 package ocrworker
 
 import (
-	"github.com/rs/zerolog/log"
 	"sync"
 	"sync/atomic"
+
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -27,7 +28,7 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 			return OcrResult{Status: "processing", ID: requestID}, true
 		}
 	} else {
-		//log.Debug().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
+		// log.Debug().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
 		return OcrResult{}, false
 	}
 }
