@@ -219,7 +219,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 					case <-timeout:
 						if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
 							deleteRequestFromQueue(ocrRequest.RequestID)
-							logger.Info().Msg("deferred request without reply-to address has decayed")
+							logger.Info().Msg("deferred request without reply-to address has decayed, client doesn't claimed request in time")
 							break Loop
 						}
 					default:
@@ -235,13 +235,17 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 				ID:     ocrRequest.RequestID,
 			}, 200, nil
 		}
-		// automatic delivery oder POST to the requester
+		// automatic delivery POST to the requester
 		// check interval for order to be ready to deliver
 		go func(requestID string) {
 			// trigger deleting request from internal queue
 			defer func() {
-				// ocrWasSentBackChan <- requestID
+				//	if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
+				//		deleteRequestFromQueue(ocrRequest.RequestID)
+				logger.Info().Msg("request handling finished, deleting it from the queue")
 				deleteRequestFromQueue(requestID)
+				//	}
+
 			}()
 			ocrRes := OcrResult{ID: ocrRequest.RequestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()
@@ -285,7 +289,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 			ID:     ocrRequest.RequestID,
 			Status: "processing",
 		}, 200, nil
-	} else {
+	} else { // handle not deferred request
 		select {
 		case ocrResult := <-rpcResponseChan:
 			// logger.Debug().Str("st", ocrResult.Status).Str("text", ocrResult.Text).Str("id", ocrResult.ID)

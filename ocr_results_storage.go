@@ -1,6 +1,7 @@
 package ocrworker
 
 import (
+	"github.com/rs/zerolog/log"
 	"sync"
 	"sync/atomic"
 )
@@ -16,17 +17,17 @@ func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 	if ok {
 		tempChannel := make(chan OcrResult)
 		tempChannel = v.(chan OcrResult)
-		defer deleteRequestFromQueue(requestID)
 		ocrResult := OcrResult{}
 		select {
 		case ocrResult = <-tempChannel:
+			defer deleteRequestFromQueue(requestID)
 			// log.Debug().Str("component", "OCR_CLIENT").Msg("got ocrResult := <-Requests[requestID]")
 			return ocrResult, true
 		default:
 			return OcrResult{Status: "processing", ID: requestID}, true
 		}
 	} else {
-		// log.Info().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
+		//log.Debug().Str("component", "OCR_CLIENT").Str("RequestID", requestID).Msg("no such request found in the queue")
 		return OcrResult{}, false
 	}
 }
@@ -36,32 +37,18 @@ func getQueueLen() uint {
 }
 
 func deleteRequestFromQueue(requestID string) {
-	atomic.AddUint32(&RequestTrackLength, ^uint32(0))
-	inFlightGauge.Dec()
-	RequestsTrack.Delete(requestID)
+	if _, ok := RequestsTrack.Load(requestID); ok {
+		atomic.AddUint32(&RequestTrackLength, ^uint32(0))
+		inFlightGauge.Dec()
+		RequestsTrack.Delete(requestID)
+	}
+	if getQueueLen() < 0 {
+		log.Error().Str("requestID", requestID).Str("component", "OCR_CLIENT").Msg("negative queue size is serious bug, report it. deleteRequestFromQueue should not be called.")
+	}
 }
 
 func addNewOcrResultToQueue(requestID string, rpcResponseChan chan OcrResult) {
 	atomic.AddUint32(&RequestTrackLength, 1)
 	inFlightGauge.Inc()
 	RequestsTrack.Store(requestID, rpcResponseChan)
-
-	// this go routine will cancel the request after global timeout or if request was sent back
-	// if the requestID arrives on ocrWasSentBackChan - ocrResult was send back to requester an request deletion is triggered
-	// go func() {
-	// 	select {
-	// 	case <-ocrWasSentBackChan:
-	// 		if _, ok := RequestsTrack.Load(requestID); ok {
-	// 			deleteRequestFromQueue(requestID)
-	// 		}
-	// 		// TODO: a bug leaking goroutines if the global timeout is set to a low value the routine in ocr_rpc_client:221 will leak
-	// 		// TODO since there is no listener in this goroutine since this goroutine is dead
-	// 	/* case <-time.After(time.Second * time.Duration(storageTime+10)):
-	// 		if _, ok := RequestsTrack.Load(requestID); ok {
-	// 			deleteRequestFromQueue(requestID)
-	// 		}*/
-	// //default:
-	//
-	// 	}
-	// }()
 }
