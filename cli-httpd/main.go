@@ -39,7 +39,7 @@ func init() {
 func handleIndex(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	appStopLocal = ocrworker.AppStop
-	text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager)
+	text := ocrworker.GenerateLandingPage(appStopLocal, ocrworker.TechnicalErrorResManager, version)
 	_, _ = fmt.Fprint(writer, text)
 }
 

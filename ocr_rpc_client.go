@@ -1,6 +1,7 @@
 package ocrworker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -16,6 +17,7 @@ import (
 
 // rpcResponseTimeout sets timeout for getting the result from channel
 var rpcResponseTimeout = time.Second * 20
+var numRetries uint = 3
 
 type OcrRpcClient struct {
 	rabbitConfig RabbitConfig
@@ -28,15 +30,6 @@ type OcrResult struct {
 	Status string `json:"status"`
 	ID     string `json:"id"`
 }
-
-func newOcrResult(id string) OcrResult {
-	ocrResult := &OcrResult{}
-	ocrResult.Status = "processing"
-	ocrResult.ID = id
-	return *ocrResult
-}
-
-var numRetries uint = 3
 
 func NewOcrRpcClient(rc *RabbitConfig) (*OcrRpcClient, error) {
 	ocrRpcClient := &OcrRpcClient{
@@ -177,7 +170,11 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 	if err != nil {
 		return OcrResult{}, 500, err
 	}
-	if err = c.channel.Publish(
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err = c.channel.PublishWithContext(
+		ctx,
 		c.rabbitConfig.Exchange, // publish to an exchange
 		routingKey,
 		false, // mandatory
@@ -204,7 +201,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 		// deferred == true but no automatic reply to the requester
 		// client should poll to get the ocr
 		if ocrRequest.ReplyTo == "" {
-			// this go routine will cancel the request after global timeout or if requester doesn't recall the request
+			// this go routine will cancel the request after global timeout or if requester doesn't retrieve the request
 			logger.Info().Msg("deferred request without reply-to address set, will decay automatically after " + strconv.FormatUint(uint64(ocrRequest.TimeOut), 10) + " seconds")
 			go func() {
 				timeout := time.After(time.Second * time.Duration(ocrRequest.TimeOut+10))
@@ -214,7 +211,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 					case <-timeout:
 						if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
 							deleteRequestFromQueue(ocrRequest.RequestID)
-							logger.Info().Msg("deferred request without reply-to address has decayed")
+							logger.Info().Msg("deferred request without reply-to address has decayed, client doesn't claimed request in time")
 							break Loop
 						}
 					default:
@@ -230,13 +227,16 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 				ID:     ocrRequest.RequestID,
 			}, 200, nil
 		}
-		// automatic delivery oder POST to the requester
+		// automatic delivery POST to the requester
 		// check interval for order to be ready to deliver
 		go func(requestID string) {
 			// trigger deleting request from internal queue
 			defer func() {
-				// ocrWasSentBackChan <- requestID
+				//	if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
+				//		deleteRequestFromQueue(ocrRequest.RequestID)
+				logger.Info().Msg("request handling finished, deleting it from the queue")
 				deleteRequestFromQueue(requestID)
+				//	}
 			}()
 			ocrRes := OcrResult{ID: ocrRequest.RequestID, Status: "error", Text: ""}
 			ocrPostClient := newOcrPostClient()
@@ -280,7 +280,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 			ID:     ocrRequest.RequestID,
 			Status: "processing",
 		}, 200, nil
-	} else {
+	} else { // handle not deferred request
 		select {
 		case ocrResult := <-rpcResponseChan:
 			// logger.Debug().Str("st", ocrResult.Status).Str("text", ocrResult.Text).Str("id", ocrResult.ID)

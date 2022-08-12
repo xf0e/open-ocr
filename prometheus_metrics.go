@@ -10,12 +10,12 @@ import (
 var (
 	inFlightGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "ocr_in_flight_requests",
-		Help: "A gauge of requests currently being served by the wrapped handler.",
+		Help: "Number of currently pending and processed requests.",
 	})
 	counter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "ocr_api_requests_total",
-			Help: "A counter for requests to the wrapped handler.",
+			Help: "A counter for http requests.",
 		},
 		[]string{"code", "method"},
 	)

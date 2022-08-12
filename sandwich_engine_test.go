@@ -2,7 +2,7 @@ package ocrworker
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/rs/zerolog/log"
@@ -16,8 +16,7 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 	}
 
 	engine := SandwichEngine{}
-	bytes, err := ioutil.ReadFile("docs/testimage.pdf")
-	// bytes, err := ioutil.ReadFile("docs/testimage.png")
+	bytes, err := os.ReadFile("docs/testimage.pdf")
 	assert.True(t, err == nil)
 
 	cFlags := make(map[string]interface{})
@@ -60,7 +59,7 @@ func TestSandwichEngineWithJson(t *testing.T) {
 		workerConfig := workerConfigForTests()
 		err := json.Unmarshal([]byte(testJson), &ocrRequest)
 		assert.True(t, err == nil)
-		bytes, err := ioutil.ReadFile("docs/testimage.pdf")
+		bytes, err := os.ReadFile("docs/testimage.pdf")
 		assert.True(t, err == nil)
 		ocrRequest.ImgBytes = bytes
 		engine := NewOcrEngine(ocrRequest.EngineType)

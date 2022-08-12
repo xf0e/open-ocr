@@ -3,13 +3,6 @@ package ocrworker
 import (
 	"flag"
 	"fmt"
-	"os"
-)
-
-var (
-	sha1ver   string
-	buildTime string
-	version   string
 )
 
 // WorkerConfig will be passed to ocr engines and is used to establish connection to a message  broker
@@ -27,6 +20,7 @@ type WorkerConfig struct {
 	Debug             bool
 	Tiff2pdfConverter string
 	NumParallelJobs   uint
+	FlgVersion        bool
 }
 
 // DefaultWorkerConfig will set the default set of worker parameters which are needed for testing and connecting to a broker
@@ -49,6 +43,7 @@ func DefaultWorkerConfig() WorkerConfig {
 		Debug:             false,
 		Tiff2pdfConverter: "convert",
 		NumParallelJobs:   1,
+		FlgVersion:        false,
 	}
 	return workerConfig
 }
@@ -115,10 +110,8 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 	)
 
 	flag.Parse()
-	if flgVersion {
-		fmt.Printf("version %s. Build on %s from git commit hash %s\n", version, buildTime, sha1ver)
-		os.Exit(0)
-	}
+
+	workerConfig.FlgVersion = flgVersion
 	if len(amqpURI) > 0 {
 		workerConfig.AmqpURI = amqpURI
 	}
