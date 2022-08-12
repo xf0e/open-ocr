@@ -17,6 +17,7 @@ import (
 
 // rpcResponseTimeout sets timeout for getting the result from channel
 var rpcResponseTimeout = time.Second * 20
+var numRetries uint = 3
 
 type OcrRpcClient struct {
 	rabbitConfig RabbitConfig
@@ -29,15 +30,6 @@ type OcrResult struct {
 	Status string `json:"status"`
 	ID     string `json:"id"`
 }
-
-func newOcrResult(id string) OcrResult {
-	ocrResult := &OcrResult{}
-	ocrResult.Status = "processing"
-	ocrResult.ID = id
-	return *ocrResult
-}
-
-var numRetries uint = 3
 
 func NewOcrRpcClient(rc *RabbitConfig) (*OcrRpcClient, error) {
 	ocrRpcClient := &OcrRpcClient{
