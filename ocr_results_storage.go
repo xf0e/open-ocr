@@ -14,8 +14,7 @@ var (
 func CheckOcrStatusByID(requestID string) (OcrResult, bool) {
 	v, ok := RequestsTrack.Load(requestID)
 	if ok {
-		tempChannel := make(chan OcrResult)
-		tempChannel = v.(chan OcrResult)
+		tempChannel := v.(chan OcrResult)
 		ocrResult := OcrResult{}
 		select {
 		case ocrResult = <-tempChannel:
