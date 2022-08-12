@@ -13,7 +13,7 @@ func NewOcrHttpStatusHandler() *OcrHttpStatusHandler {
 	return &OcrHttpStatusHandler{}
 }
 
-func (s *OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (*OcrHttpStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	log.Debug().Str("component", "OCR_STATUS").Msg("OcrHttpStatusHandler called")
 
 	ocrRequest := OcrRequest{}

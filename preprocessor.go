@@ -12,6 +12,6 @@ type Preprocessor interface {
 
 type IdentityPreprocessor struct{}
 
-func (i IdentityPreprocessor) preprocess(ocrRequest *OcrRequest) error {
+func (IdentityPreprocessor) preprocess(ocrRequest *OcrRequest) error {
 	return nil
 }
