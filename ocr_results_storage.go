@@ -3,8 +3,6 @@ package ocrworker
 import (
 	"sync"
 	"sync/atomic"
-
-	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -42,9 +40,6 @@ func deleteRequestFromQueue(requestID string) {
 		atomic.AddUint32(&RequestTrackLength, ^uint32(0))
 		inFlightGauge.Dec()
 		RequestsTrack.Delete(requestID)
-	}
-	if getQueueLen() < 0 {
-		log.Error().Str("requestID", requestID).Str("component", "OCR_CLIENT").Msg("negative queue size is serious bug, report it. deleteRequestFromQueue should not be called.")
 	}
 }
 
