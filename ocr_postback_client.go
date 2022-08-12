@@ -13,7 +13,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var postTimeout = 50 * time.Second
+var (
+	postTimeout = 50 * time.Second
+	version     string
+)
 
 type ocrPostClient struct{}
 

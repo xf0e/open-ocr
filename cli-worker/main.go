@@ -1,13 +1,22 @@
 package main
 
 import (
+	"fmt"
 	"net/url"
+	"os"
+
 	// _ "net/http/pprof"
 	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xf0e/open-ocr"
+)
+
+var (
+	sha1ver   string
+	buildTime string
+	version   string
 )
 
 // This assumes that there is a rabbit mq running
@@ -26,6 +35,12 @@ func main() {
 		log.Panic().Str("component", "OCR_WORKER").
 			Msgf("error getting arguments: %v ", err)
 	}
+
+	if workerConfig.FlgVersion {
+		fmt.Printf("version %s. Build on %s from git commit hash %s\n", version, buildTime, sha1ver)
+		os.Exit(0)
+	}
+
 	if workerConfig.Debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
