@@ -3,6 +3,7 @@ package ocrworker
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -289,7 +290,7 @@ func (SandwichEngine) runExternalCmd(commandToRun string, cmdArgs []string, defa
 
 	cmd := exec.CommandContext(ctx, commandToRun, cmdArgs...)
 	output, err := cmd.CombinedOutput()
-	if ctx.Err() == context.DeadlineExceeded {
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		err = fmt.Errorf("command timed out, terminated: %v", err)
 		// on deadline cancellation the output doesnt matter
 		return "", err

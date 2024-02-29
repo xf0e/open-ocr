@@ -32,8 +32,8 @@ func NewOcrEngine(engineType OcrEngineType) OcrEngine {
 	return nil
 }
 
-func (e OcrEngineType) String() string {
-	switch e {
+func (e *OcrEngineType) String() string {
+	switch *e {
 	case EngineMock:
 		return "ENGINE_MOCK"
 	case EngineTesseract:
