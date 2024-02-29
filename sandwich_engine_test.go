@@ -79,10 +79,10 @@ func TestNewsandwichEngineArgs(t *testing.T) {
 	assert.True(t, err == nil)
 	engineArgs, err := NewSandwichEngineArgs(&ocrRequest, &workerConfig)
 	assert.True(t, err == nil)
-	assert.Equals(t, len(engineArgs.configVars), 1)
-	assert.Equals(t, engineArgs.configVars["tessedit_char_whitelist"], "0123456789")
+	assert.Equals(t, len(engineArgs.ConfigVars), 1)
+	assert.Equals(t, engineArgs.ConfigVars["tessedit_char_whitelist"], "0123456789")
 	// assert.Equals(t, engineArgs.pageSegMode, "0")
-	assert.Equals(t, engineArgs.lang, "eng")
+	assert.Equals(t, engineArgs.Lang, "eng")
 }
 
 func TestSandwichEngineWithFile(t *testing.T) {
@@ -92,9 +92,9 @@ func TestSandwichEngineWithFile(t *testing.T) {
 
 	engine := SandwichEngine{}
 	engineArgs := SandwichEngineArgs{}
-	engineArgs.ocrType = "combinedpdf"
-	engineArgs.ocrOptimize = true
-	engineArgs.lang = "deu"
+	engineArgs.OcrType = "combinedpdf"
+	engineArgs.OcrOptimize = true
+	engineArgs.Lang = "deu"
 	engineArgs.saveFiles = true
 	result, err := engine.processImageFile("docs/testimage.pdf", "PDF", &engineArgs, 20)
 	log.Warn().Err(err).Str("component", "TEST")

@@ -23,10 +23,10 @@ import (
 type SandwichEngine struct{}
 
 type SandwichEngineArgs struct {
-	configVars   map[string]string `json:"config_vars"`
-	lang         string            `json:"lang"`
-	ocrType      string            `json:"ocr_type"`
-	ocrOptimize  bool              `json:"result_optimize"`
+	ConfigVars   map[string]string `json:"config_vars"`
+	Lang         string            `json:"lang"`
+	OcrType      string            `json:"ocr_type"`
+	OcrOptimize  bool              `json:"result_optimize"`
 	saveFiles    bool
 	t2pConverter string
 	requestID    string
@@ -64,7 +64,7 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 			configVarsMap[k] = v
 		}
 
-		engineArgs.configVars = configVarsMap
+		engineArgs.ConfigVars = configVarsMap
 
 	}
 
@@ -75,7 +75,7 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 		if !ok {
 			return nil, fmt.Errorf("could not convert lang into string: %v", lang)
 		}
-		engineArgs.lang = langStr
+		engineArgs.Lang = langStr
 	}
 
 	// select from  pdf, layer 1:pdf + layer 2:ocr_pdf
@@ -85,7 +85,7 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 		if !(ok) {
 			return nil, fmt.Errorf("could not convert into string: %v", ocrType)
 		}
-		engineArgs.ocrType = ocrTypeSrt
+		engineArgs.OcrType = ocrTypeSrt
 	}
 
 	// set optimize flag
@@ -95,7 +95,7 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 		if !(ok) {
 			return nil, fmt.Errorf("could not convert into boolean: %v", ocrOptimize)
 		}
-		engineArgs.ocrOptimize = ocrOptimizeFlag
+		engineArgs.OcrOptimize = ocrOptimizeFlag
 	}
 	// if true temp files won't be deleted
 	engineArgs.saveFiles = workerConfig.SaveFiles
@@ -108,13 +108,13 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 // args, eg, ["-c", "tessedit_char_whitelist=0123456789", "-c", "foo=bar"]
 func (t *SandwichEngineArgs) Export() []string {
 	var result []string
-	if t.lang != "" {
-		result = append(result, "-lang", t.lang)
+	if t.Lang != "" {
+		result = append(result, "-lang", t.Lang)
 	}
 	// pdfsandwich wants the quotes before -c an after the last key e.g. -tesso '"-c arg1=key1"'
 	result = append(result, "-tesso", "-c textonly_pdf=1")
-	if t.configVars != nil {
-		for k, v := range t.configVars {
+	if t.ConfigVars != nil {
+		for k, v := range t.ConfigVars {
 			keyValArg := fmt.Sprintf("%s=%s", k, v)
 			result = append(result, keyValArg)
 		}
@@ -371,7 +371,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 		}
 	}
 
-	ocrType := strings.ToUpper(engineArgs.ocrType)
+	ocrType := strings.ToUpper(engineArgs.OcrType)
 
 	extCommandTimeout := time.Duration(configTimeOut) * time.Second
 
@@ -415,7 +415,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 			return OcrResult{Status: "error"}, err
 		}
 
-		if engineArgs.ocrOptimize {
+		if engineArgs.OcrOptimize {
 			logger.Info().Msg("optimizing was requested, performing selected operation")
 			var compressedArgs []string
 			tmpOutCompressedPdf := inputFilename
