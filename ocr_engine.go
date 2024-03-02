@@ -28,8 +28,9 @@ func NewOcrEngine(engineType OcrEngineType) OcrEngine {
 		return &TesseractEngine{}
 	case EngineSandwichTesseract:
 		return &SandwichEngine{}
+	default:
+		return &TesseractEngine{}
 	}
-	return nil
 }
 
 func (e *OcrEngineType) String() string {
@@ -42,7 +43,6 @@ func (e *OcrEngineType) String() string {
 		return "ENGINE_GO_TESSERACT"
 	case EngineSandwichTesseract:
 		return "ENGINE_SANDWICH_TESSERACT"
-
 	}
 	return ""
 }
