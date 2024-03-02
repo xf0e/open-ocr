@@ -13,9 +13,9 @@ import (
 type TesseractEngine struct{}
 
 type TesseractEngineArgs struct {
-	configVars  map[string]string `json:"config_vars"`
-	pageSegMode string            `json:"psm"`
-	lang        string            `json:"lang"`
+	ConfigVars  map[string]string `json:"config_vars"`
+	PageSegMode string            `json:"psm"`
+	Lang        string            `json:"lang"`
 	saveFiles   bool
 }
 
@@ -46,7 +46,7 @@ func NewTesseractEngineArgs(ocrRequest *OcrRequest) (*TesseractEngineArgs, error
 			configVarsMap[k] = v
 		}
 
-		engineArgs.configVars = configVarsMap
+		engineArgs.ConfigVars = configVarsMap
 
 	}
 
@@ -57,7 +57,7 @@ func NewTesseractEngineArgs(ocrRequest *OcrRequest) (*TesseractEngineArgs, error
 		if !ok {
 			return nil, fmt.Errorf("could not convert psm into string: %v", pageSegMode)
 		}
-		engineArgs.pageSegMode = pageSegModeStr
+		engineArgs.PageSegMode = pageSegModeStr
 	}
 
 	// language
@@ -67,7 +67,7 @@ func NewTesseractEngineArgs(ocrRequest *OcrRequest) (*TesseractEngineArgs, error
 		if !ok {
 			return nil, fmt.Errorf("could not convert lang into string: %v", lang)
 		}
-		engineArgs.lang = langStr
+		engineArgs.Lang = langStr
 	}
 
 	return engineArgs, nil
@@ -77,16 +77,16 @@ func NewTesseractEngineArgs(ocrRequest *OcrRequest) (*TesseractEngineArgs, error
 // args, eg, ["-c", "tessedit_char_whitelist=0123456789", "-c", "foo=bar"]
 func (t TesseractEngineArgs) Export() []string {
 	var result []string
-	for k, v := range t.configVars {
+	for k, v := range t.ConfigVars {
 		result = append(result, "-c")
 		keyValArg := fmt.Sprintf("%s=%s", k, v)
 		result = append(result, keyValArg)
 	}
-	if t.pageSegMode != "" {
-		result = append(result, "--psm", t.pageSegMode)
+	if t.PageSegMode != "" {
+		result = append(result, "--psm", t.PageSegMode)
 	}
-	if t.lang != "" {
-		result = append(result, "-l", t.lang)
+	if t.Lang != "" {
+		result = append(result, "-l", t.Lang)
 	}
 
 	return result

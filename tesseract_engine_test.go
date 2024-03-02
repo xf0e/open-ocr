@@ -71,10 +71,10 @@ func TestNewTesseractEngineArgs(t *testing.T) {
 	assert.True(t, err == nil)
 	engineArgs, err := NewTesseractEngineArgs(&ocrRequest)
 	assert.True(t, err == nil)
-	assert.Equals(t, len(engineArgs.configVars), 1)
-	assert.Equals(t, engineArgs.configVars["tessedit_char_whitelist"], "0123456789")
-	assert.Equals(t, engineArgs.pageSegMode, "0")
-	assert.Equals(t, engineArgs.lang, "jpn")
+	assert.Equals(t, len(engineArgs.ConfigVars), 1)
+	assert.Equals(t, engineArgs.ConfigVars["tessedit_char_whitelist"], "0123456789")
+	assert.Equals(t, engineArgs.PageSegMode, "0")
+	assert.Equals(t, engineArgs.Lang, "jpn")
 }
 
 func TestTesseractEngineWithFile(t *testing.T) {
