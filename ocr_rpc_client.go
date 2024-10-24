@@ -211,7 +211,7 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 					case <-timeout:
 						if _, ok := RequestsTrack.Load(ocrRequest.RequestID); ok {
 							deleteRequestFromQueue(ocrRequest.RequestID)
-							logger.Info().Msg("deferred request without reply-to address has decayed, client doesn't claimed request in time")
+							logger.Info().Msg("deferred request without reply-to address has decayed, client has not claimed request in time")
 							break Loop
 						}
 					default:

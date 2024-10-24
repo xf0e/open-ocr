@@ -263,9 +263,9 @@ func (SandwichEngine) tmpFileFromImageURL(imgURL, tmpFileName string) (string, e
 func (SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs *SandwichEngineArgs) (cmdArgs []string, ocrLayerFile string) {
 	// sets output file name for pdfsandwich output file
 	// and builds the argument list for external program
-	// since pdfsandwich can only return pdf files the will deliver work with pdf intermediates
+	// since pdfsandwich can only return pdf files will deliver work with pdf intermediates
 	// for later use we may expand the implementation
-	// pdfsandwich by default default expands the name of output file wich _ocr
+	// pdfsandwich by default expands the name of output file which _ocr
 	cflags := engineArgs.Export()
 	tmpFileExtension := "_ocr.pdf"
 	ocrLayerFile = inputFilename
