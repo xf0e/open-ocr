@@ -19,7 +19,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	ocrcworker "github.com/xf0e/open-ocr"
+	ocrworker "github.com/xf0e/open-ocr"
 )
 
 var (
@@ -92,7 +92,7 @@ func waitForShutdown(srv *http.Server) {
 	defer cancel()
 
 	// Signal other parts of the application to stop.
-	ocrcworker.StopChan <- true
+	ocrworker.StopChan <- true
 
 	// Wait for in-flight requests to complete.
 	for {
