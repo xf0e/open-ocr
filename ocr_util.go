@@ -176,7 +176,7 @@ func checkURLForReplyTo(uri string) (string, error) {
 	}
 	if u.Scheme != "https" && u.Scheme != "http" {
 		errorText := "provided " + u.String() + " URI must be an absolute URL"
-		err = fmt.Errorf(errorText)
+		err = fmt.Errorf("%s", errorText)
 	}
 	return u.String(), err
 }

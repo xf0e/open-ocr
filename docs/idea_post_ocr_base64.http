@@ -47,7 +47,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-  "img_url": "27mgODYT0bFF0EaPtcPeFe0alJn"
+  "img_url": "384kyz8pT4rnAfoy2n0JgjcpJtf"
 }
 
 ### sane request combined pdf

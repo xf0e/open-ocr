@@ -3,6 +3,7 @@ package ocrworker
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -16,16 +17,16 @@ import (
 )
 
 // SandwichEngine calls pdfsandwich via exec
-// This implementation returns either the pdf with ocr layer only
-// or merged variant of pdf plus ocr layer with the ability to
-// optimize the output pdf file by calling "gs" tool
+// This implementation returns either the PDF with ocr layer only
+// or merged variant of PDF plus ocr layer with the ability to
+// optimize the output PDF file by calling "gs" tool
 type SandwichEngine struct{}
 
 type SandwichEngineArgs struct {
-	configVars   map[string]string `json:"config_vars"`
-	lang         string            `json:"lang"`
-	ocrType      string            `json:"ocr_type"`
-	ocrOptimize  bool              `json:"result_optimize"`
+	ConfigVars   map[string]string `json:"config_vars"`
+	Lang         string            `json:"lang"`
+	OcrType      string            `json:"ocr_type"`
+	OcrOptimize  bool              `json:"result_optimize"`
 	saveFiles    bool
 	t2pConverter string
 	requestID    string
@@ -63,7 +64,7 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 			configVarsMap[k] = v
 		}
 
-		engineArgs.configVars = configVarsMap
+		engineArgs.ConfigVars = configVarsMap
 
 	}
 
@@ -74,17 +75,17 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 		if !ok {
 			return nil, fmt.Errorf("could not convert lang into string: %v", lang)
 		}
-		engineArgs.lang = langStr
+		engineArgs.Lang = langStr
 	}
 
-	// select from  pdf, layer 1:pdf + layer 2:ocr_pdf
+	// select from  PDF, layer 1:PDF + layer 2:ocr_pdf
 	ocrType := ocrRequest.EngineArgs["ocr_type"]
 	if ocrType != nil {
 		ocrTypeSrt, ok := ocrType.(string)
 		if !(ok) {
 			return nil, fmt.Errorf("could not convert into string: %v", ocrType)
 		}
-		engineArgs.ocrType = ocrTypeSrt
+		engineArgs.OcrType = ocrTypeSrt
 	}
 
 	// set optimize flag
@@ -94,7 +95,7 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 		if !(ok) {
 			return nil, fmt.Errorf("could not convert into boolean: %v", ocrOptimize)
 		}
-		engineArgs.ocrOptimize = ocrOptimizeFlag
+		engineArgs.OcrOptimize = ocrOptimizeFlag
 	}
 	// if true temp files won't be deleted
 	engineArgs.saveFiles = workerConfig.SaveFiles
@@ -105,15 +106,18 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 
 // Export return a slice that can be passed to tesseract binary as command line
 // args, eg, ["-c", "tessedit_char_whitelist=0123456789", "-c", "foo=bar"]
-func (t *SandwichEngineArgs) Export() []string {
+func (t *SandwichEngineArgs) Export(unpaperError bool) []string {
 	var result []string
-	if t.lang != "" {
-		result = append(result, "-lang", t.lang)
+	if t.Lang != "" {
+		result = append(result, "-lang", t.Lang)
 	}
 	// pdfsandwich wants the quotes before -c an after the last key e.g. -tesso '"-c arg1=key1"'
 	result = append(result, "-tesso", "-c textonly_pdf=1")
-	if t.configVars != nil {
-		for k, v := range t.configVars {
+	if unpaperError {
+		result = append(result, "-nopreproc")
+	}
+	if t.ConfigVars != nil {
+		for k, v := range t.ConfigVars {
 			keyValArg := fmt.Sprintf("%s=%s", k, v)
 			result = append(result, keyValArg)
 		}
@@ -193,7 +197,16 @@ func (t SandwichEngine) ProcessRequest(ocrRequest *OcrRequest, workerConfig *Wor
 	// getting timeout for request
 	configTimeOut := ocrRequest.TimeOut
 
-	ocrResult, err := t.processImageFile(tmpFileName, uplFileType, engineArgs, configTimeOut)
+	ocrResult, err := t.processImageFile(tmpFileName, uplFileType, engineArgs, configTimeOut, false)
+	if err != nil {
+		unpaperError := strings.Contains(err.Error(), "unpaper")
+		if unpaperError {
+			// retry with without preprocessing
+			logger.Info().Msg("Error occurred in preprocessing by unpaper, retry once without preprocessing ")
+			ocrResult, err := t.processImageFile(tmpFileName, uplFileType, engineArgs, configTimeOut, unpaperError)
+			return ocrResult, err
+		}
+	}
 
 	return ocrResult, err
 }
@@ -259,13 +272,13 @@ func (SandwichEngine) tmpFileFromImageURL(imgURL, tmpFileName string) (string, e
 	return tmpFileName, nil
 }
 
-func (SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs *SandwichEngineArgs) (cmdArgs []string, ocrLayerFile string) {
+func (SandwichEngine) buildCmdLineArgs(inputFilename string, engineArgs *SandwichEngineArgs, unpaperError bool) (cmdArgs []string, ocrLayerFile string) {
 	// sets output file name for pdfsandwich output file
 	// and builds the argument list for external program
-	// since pdfsandwich can only return pdf files the will deliver work with pdf intermediates
+	// since pdfsandwich can only return PDF files we will deliver work with PDF intermediates
 	// for later use we may expand the implementation
-	// pdfsandwich by default default expands the name of output file wich _ocr
-	cflags := engineArgs.Export()
+	// pdfsandwich by default expands the name of output file wich _ocr
+	cflags := engineArgs.Export(unpaperError)
 	tmpFileExtension := "_ocr.pdf"
 	ocrLayerFile = inputFilename
 	cmdArgs = make([]string, 0)
@@ -289,16 +302,16 @@ func (SandwichEngine) runExternalCmd(commandToRun string, cmdArgs []string, defa
 
 	cmd := exec.CommandContext(ctx, commandToRun, cmdArgs...)
 	output, err := cmd.CombinedOutput()
-	if ctx.Err() == context.DeadlineExceeded {
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		err = fmt.Errorf("command timed out, terminated: %v", err)
-		// on deadline cancellation the output doesnt matter
+		// on deadline cancellation the output doesn't matter
 		return "", err
 	}
 	// err = "command timed out, terminated: signal: killed"
 	return string(output), err
 }
 
-func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engineArgs *SandwichEngineArgs, configTimeOut uint) (OcrResult, error) {
+func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engineArgs *SandwichEngineArgs, configTimeOut uint, unpaperError bool) (OcrResult, error) {
 	// if error flag is true, input files won't be deleted
 	errorFlag := false
 	filesToDelete := make([]string, 0)
@@ -335,7 +348,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 
 	ocrLayerFile := ""
 	alternativeConverter := ""
-	originalInputfileName := inputFilename
+	originalInputFileName := inputFilename
 
 	logger.Info().Str("file_name", inputFilename).Msg("input file name")
 
@@ -351,15 +364,15 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 			inputFilename = tiff2Pdf(inputFilename)
 		}
 		/* if the first converter fails, we will automatically try the second one.
-		If the second one fails, we will break up processing and return an error to a caller */
+		   If the second one fails, we will break up processing and return an error to a caller */
 		if inputFilename == "" {
 			err := fmt.Errorf("can not convert input image to intermediate pdf, usually this is caused by a damaged input file")
 			logger.Warn().Err(err).Caller().Msg("Error exec " + engineArgs.t2pConverter + " Try to switch the image converter to " + alternativeConverter)
 			switch alternativeConverter {
 			case "convert":
-				inputFilename = convertImageToPdf(originalInputfileName)
+				inputFilename = convertImageToPdf(originalInputFileName)
 			case "tiff2pdf":
-				inputFilename = tiff2Pdf(originalInputfileName)
+				inputFilename = tiff2Pdf(originalInputFileName)
 			}
 			if inputFilename == "" {
 				err := fmt.Errorf("entirely failed to convert the input image to intermediate pdf, usually this is caused by a damaged input file")
@@ -370,11 +383,11 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 		}
 	}
 
-	ocrType := strings.ToUpper(engineArgs.ocrType)
+	ocrType := strings.ToUpper(engineArgs.OcrType)
 
 	extCommandTimeout := time.Duration(configTimeOut) * time.Second
 
-	cmdArgs, ocrLayerFile = t.buildCmdLineArgs(inputFilename, engineArgs)
+	cmdArgs, ocrLayerFile = t.buildCmdLineArgs(inputFilename, engineArgs, unpaperError)
 	logger.Info().Str("command", "pdfsandwich").Interface("cmdArgs", cmdArgs).
 		Uint("command_timeout", configTimeOut).
 		Msg("running external pdfsandwich command")
@@ -383,7 +396,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 		errMsg := output
 		if errMsg != "" {
 			errMsg = fmt.Sprintf(output, err)
-			err := fmt.Errorf(errMsg)
+			err := fmt.Errorf("%s", errMsg)
 			logger.Error().Err(err).Caller().Msg("Error exec external command")
 			errorFlag = true
 			return OcrResult{Status: "error"}, err
@@ -414,7 +427,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 			return OcrResult{Status: "error"}, err
 		}
 
-		if engineArgs.ocrOptimize {
+		if engineArgs.OcrOptimize {
 			logger.Info().Msg("optimizing was requested, performing selected operation")
 			var compressedArgs []string
 			tmpOutCompressedPdf := inputFilename
@@ -461,7 +474,7 @@ func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engi
 		outputPdfToText, err := cmdArgsPdfToText.CombinedOutput()
 		if err != nil {
 			errMsg := fmt.Sprintf(string(outputPdfToText), err)
-			err := fmt.Errorf(errMsg)
+			err := fmt.Errorf("%s", errMsg)
 			logger.Error().Caller().Err(err).Msg("error exec pdftotext")
 			errorFlag = true
 		}

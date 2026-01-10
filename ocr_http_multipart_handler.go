@@ -112,5 +112,5 @@ func (s *OcrHttpMultipartHandler) ServeHTTP(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	_, _ = fmt.Fprintf(w, ocrResult.Text)
+	_, _ = fmt.Fprintf(w, "%s", ocrResult.Text)
 }

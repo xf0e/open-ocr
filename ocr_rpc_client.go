@@ -370,7 +370,7 @@ func (c *OcrRpcClient) handleRPCResponse(deliveries <-chan amqp.Delivery, correl
 			if err != nil {
 				msg := "Error unmarshalling json: %v.  Error: %v"
 				errMsg := fmt.Sprintf(msg, string(d.Body[0:bodyLenToLog]), err)
-				logger.Error().Err(fmt.Errorf(errMsg))
+				logger.Error().Err(fmt.Errorf("%s", errMsg))
 			}
 			ocrResult.ID = correlationID
 

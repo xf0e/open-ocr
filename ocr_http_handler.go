@@ -54,7 +54,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	// check if the API should accept new requests. The part after || is needed because the first part can be slow
 	if (!serviceCanAcceptLocal && !appStopLocal) || !schedulerByWorkerNumber() {
 		err := "no resources available to process the request. RequestID " + requestID
-		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
+		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf("%s", err)).
 			Str("RequestID", requestID).
 			Msg("conditions for accepting new requests are not met")
 		httpStatus = 503
@@ -64,7 +64,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 
 	if !serviceCanAcceptLocal && appStopLocal {
 		err := "service is going down. RequestID " + requestID
-		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf(err)).
+		log.Warn().Str("component", "OCR_HTTP").Err(fmt.Errorf("%s", err)).
 			Str("RequestID", requestID).
 			Msg("conditions for accepting new requests are not met")
 		httpStatus = 503
