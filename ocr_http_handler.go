@@ -76,7 +76,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&ocrRequest)
 	if err != nil {
-		log.Warn().Str("component", "OCR_HTTP").Err(err).
+		log.Warn().Str("component", "OCR_HTTP").Err(err).Str("RequestID", requestID).
 			Msg("did the client send a valid json? RequestID " + requestID)
 		httpStatus = 400
 		http.Error(w, "Unable to unmarshal json, malformed request. RequestID "+requestID, httpStatus)
@@ -87,7 +87,7 @@ func (s *OcrHTTPStatusHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	if err != nil {
 		msg := "Unable to perform OCR decode. Error: %v"
 		errMsg := fmt.Sprintf(msg, err)
-		log.Error().Err(err).Str("component", "OCR_HTTP").Msg("Unable to perform OCR decode. RequestID " + requestID)
+		log.Error().Err(err).Str("RequestID", requestID).Str("component", "OCR_HTTP").Msg("Unable to perform OCR decode. RequestID ")
 		http.Error(w, errMsg, httpStatus)
 		return
 	}

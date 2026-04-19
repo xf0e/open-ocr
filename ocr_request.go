@@ -30,13 +30,13 @@ type OcrRequest struct {
 func (ocrRequest *OcrRequest) nextPreprocessor(processorRoutingKey string) string {
 	if len(ocrRequest.PreprocessorChain) == 0 {
 		return processorRoutingKey
-	} else {
-		var x string
-		s := ocrRequest.PreprocessorChain
-		x, s = s[len(s)-1], s[:len(s)-1]
-		ocrRequest.PreprocessorChain = s
-		return x
 	}
+
+	var x string
+	s := ocrRequest.PreprocessorChain
+	x, s = s[len(s)-1], s[:len(s)-1]
+	ocrRequest.PreprocessorChain = s
+	return x
 }
 
 func (ocrRequest *OcrRequest) decodeBase64() error {

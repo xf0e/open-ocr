@@ -47,7 +47,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-  "img_url": "384kyz8pT4rnAfoy2n0JgjcpJtf"
+  "img_url": "3CZXEgqdt9tCLvlvWVhFeiV2rxE"
 }
 
 ### sane request combined pdf
@@ -97,7 +97,7 @@ Content-Type: application/json
 
 ### sane request, client doesn't disconnect
 
-POST http://192.168.178.77:8080/ocr
+POST http://localhost:8080/ocr
 Content-Type: application/json
 
 {
@@ -116,6 +116,14 @@ Content-Type: application/json
   "user_agent": "0xdeadbeef",
   "reference_id": "0xf0ef0ef0ef0ef0ef0e"
 }
+
+### big request, client doesn't disconnect, read the whole file from disk
+
+POST http://localhost:8080/ocr
+Content-Type: application/json
+
+< ../../../big_fault_file.json_request
+
 
 ### sane request, automatic delivery. reply adress is set
 
@@ -264,7 +272,7 @@ POST http://localhost:8080/ocr-status
 Content-Type: application/json
 
 {
-  "img_url": "1sDRnIKpJSijZaMXmXoCqQVc32N "
+  "img_url": "1sDRnIKpJSijZaMXmXoCqQVc32N"
 }
 > {%
 client.test("Request executed successfully", function() {

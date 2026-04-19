@@ -135,7 +135,7 @@ Loop:
 	for {
 		if AppStop {
 			break
-		} // break the loop if the have to stop the app
+		} // break the loop if we have to stop the app
 		select {
 		case <-StopChan:
 			ServiceCanAcceptMu.Lock()

@@ -68,7 +68,7 @@ func (e *OcrEngineType) UnmarshalJSON(b []byte) (err error) {
 		return nil
 	}
 
-	// not a string .. maybe it's an int
+	// not a string ... maybe it's an int
 
 	var engineTypeInt int
 	if err := json.Unmarshal(b, &engineTypeInt); err == nil {

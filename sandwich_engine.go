@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -301,14 +302,36 @@ func (SandwichEngine) runExternalCmd(commandToRun string, cmdArgs []string, defa
 		Msg("running external command")
 
 	cmd := exec.CommandContext(ctx, commandToRun, cmdArgs...)
-	output, err := cmd.CombinedOutput()
-	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		err = fmt.Errorf("command timed out, terminated: %v", err)
-		// on deadline cancellation the output doesn't matter
-		return "", err
+
+	// 1. Create a Process Group (PGID)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	// When the context expires, Go calls this function.
+	// We send SIGKILL to -Pid (the negative PID targets the whole group).
+	cmd.Cancel = func() error {
+		// Only attempt to kill if the process has been assigned a PID
+		if cmd.Process != nil {
+			return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		}
+		return nil
 	}
-	// err = "command timed out, terminated: signal: killed"
-	return string(output), err
+
+	// 3. Prevent Pipe Hangs
+	// If children hold stdout/stderr open after the parent dies,
+	// this forces CombinedOutput to return after 1 second.
+	cmd.WaitDelay = 1 * time.Second
+
+	output, err := cmd.CombinedOutput()
+
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return "", fmt.Errorf("command timed out %v and process group was signaled because of exceeding timeout set by admin or the client", defaultTimeOutSeconds)
+	}
+
+	if err != nil {
+		return string(output), fmt.Errorf("command failed: %w", err)
+	}
+
+	return string(output), nil
 }
 
 func (t SandwichEngine) processImageFile(inputFilename, uplFileType string, engineArgs *SandwichEngineArgs, configTimeOut uint, unpaperError bool) (OcrResult, error) {

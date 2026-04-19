@@ -76,11 +76,11 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 		logger.Info().Str("DocType", ocrRequest.DocType).
 			Msg("message type is specified, check for higher priority request")
 		// set highest priority for defined message id
-		logger.Debug().Interface("doc_types_available", c.rabbitConfig.QueuePrio)
-		if val, ok := c.rabbitConfig.QueuePrio[ocrRequest.DocType]; ok {
+		logger.Debug().Interface("doc_types_available", c.rabbitConfig.QueuePriority)
+		if val, ok := c.rabbitConfig.QueuePriority[ocrRequest.DocType]; ok {
 			messagePriority = val
 		} else {
-			messagePriority = c.rabbitConfig.QueuePrio["standard"]
+			messagePriority = c.rabbitConfig.QueuePriority["standard"]
 		}
 	}
 	// setting the timeout for worker if not set or to high
@@ -280,14 +280,14 @@ func (c *OcrRpcClient) DecodeImage(ocrRequest *OcrRequest) (OcrResult, int, erro
 			ID:     ocrRequest.RequestID,
 			Status: "processing",
 		}, 200, nil
-	} else { // handle not deferred request
-		select {
-		case ocrResult := <-rpcResponseChan:
-			// logger.Debug().Str("st", ocrResult.Status).Str("text", ocrResult.Text).Str("id", ocrResult.ID)
-			return ocrResult, 200, nil
-		case <-time.After(time.Duration(c.rabbitConfig.ResponseCacheTimeout) * time.Second):
-			return OcrResult{}, 500, fmt.Errorf("timeout waiting for RPC response")
-		}
+	}
+	// handle not deferred request
+	select {
+	case ocrResult := <-rpcResponseChan:
+		logger.Debug().Str("st", ocrResult.Status).Str("text", ocrResult.Text).Str("id", ocrResult.ID)
+		return ocrResult, 200, nil
+	case <-time.After(time.Duration(c.rabbitConfig.ResponseCacheTimeout) * time.Second):
+		return OcrResult{}, 422, fmt.Errorf("request exceeding timeout set by admin or the client; number of pages is to large, or some pages can not be processed")
 	}
 }
 
