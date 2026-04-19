@@ -311,7 +311,7 @@ func (SandwichEngine) runExternalCmd(commandToRun string, cmdArgs []string, defa
 	cmd.Cancel = func() error {
 		// Only attempt to kill if the process has been assigned a PID
 		if cmd.Process != nil {
-			return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			return syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
 		}
 		return nil
 	}
