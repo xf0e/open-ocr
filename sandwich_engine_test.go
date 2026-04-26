@@ -30,10 +30,8 @@ func TestSandwichEngineWithRequest(t *testing.T) {
 		TimeOut:    30,
 	}
 
-	workerConfig := workerConfigForTests()
-
 	assert.True(t, err == nil)
-	result, err := engine.ProcessRequest(&ocrRequest, &workerConfig)
+	result, err := engine.ProcessRequest(&ocrRequest, new(workerConfigForTests()))
 	assert.True(t, err == nil)
 	log.Info().Str("component", "TEST").Interface("result", result)
 }
@@ -56,14 +54,13 @@ func TestSandwichEngineWithJson(t *testing.T) {
 	for _, testJson := range testJsons {
 		log.Info().Str("component", "TEST").Interface("testJson", testJson)
 		ocrRequest := OcrRequest{TimeOut: 60}
-		workerConfig := workerConfigForTests()
 		err := json.Unmarshal([]byte(testJson), &ocrRequest)
 		assert.True(t, err == nil)
 		bytes, err := os.ReadFile("docs/testimage.pdf")
 		assert.True(t, err == nil)
 		ocrRequest.ImgBytes = bytes
 		engine := NewOcrEngine(ocrRequest.EngineType)
-		result, err := engine.ProcessRequest(&ocrRequest, &workerConfig)
+		result, err := engine.ProcessRequest(&ocrRequest, new(workerConfigForTests()))
 		log.Error().Err(err).Str("component", "TEST")
 		assert.True(t, err == nil)
 		log.Info().Str("component", "TEST").Interface("result", result)
@@ -74,10 +71,9 @@ func TestSandwichEngineWithJson(t *testing.T) {
 func TestNewsandwichEngineArgs(t *testing.T) {
 	testJSON := `{"engine":"sandwich", "engine_args":{"config_vars":{"tessedit_char_whitelist":"0123456789"},"ocr_type":"combinedpdf", "psm":"0", "lang":"eng"}}`
 	ocrRequest := OcrRequest{}
-	workerConfig := workerConfigForTests()
 	err := json.Unmarshal([]byte(testJSON), &ocrRequest)
 	assert.True(t, err == nil)
-	engineArgs, err := NewSandwichEngineArgs(&ocrRequest, &workerConfig)
+	engineArgs, err := NewSandwichEngineArgs(&ocrRequest, new(workerConfigForTests()))
 	assert.True(t, err == nil)
 	assert.Equals(t, len(engineArgs.ConfigVars), 1)
 	assert.Equals(t, engineArgs.ConfigVars["tessedit_char_whitelist"], "0123456789")

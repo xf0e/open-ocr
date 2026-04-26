@@ -14,10 +14,7 @@ import (
 
 // This test assumes that rabbit mq is running
 func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
-	rabbitConfig := rabbitConfigForTests()
-	workerConfig := workerConfigForTests()
-
-	err := spawnOcrWorker(&workerConfig)
+	err := spawnOcrWorker(new(workerConfigForTests()))
 	if err != nil {
 		log.Panic().Msg("Could not spawn ocr worker")
 	}
@@ -27,7 +24,7 @@ func DisabledTestOcrHttpHandlerIntegration(t *testing.T) {
 		http.ServeFile(w, r, "refactoring.png")
 	})
 
-	http.Handle("/ocr", NewOcrHttpHandler(&rabbitConfig))
+	http.Handle("/ocr", NewOcrHttpHandler(new(rabbitConfigForTests())))
 
 	go http.ListenAndServe(":8081", nil)
 

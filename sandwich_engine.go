@@ -32,6 +32,7 @@ type SandwichEngineArgs struct {
 	t2pConverter string
 	requestID    string
 	component    string
+	MaxEntropy   float64
 }
 
 // NewSandwichEngineArgs generates arguments for SandwichEngine which will be used to start involved tools
@@ -98,15 +99,18 @@ func NewSandwichEngineArgs(ocrRequest *OcrRequest, workerConfig *WorkerConfig) (
 		}
 		engineArgs.OcrOptimize = ocrOptimizeFlag
 	}
-	// if true temp files won't be deleted
+	// if true temp files won't be deleted for debug puposses
 	engineArgs.saveFiles = workerConfig.SaveFiles
 	engineArgs.t2pConverter = workerConfig.Tiff2pdfConverter
+	engineArgs.MaxEntropy = workerConfig.MaxEntropy
 
 	return engineArgs, nil
 }
 
 // Export return a slice that can be passed to tesseract binary as command line
-// args, eg, ["-c", "tessedit_char_whitelist=0123456789", "-c", "foo=bar"]
+// args, eg, ["-c", "tessedit_char_whitelist=0123456789", "-c", "foo=bar".
+// unpaperError is for a recovery call, if at first attempt OCR process fails,
+// we try once more without preprocessing
 func (t *SandwichEngineArgs) Export(unpaperError bool) []string {
 	var result []string
 	if t.Lang != "" {
@@ -116,6 +120,9 @@ func (t *SandwichEngineArgs) Export(unpaperError bool) []string {
 	result = append(result, "-tesso", "-c textonly_pdf=1")
 	if unpaperError {
 		result = append(result, "-nopreproc")
+	}
+	if t.MaxEntropy > 0.0 {
+		result = append(result, "-max_entropy", fmt.Sprintf("%v", t.MaxEntropy))
 	}
 	if t.ConfigVars != nil {
 		for k, v := range t.ConfigVars {

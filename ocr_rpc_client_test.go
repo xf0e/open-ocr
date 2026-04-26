@@ -27,14 +27,11 @@ func DisabledTestOcrRpcClientIntegration(t *testing.T) {
 	// that reads from the filesystem
 	testImageUrl := "http://localhost:8080/img"
 
-	rabbitConfig := rabbitConfigForTests()
-	workerConfig := workerConfigForTests()
-
-	// requestID := "426d0ef9-a0c9-48cb-4562-f9d6f29a6ba5"
+	rabbitConfig := rabbitConfigForTests() // requestID := "426d0ef9-a0c9-48cb-4562-f9d6f29a6ba5"
 
 	// kick off a worker
 	// this would normally happen on a different machine ..
-	ocrWorker, err := NewOcrRpcWorker(&workerConfig)
+	ocrWorker, err := NewOcrRpcWorker(new(workerConfigForTests()))
 	if err != nil {
 		log.Error().Str("component", "TEST").Err(err)
 	}

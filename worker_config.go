@@ -21,6 +21,7 @@ type WorkerConfig struct {
 	Tiff2pdfConverter string
 	NumParallelJobs   uint
 	FlgVersion        bool
+	MaxEntropy        float64
 }
 
 // DefaultWorkerConfig will set the default set of worker parameters which are needed for testing and connecting to a broker
@@ -44,6 +45,7 @@ func DefaultWorkerConfig() WorkerConfig {
 		Tiff2pdfConverter: "convert",
 		NumParallelJobs:   1,
 		FlgVersion:        false,
+		MaxEntropy:        0.5,
 	}
 	return workerConfig
 }
@@ -68,6 +70,7 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 		tiff2pdfConverter string
 		flgVersion        bool
 		numParJobs        uint
+		maxEntropy        float64
 	)
 	flag.StringVar(
 		&amqpURI,
@@ -102,6 +105,14 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 			" Set the value to 1 for round robbin distribution of messages across workers.",
 	)
 
+	flag.Float64Var(
+		&maxEntropy,
+		"max_entropy",
+		0.5,
+		"Set entropy threshold from 0.0 to 1.0 for pdfsandwich fork by xf0e >= 0.1.8. "+
+			"If the calculated entropy value for a single page is greater than a threshold, the OCR will not be performed by pdfsandwich for a given page.",
+	)
+
 	flag.BoolVar(
 		&flgVersion,
 		"version",
@@ -116,11 +127,21 @@ func DefaultConfigFlagsWorkerOverride(flagFunction FlagFunctionWorker) (WorkerCo
 		workerConfig.AmqpURI = amqpURI
 	}
 	if len(tiff2pdfConverter) > 0 {
-		workerConfig.Tiff2pdfConverter = tiff2pdfConverter
-		if tiff2pdfConverter != "convert" && tiff2pdfConverter != "tiff2pdf" {
+		switch tiff2pdfConverter {
+		case "convert", "tiff2pdf":
+			workerConfig.Tiff2pdfConverter = tiff2pdfConverter
+		default:
 			return workerConfig, fmt.Errorf("please choose convert of tiff2pdf as image converter")
 		}
 	}
+
+	switch {
+	case maxEntropy > 0.0:
+		workerConfig.MaxEntropy = maxEntropy
+	case maxEntropy > 1.0:
+		return workerConfig, fmt.Errorf("max_entropy must be less than 1.0")
+	}
+
 	workerConfig.SaveFiles = saveFiles
 	workerConfig.Debug = debug
 	workerConfig.NumParallelJobs = numParJobs
